@@ -7,6 +7,7 @@ import {
   SafeAreaView,
   Platform,
   Image,
+  useWindowDimensions,
 } from 'react-native';
 import React, { ReactNode, useState } from 'react';
 import { useAuth } from '../hooks/useAuth';
@@ -39,10 +40,11 @@ const DOC_SUBS = [
 ];
 
 const MOBILE_NAV = [
-  { to: 'Dashboard', label: 'Home',    icon: 'home-outline'          as const },
-  { to: 'Documents', label: 'Docs',    icon: 'file-document-outline' as const },
-  { to: 'Family',    label: 'Family',  icon: 'account-group-outline' as const },
-  { to: 'Profile',   label: 'Profile', icon: 'account-outline'       as const },
+  { to: 'Dashboard',     label: 'Home',    icon: 'home-outline'          as const },
+  { to: 'Documents',     label: 'Docs',    icon: 'file-document-outline' as const },
+  { to: 'Notifications', label: 'Alerts',  icon: 'bell-outline'          as const },
+  { to: 'Family',        label: 'Family',  icon: 'account-group-outline' as const },
+  { to: 'Menu',          label: 'More',    icon: 'menu'                  as const },
 ];
 
 // ─── Component ───────────────────────────────────────────────────────────────
@@ -52,6 +54,8 @@ export const AppLayout = ({ children }: { children: ReactNode }) => {
   const { documents } = useDocuments();
   const navigation = useNavigation<any>();
   const route = useRoute();
+  const { width } = useWindowDimensions();
+  const [menuOpen, setMenuOpen] = useState(false);
   const [docsExpanded, setDocsExpanded] = useState(
     route.name === 'Documents',
   );
@@ -76,7 +80,7 @@ export const AppLayout = ({ children }: { children: ReactNode }) => {
     .toUpperCase();
 
   // ── Web sidebar layout ───────────────────────────────────────────────────
-  if (Platform.OS === 'web') {
+  if (Platform.OS === 'web' && width >= 768) {
     return (
       <View style={ws.root}>
         {/* ── Sidebar ── */}
@@ -306,12 +310,19 @@ export const AppLayout = ({ children }: { children: ReactNode }) => {
         {/* Bottom tab bar */}
         <View style={ms.bottomBar}>
           {MOBILE_NAV.map((l) => {
-            const active = route.name === l.to;
+            const active = l.to === 'Menu' ? menuOpen : route.name === l.to;
             return (
               <TouchableOpacity
                 key={l.to}
                 style={ms.tabItem}
-                onPress={() => navigation.navigate(l.to)}
+                onPress={() => {
+                  if (l.to === 'Menu') {
+                    setMenuOpen(!menuOpen);
+                  } else {
+                    setMenuOpen(false);
+                    navigation.navigate(l.to);
+                  }
+                }}
               >
                 <View
                   style={[ms.tabIcon, active && ms.tabIconActive]}
@@ -331,6 +342,71 @@ export const AppLayout = ({ children }: { children: ReactNode }) => {
             );
           })}
         </View>
+
+        {/* Slide-up Menu Drawer */}
+        {menuOpen && (
+          <>
+            {/* Backdrop */}
+            <TouchableOpacity 
+              style={ms.drawerBackdrop} 
+              activeOpacity={1} 
+              onPress={() => setMenuOpen(false)}
+            />
+            {/* Drawer Content */}
+            <View style={ms.drawerContent}>
+              <View style={ms.drawerHeader}>
+                <View style={ms.drawerUserRow}>
+                  <View style={ms.drawerAvatar}>
+                    {user?.user_metadata?.avatar_url ? (
+                      <Image source={{ uri: user.user_metadata.avatar_url }} style={ms.drawerAvatarImg} />
+                    ) : (
+                      <Text style={ms.drawerAvatarText}>{initials}</Text>
+                    )}
+                  </View>
+                  <View style={ms.drawerUserInfo}>
+                    <Text style={ms.drawerUserName}>{fullName}</Text>
+                    <Text style={ms.drawerUserEmail}>{user?.email}</Text>
+                  </View>
+                </View>
+              </View>
+
+              <View style={ms.drawerGrid}>
+                {[
+                  { to: 'Search', label: 'Search', icon: 'magnify', color: '#8B5CF6', bg: '#EDE9FE' },
+                  { to: 'Analytics', label: 'Analytics', icon: 'chart-bar', color: '#10B981', bg: '#D1FAE5' },
+                  { to: 'Settings', label: 'Settings', icon: 'cog-outline', color: '#64748B', bg: '#F1F5F9' },
+                  { to: 'Profile', label: 'Profile', icon: 'account-outline', color: '#3B82F6', bg: '#DBEAFE' },
+                ].map((item) => (
+                  <TouchableOpacity
+                    key={item.to}
+                    style={ms.drawerGridItem}
+                    onPress={() => {
+                      setMenuOpen(false);
+                      navigation.navigate(item.to);
+                    }}
+                  >
+                    <View style={[ms.drawerGridIcon, { backgroundColor: item.bg }]}>
+                      <MaterialCommunityIcons name={item.icon as any} size={22} color={item.color} />
+                    </View>
+                    <Text style={ms.drawerGridLabel}>{item.label}</Text>
+                  </TouchableOpacity>
+                ))}
+              </View>
+
+              <TouchableOpacity
+                style={ms.drawerLogoutBtn}
+                onPress={async () => {
+                  setMenuOpen(false);
+                  await signOut();
+                  navigation.navigate('Auth');
+                }}
+              >
+                <Feather name="log-out" size={18} color="#EF4444" style={{ marginRight: 8 }} />
+                <Text style={ms.drawerLogoutText}>Log Out</Text>
+              </TouchableOpacity>
+            </View>
+          </>
+        )}
       </View>
     </SafeAreaView>
   );
@@ -545,4 +621,116 @@ const ms = StyleSheet.create({
   tabIconActive: { backgroundColor: 'rgba(59,130,246,0.1)' },
   tabLabel: { fontSize: 11, fontWeight: '500', color: '#6B7280', marginTop: 2 },
   tabLabelActive: { color: '#3B82F6' },
+  drawerBackdrop: {
+    position: 'absolute',
+    top: 0,
+    bottom: 0,
+    left: 0,
+    right: 0,
+    backgroundColor: 'rgba(15, 23, 42, 0.4)',
+    zIndex: 99,
+  },
+  drawerContent: {
+    position: 'absolute',
+    bottom: Platform.OS === 'ios' ? 84 : 72,
+    left: 16,
+    right: 16,
+    backgroundColor: '#FFFFFF',
+    borderRadius: 16,
+    padding: 20,
+    zIndex: 100,
+    shadowColor: '#0F172A',
+    shadowOffset: { width: 0, height: -4 },
+    shadowOpacity: 0.1,
+    shadowRadius: 12,
+    elevation: 10,
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
+  },
+  drawerHeader: {
+    borderBottomWidth: 1,
+    borderBottomColor: '#F1F5F9',
+    paddingBottom: 16,
+    marginBottom: 16,
+  },
+  drawerUserRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+  },
+  drawerAvatar: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    backgroundColor: '#3B82F6',
+    alignItems: 'center',
+    justifyContent: 'center',
+    overflow: 'hidden',
+  },
+  drawerAvatarImg: {
+    width: 44,
+    height: 44,
+  },
+  drawerAvatarText: {
+    color: '#FFFFFF',
+    fontSize: 16,
+    fontWeight: '700',
+  },
+  drawerUserInfo: {
+    flex: 1,
+  },
+  drawerUserName: {
+    fontSize: 15,
+    fontWeight: '600',
+    color: '#0F172A',
+  },
+  drawerUserEmail: {
+    fontSize: 12,
+    color: '#64748B',
+    marginTop: 2,
+  },
+  drawerGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 12,
+    marginBottom: 16,
+  },
+  drawerGridItem: {
+    width: '47%',
+    backgroundColor: '#F8FAFC',
+    borderRadius: 12,
+    padding: 12,
+    alignItems: 'center',
+    gap: 8,
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
+  },
+  drawerGridIcon: {
+    width: 40,
+    height: 40,
+    borderRadius: 10,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  drawerGridLabel: {
+    fontSize: 12.5,
+    fontWeight: '600',
+    color: '#334155',
+  },
+  drawerLogoutBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#FEF2F2',
+    borderWidth: 1,
+    borderColor: '#FEE2E2',
+    paddingVertical: 12,
+    borderRadius: 12,
+    width: '100%',
+  },
+  drawerLogoutText: {
+    color: '#EF4444',
+    fontSize: 13.5,
+    fontWeight: '600',
+  },
 });
