@@ -8,11 +8,19 @@ import { useNavigation } from '@react-navigation/native';
 import * as ImagePicker from 'expo-image-picker';
 
 const Auth = () => {
-  const { signIn, signUp, checkEmailExists } = useAuth();
+  const { 
+    signIn, 
+    signUp, 
+    checkEmailExists, 
+    verifySignUpOtp, 
+    sendPasswordResetEmail, 
+    verifyPasswordResetOtp, 
+    updatePassword 
+  } = useAuth();
   const { isAuthenticated, loading } = useSession();
   const navigation = useNavigation<any>();
 
-  const [mode, setMode] = useState<"login" | "signup">("login");
+  const [mode, setMode] = useState<"login" | "signup" | "verify_signup" | "forgot_password" | "reset_password">("login");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
@@ -21,6 +29,7 @@ const Auth = () => {
   const [name, setName] = useState("");
   const [phone, setPhone] = useState("");
   const [photo, setPhoto] = useState<any>(null);
+  const [otpCode, setOtpCode] = useState("");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -50,8 +59,13 @@ const Auth = () => {
   };
 
   const handleSubmit = async () => {
-    if (!email || !password) {
-      setError("Please fill in all fields.");
+    if (!email) {
+      setError("Please fill in email address.");
+      return;
+    }
+
+    if ((mode === "login" || mode === "signup" || mode === "reset_password") && !password) {
+      setError("Please enter a password.");
       return;
     }
 
@@ -60,7 +74,6 @@ const Auth = () => {
     
     try {
       if (mode === "login") {
-        // 1. Check if email exists
         const exists = await checkEmailExists(email);
         if (!exists) {
           setError("Email not found. Please check your email or sign up.");
@@ -68,14 +81,13 @@ const Auth = () => {
           return;
         }
 
-        // 2. Attempt sign in
         const { error: signInError } = await signIn({ email, password });
         if (signInError) {
           setError("Incorrect password. Please try again.");
         } else { 
           navigation.replace("Dashboard"); 
         }
-      } else {
+      } else if (mode === "signup") {
         if (!name || !phone || !photo) {
           setError("Please fill in all fields and select a profile photo.");
           setBusy(false);
@@ -98,7 +110,56 @@ const Auth = () => {
         if (signUpError) {
           setError(signUpError.message);
         } else {
-          Alert.alert("Success", "Account created. Check your email to verify (if required).");
+          Alert.alert("Success", "Account created. Please check your email for the verification code.");
+          setMode("verify_signup");
+        }
+      } else if (mode === "verify_signup") {
+        if (!otpCode) {
+          setError("Please enter the verification code.");
+          setBusy(false);
+          return;
+        }
+        const { error: verifyError } = await verifySignUpOtp(email, otpCode);
+        if (verifyError) {
+          setError(verifyError.message);
+        } else {
+          Alert.alert("Success", "Account verified successfully!");
+          navigation.replace("Dashboard");
+        }
+      } else if (mode === "forgot_password") {
+        const { error: resetError } = await sendPasswordResetEmail(email);
+        if (resetError) {
+          setError(resetError.message);
+        } else {
+          Alert.alert("Success", "Verification code sent to your email.");
+          setMode("reset_password");
+        }
+      } else if (mode === "reset_password") {
+        if (!otpCode || !confirmPassword) {
+          setError("Please fill in all fields.");
+          setBusy(false);
+          return;
+        }
+        if (password !== confirmPassword) {
+          setError("Passwords do not match.");
+          setBusy(false);
+          return;
+        }
+        const { error: verifyError } = await verifyPasswordResetOtp(email, otpCode);
+        if (verifyError) {
+          setError(verifyError.message);
+          setBusy(false);
+          return;
+        }
+        const { error: updateError } = await updatePassword(password);
+        if (updateError) {
+          setError(updateError.message);
+        } else {
+          Alert.alert("Success", "Your password has been reset successfully.");
+          setMode("login");
+          setPassword("");
+          setConfirmPassword("");
+          setOtpCode("");
         }
       }
     } catch (e: any) {
@@ -145,20 +206,23 @@ const Auth = () => {
               <Text style={styles.errorText}>{error}</Text>
             </View>
           )}
-          <View style={styles.tabs}>
-            <TouchableOpacity 
-              style={[styles.tab, mode === "login" && styles.activeTab]}
-              onPress={() => { setMode("login"); setError(null); }}
-            >
-              <Text style={[styles.tabText, mode === "login" && styles.activeTabText]}>Login</Text>
-            </TouchableOpacity>
-            <TouchableOpacity 
-              style={[styles.tab, mode === "signup" && styles.activeTab]}
-              onPress={() => { setMode("signup"); setError(null); }}
-            >
-              <Text style={[styles.tabText, mode === "signup" && styles.activeTabText]}>Sign up</Text>
-            </TouchableOpacity>
-          </View>
+          
+          {(mode === "login" || mode === "signup") && (
+            <View style={styles.tabs}>
+              <TouchableOpacity 
+                style={[styles.tab, mode === "login" && styles.activeTab]}
+                onPress={() => { setMode("login"); setError(null); }}
+              >
+                <Text style={[styles.tabText, mode === "login" && styles.activeTabText]}>Login</Text>
+              </TouchableOpacity>
+              <TouchableOpacity 
+                style={[styles.tab, mode === "signup" && styles.activeTab]}
+                onPress={() => { setMode("signup"); setError(null); }}
+              >
+                <Text style={[styles.tabText, mode === "signup" && styles.activeTabText]}>Sign up</Text>
+              </TouchableOpacity>
+            </View>
+          )}
 
           <View style={styles.form}>
             {mode === "signup" && (
@@ -194,45 +258,65 @@ const Auth = () => {
               </>
             )}
 
-            <View style={styles.inputGroup}>
-              <Text style={styles.label}>Email</Text>
-              <TextInput 
-                style={styles.input}
-                value={email}
-                onChangeText={setEmail}
-                placeholder="Enter email"
-                keyboardType="email-address"
-                autoCapitalize="none"
-              />
-            </View>
-            <View style={styles.inputGroup}>
-              <Text style={styles.label}>Password</Text>
-              <View style={styles.passwordInputContainer}>
-                <TextInput 
-                  style={styles.passwordInput}
-                  value={password}
-                  onChangeText={setPassword}
-                  placeholder="Enter password"
-                  secureTextEntry={!showPassword}
-                />
-                <TouchableOpacity 
-                  onPress={() => setShowPassword(!showPassword)}
-                  style={styles.eyeIcon}
-                >
-                  <Feather name={showPassword ? "eye" : "eye-off"} size={20} color="#64748B" />
-                </TouchableOpacity>
-              </View>
-            </View>
-
-            {mode === "signup" && (
+            {mode !== "verify_signup" && (
               <View style={styles.inputGroup}>
-                <Text style={styles.label}>Confirm Password</Text>
+                <Text style={styles.label}>Email</Text>
+                <TextInput 
+                  style={styles.input}
+                  value={email}
+                  onChangeText={setEmail}
+                  placeholder="Enter email"
+                  keyboardType="email-address"
+                  autoCapitalize="none"
+                  editable={mode !== "reset_password"}
+                />
+              </View>
+            )}
+
+            {(mode === "verify_signup" || mode === "reset_password") && (
+              <View style={styles.inputGroup}>
+                <Text style={styles.label}>Verification Code (6-digit OTP)</Text>
+                <TextInput 
+                  style={styles.input}
+                  value={otpCode}
+                  onChangeText={setOtpCode}
+                  placeholder="Enter 6-digit code"
+                  keyboardType="number-pad"
+                  maxLength={6}
+                />
+              </View>
+            )}
+
+            {(mode === "login" || mode === "signup" || mode === "reset_password") && (
+              <View style={styles.inputGroup}>
+                <Text style={styles.label}>{mode === "reset_password" ? "New Password" : "Password"}</Text>
+                <View style={styles.passwordInputContainer}>
+                  <TextInput 
+                    style={styles.passwordInput}
+                    value={password}
+                    onChangeText={setPassword}
+                    placeholder={mode === "reset_password" ? "Enter new password" : "Enter password"}
+                    secureTextEntry={!showPassword}
+                  />
+                  <TouchableOpacity 
+                    onPress={() => setShowPassword(!showPassword)}
+                    style={styles.eyeIcon}
+                  >
+                    <Feather name={showPassword ? "eye" : "eye-off"} size={20} color="#64748B" />
+                  </TouchableOpacity>
+                </View>
+              </View>
+            )}
+
+            {(mode === "signup" || mode === "reset_password") && (
+              <View style={styles.inputGroup}>
+                <Text style={styles.label}>{mode === "reset_password" ? "Confirm New Password" : "Confirm Password"}</Text>
                 <View style={styles.passwordInputContainer}>
                   <TextInput 
                     style={styles.passwordInput}
                     value={confirmPassword}
                     onChangeText={setConfirmPassword}
-                    placeholder="Confirm password"
+                    placeholder={mode === "reset_password" ? "Confirm new password" : "Confirm password"}
                     secureTextEntry={!showConfirmPassword}
                   />
                   <TouchableOpacity 
@@ -245,6 +329,15 @@ const Auth = () => {
               </View>
             )}
 
+            {mode === "login" && (
+              <TouchableOpacity 
+                onPress={() => { setMode("forgot_password"); setError(null); }}
+                style={styles.forgotPasswordLink}
+              >
+                <Text style={styles.forgotPasswordText}>Forgot password?</Text>
+              </TouchableOpacity>
+            )}
+
             <TouchableOpacity 
               style={[styles.submitButton, busy && styles.disabledButton]}
               onPress={handleSubmit}
@@ -254,10 +347,23 @@ const Auth = () => {
                 <ActivityIndicator color="#fff" />
               ) : (
                 <Text style={styles.submitButtonText}>
-                  {mode === "login" ? "Login" : "Create account"}
+                  {mode === "login" && "Login"}
+                  {mode === "signup" && "Create account"}
+                  {mode === "verify_signup" && "Verify Code"}
+                  {mode === "forgot_password" && "Send Verification Code"}
+                  {mode === "reset_password" && "Reset Password"}
                 </Text>
               )}
             </TouchableOpacity>
+
+            {mode !== "login" && mode !== "signup" && (
+              <TouchableOpacity 
+                onPress={() => { setMode("login"); setError(null); setOtpCode(""); }}
+                style={styles.backToLoginLink}
+              >
+                <Text style={styles.backToLoginText}>Back to Login</Text>
+              </TouchableOpacity>
+            )}
           </View>
         </View>
       </ScrollView>
@@ -467,6 +573,24 @@ const styles = StyleSheet.create({
   },
   disabledButton: {
     opacity: 0.7,
+  },
+  forgotPasswordLink: {
+    alignSelf: 'flex-end',
+    marginTop: 4,
+  },
+  forgotPasswordText: {
+    fontSize: 14,
+    color: '#3b82f6',
+    fontWeight: '500',
+  },
+  backToLoginLink: {
+    alignSelf: 'center',
+    marginTop: 16,
+  },
+  backToLoginText: {
+    fontSize: 14,
+    color: '#64748B',
+    fontWeight: '500',
   },
 });
 

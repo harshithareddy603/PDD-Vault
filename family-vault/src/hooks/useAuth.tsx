@@ -11,6 +11,10 @@ type AuthCtx = {
   signIn: (input: { email: string; password: string }) => Promise<{ error: Error | null }>;
   signOut: () => Promise<void>;
   checkEmailExists: (email: string) => Promise<boolean>;
+  verifySignUpOtp: (email: string, token: string) => Promise<{ error: Error | null }>;
+  sendPasswordResetEmail: (email: string) => Promise<{ error: Error | null }>;
+  verifyPasswordResetOtp: (email: string, token: string) => Promise<{ error: Error | null }>;
+  updatePassword: (password: string) => Promise<{ error: Error | null }>;
 };
 
 const Ctx = createContext<AuthCtx | undefined>(undefined);
@@ -95,8 +99,50 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     }
   }, []);
 
+  const verifySignUpOtp = useCallback(async (email: string, token: string) => {
+    const { error } = await supabase.auth.verifyOtp({
+      email,
+      token,
+      type: 'signup'
+    });
+    return { error: error as Error | null };
+  }, []);
+
+  const sendPasswordResetEmail = useCallback(async (email: string) => {
+    const { error } = await supabase.auth.resetPasswordForEmail(email);
+    return { error: error as Error | null };
+  }, []);
+
+  const verifyPasswordResetOtp = useCallback(async (email: string, token: string) => {
+    const { error } = await supabase.auth.verifyOtp({
+      email,
+      token,
+      type: 'recovery'
+    });
+    return { error: error as Error | null };
+  }, []);
+
+  const updatePassword = useCallback(async (password: string) => {
+    const { error } = await supabase.auth.updateUser({
+      password
+    });
+    return { error: error as Error | null };
+  }, []);
+
   return (
-    <Ctx.Provider value={{ session, user: session?.user ?? null, loading, signUp, signIn, signOut, checkEmailExists }}>
+    <Ctx.Provider value={{
+      session,
+      user: session?.user ?? null,
+      loading,
+      signUp,
+      signIn,
+      signOut,
+      checkEmailExists,
+      verifySignUpOtp,
+      sendPasswordResetEmail,
+      verifyPasswordResetOtp,
+      updatePassword
+    }}>
       {loading ? <SplashScreen /> : children}
     </Ctx.Provider>
   );
