@@ -1,0 +1,30 @@
+{
+  "expo": {
+    "name": "Smart Docs",
+    "slug": "family-vault",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./public/favicon.png",
+    "userInterfaceStyle": "light",
+    "splash": {
+      "image": "./public/favicon.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#4a3aff"
+    },
+    "assetBundlePatterns": [
+      "**/*"
+    ],
+    "ios": {
+      "supportsTablet": true
+    },
+    "android": {
+      "adaptiveIcon": {
+        "foregroundImage": "./public/favicon.png",
+        "backgroundColor": "#4a3aff"
+      }
+    },
+    "web": {
+      "favicon": "./public/favicon.png"
+    }
+  }
+}
