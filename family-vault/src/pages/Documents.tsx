@@ -13,7 +13,8 @@ import { Checkbox, ProgressBar } from 'react-native-paper';
 import * as DocumentPicker from 'expo-document-picker';
 import * as Linking from 'expo-linking';
 import type { DocumentRow } from "../services/supabase";
-import { useRoute } from '@react-navigation/native';
+import { useRoute, useNavigation } from '@react-navigation/native';
+import * as ImagePicker from 'expo-image-picker';
 
 const CATEGORIES = ["ID", "Certificate", "Insurance", "Medical", "License", "Resume", "Passport", "Education", "Property", "Other"];
 const FILTER_CHIPS = ["All", ...CATEGORIES, "⚠ Expiring Soon", "❌ Expired"];
@@ -22,6 +23,7 @@ const Documents = () => {
   const { members } = useFamily();
   const { documents, loading, addDocument, deleteDocument, deleteDocuments, getSignedUrl, isOffline, uploadProgress } = useDocumentsWithCache();
   const route = useRoute<any>();
+  const navigation = useNavigation<any>();
 
   const [open, setOpen] = useState(false);
   const [name, setName] = useState("");
@@ -45,6 +47,45 @@ const Documents = () => {
   const [sortBy, setSortBy] = useState("newest_first");
   const [ownerFilter, setOwnerFilter] = useState<"all" | "myself" | "family">("all");
   const [familyMemberFilter, setFamilyMemberFilter] = useState<string>("all");
+
+  const scanDocument = async () => {
+    try {
+      const { status } = await ImagePicker.requestCameraPermissionsAsync();
+      if (status !== 'granted') {
+        Alert.alert("Permission Denied", "Camera permission is required to scan documents.");
+        return;
+      }
+
+      const result = await ImagePicker.launchCameraAsync({
+        mediaTypes: ImagePicker.MediaTypeOptions.Images,
+        allowsEditing: true,
+        quality: 0.8,
+      });
+
+      if (!result.canceled) {
+        const asset = result.assets[0];
+        const timestamp = new Date().getTime();
+        const scannedName = `Scan_${timestamp}`;
+        setFile({
+          uri: asset.uri,
+          name: `${scannedName}.jpg`,
+          type: 'image/jpeg',
+          size: asset.fileSize || 0
+        });
+        setName(scannedName);
+        setOpen(true);
+      }
+    } catch (err) {
+      Alert.alert("Error", "Failed to start camera.");
+    }
+  };
+
+  useEffect(() => {
+    if (route.params?.triggerScan) {
+      navigation.setParams({ triggerScan: undefined });
+      scanDocument();
+    }
+  }, [route.params?.triggerScan]);
 
   useEffect(() => {
     if (route.params?.category) {

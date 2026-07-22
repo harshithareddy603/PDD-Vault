@@ -17,7 +17,6 @@ import ProfilePage from "./pages/ProfilePage";
 import NotificationsPage from "./pages/NotificationsPage";
 import Analytics from "./pages/Analytics";
 import Settings from "./pages/Settings";
-import Help from "./pages/Help";
 import NotFound from "./pages/NotFound";
 import Search from "./pages/Search";
 
@@ -106,13 +105,7 @@ const App = () => {
                 )}
               </Stack.Screen>
 
-              <Stack.Screen name="Help">
-                {(props: any) => (
-                  <ProtectedRoute>
-                    <Help {...props} />
-                  </ProtectedRoute>
-                )}
-              </Stack.Screen>
+
 
               {/* Catch-all/NotFound is usually handled by navigation logic in RN, 
                   but we include it here for consistency */}

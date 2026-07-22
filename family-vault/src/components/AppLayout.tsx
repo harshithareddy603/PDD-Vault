@@ -27,7 +27,6 @@ const WEB_NAV = [
 
 const FOOTER_NAV = [
   { key: 'Settings', label: 'Settings', icon: 'cog-outline'         as const },
-  { key: 'Help',     label: 'Help',     icon: 'help-circle-outline'  as const },
 ];
 
 const DOC_SUBS = [

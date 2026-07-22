@@ -183,33 +183,10 @@ const Dashboard = () => {
         />
       </View>
 
-      {/* Middle section: Storage + Quick Actions + Recent Alerts */}
+      {/* Middle section: Quick Actions + Recent Alerts */}
       <View style={[s.midRow, isWeb && s.midRowWide]}>
-        {/* Storage Usage */}
-        <View style={[s.midCard, { flex: isWeb ? 1.1 : undefined }]}>
-          <View style={s.cardHeaderRow}>
-            <MaterialCommunityIcons name="database-outline" size={16} color="#64748B" />
-            <Text style={s.cardTitle}>Storage Usage</Text>
-          </View>
-          <Text style={s.storageNum}>
-            <Text style={{ color: '#3B82F6', fontWeight: '700' }}>
-              {(totalDocs * 0.035).toFixed(1)} GB
-            </Text>
-            {' / 10 GB'}
-          </Text>
-          <View style={s.progressBg}>
-            <View
-              style={[
-                s.progressBar,
-                { width: `${Math.min(totalDocs * 0.35, 100)}%` as any },
-              ]}
-            />
-          </View>
-          <Text style={s.storageSub}>Storage Usage</Text>
-        </View>
-
         {/* Quick Actions */}
-        <View style={[s.midCard, { flex: isWeb ? 1.4 : undefined }]}>
+        <View style={[s.midCard, { flex: isWeb ? 1 : undefined }]}>
           <Text style={s.cardTitle}>Quick Actions</Text>
           {[
             {
@@ -225,6 +202,7 @@ const Dashboard = () => {
               color: '#3B82F6',
               bg: '#DBEAFE',
               screen: 'Documents',
+              params: { triggerScan: true },
             },
             {
               label: 'Search Documents',
@@ -237,7 +215,7 @@ const Dashboard = () => {
             <TouchableOpacity
               key={action.label}
               style={s.actionRow}
-              onPress={() => navigation.navigate(action.screen)}
+              onPress={() => navigation.navigate(action.screen, (action as any).params)}
             >
               <View style={[s.actionIcon, { backgroundColor: action.bg }]}>
                 <MaterialCommunityIcons
@@ -253,7 +231,7 @@ const Dashboard = () => {
         </View>
 
         {/* Recent Alerts */}
-        <View style={[s.midCard, { flex: isWeb ? 1.5 : undefined }]}>
+        <View style={[s.midCard, { flex: isWeb ? 1 : undefined }]}>
           <View style={s.cardHeaderRow}>
             <Text style={s.cardTitle}>Recent Alerts</Text>
             <TouchableOpacity onPress={() => navigation.navigate('Notifications')}>
