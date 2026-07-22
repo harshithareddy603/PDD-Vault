@@ -357,6 +357,9 @@ const Auth = () => {
                   keyboardType="number-pad"
                   maxLength={6}
                 />
+                <Text style={{ fontSize: 12, color: '#64748B', marginTop: 4 }}>
+                  Check spam folder if you can't find the mail.
+                </Text>
               </View>
             )}
 
