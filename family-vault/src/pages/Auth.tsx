@@ -1,4 +1,4 @@
-import { View, Text, StyleSheet, TouchableOpacity, TextInput, ScrollView, Alert, ActivityIndicator, KeyboardAvoidingView, Platform } from 'react-native'
+import { View, Text, StyleSheet, TouchableOpacity, TextInput, ScrollView, Alert, ActivityIndicator, KeyboardAvoidingView, Platform, Image, Modal } from 'react-native'
 import React, { useEffect, useState } from "react";
 import { useAuth } from "../hooks/useAuth";
 import { useSession } from "../hooks/useSession";
@@ -6,6 +6,49 @@ import { isSupabaseConfigured } from "../services/supabase";
 import { MaterialCommunityIcons, Feather } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
 import * as ImagePicker from 'expo-image-picker';
+
+const cropImageWeb = (imageUri: string, zoom: number, offsetX: number, offsetY: number) => {
+  return new Promise<string>((resolve, reject) => {
+    const img = new window.Image();
+    img.src = imageUri;
+    img.onload = () => {
+      const canvas = document.createElement('canvas');
+      const size = 300;
+      canvas.width = size;
+      canvas.height = size;
+      const ctx = canvas.getContext('2d');
+      if (!ctx) {
+        reject(new Error("Failed to get canvas context"));
+        return;
+      }
+
+      ctx.fillStyle = '#FFFFFF';
+      ctx.fillRect(0, 0, size, size);
+
+      const minDimension = Math.min(img.width, img.height);
+      const sWidth = minDimension / zoom;
+      const sHeight = minDimension / zoom;
+      
+      const sx = (img.width - sWidth) / 2 - (offsetX / 250) * sWidth;
+      const sy = (img.height - sHeight) / 2 - (offsetY / 250) * sHeight;
+
+      ctx.drawImage(
+        img,
+        Math.max(0, Math.min(sx, img.width - sWidth)),
+        Math.max(0, Math.min(sy, img.height - sHeight)),
+        sWidth,
+        sHeight,
+        0,
+        0,
+        size,
+        size
+      );
+
+      resolve(canvas.toDataURL('image/jpeg', 0.8));
+    };
+    img.onerror = (e) => reject(e);
+  });
+};
 
 const Auth = () => {
   const { 
@@ -33,6 +76,12 @@ const Auth = () => {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  const [rawPhotoUri, setRawPhotoUri] = useState<string | null>(null);
+  const [showCropModal, setShowCropModal] = useState(false);
+  const [cropZoom, setCropZoom] = useState(1);
+  const [cropOffsetX, setCropOffsetX] = useState(0);
+  const [cropOffsetY, setCropOffsetY] = useState(0);
+
   useEffect(() => {
     if (!loading && isAuthenticated) {
       navigation.replace("Dashboard");
@@ -42,19 +91,43 @@ const Auth = () => {
   const pickImage = async () => {
     let result = await ImagePicker.launchImageLibraryAsync({
       mediaTypes: ImagePicker.MediaTypeOptions.Images,
-      allowsEditing: true,
+      allowsEditing: Platform.OS !== 'web',
       aspect: [1, 1],
       quality: 0.7,
     });
 
     if (!result.canceled) {
       const asset = result.assets[0];
+      if (Platform.OS === 'web') {
+        setRawPhotoUri(asset.uri);
+        setCropZoom(1);
+        setCropOffsetX(0);
+        setCropOffsetY(0);
+        setShowCropModal(true);
+      } else {
+        setPhoto({
+          uri: asset.uri,
+          name: 'profile.jpg',
+          type: 'image/jpeg',
+          size: asset.fileSize || 0
+        });
+      }
+    }
+  };
+
+  const handleSaveCrop = async () => {
+    if (!rawPhotoUri) return;
+    try {
+      const croppedUri = await cropImageWeb(rawPhotoUri, cropZoom, cropOffsetX, cropOffsetY);
       setPhoto({
-        uri: asset.uri,
+        uri: croppedUri,
         name: 'profile.jpg',
         type: 'image/jpeg',
-        size: asset.fileSize || 0
+        size: 0
       });
+      setShowCropModal(false);
+    } catch (err) {
+      Alert.alert("Error", "Failed to crop image.");
     }
   };
 
@@ -367,6 +440,78 @@ const Auth = () => {
           </View>
         </View>
       </ScrollView>
+
+      {/* Image Crop Modal (Web only) */}
+      <Modal visible={showCropModal} transparent={true} animationType="slide">
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContent}>
+            <Text style={styles.modalTitle}>Crop Profile Picture</Text>
+            
+            {/* Cropping Preview Area */}
+            <View style={{
+              width: 200,
+              height: 200,
+              borderRadius: 100,
+              overflow: 'hidden',
+              alignSelf: 'center',
+              backgroundColor: '#F1F5F9',
+              borderWidth: 2,
+              borderColor: '#3B82F6',
+              marginBottom: 20,
+              justifyContent: 'center',
+              alignItems: 'center',
+            }}>
+              {rawPhotoUri && (
+                <Image 
+                  source={{ uri: rawPhotoUri }} 
+                  style={{
+                    width: 200,
+                    height: 200,
+                    transform: [
+                      { scale: cropZoom },
+                      { translateX: cropOffsetX },
+                      { translateY: cropOffsetY }
+                    ]
+                  }}
+                  resizeMode="contain"
+                />
+              )}
+            </View>
+
+            {/* Adjustment Controls */}
+            <Text style={{ fontSize: 13, color: '#64748B', marginBottom: 8, textAlign: 'center' }}>Adjust Image Position</Text>
+            <View style={{ flexDirection: 'row', justifyContent: 'center', gap: 10, marginBottom: 20 }}>
+              <TouchableOpacity onPress={() => setCropOffsetX(x => x - 10)} style={styles.controlBtn}>
+                <Feather name="arrow-left" size={16} color="#475569" />
+              </TouchableOpacity>
+              <TouchableOpacity onPress={() => setCropOffsetX(x => x + 10)} style={styles.controlBtn}>
+                <Feather name="arrow-right" size={16} color="#475569" />
+              </TouchableOpacity>
+              <TouchableOpacity onPress={() => setCropOffsetY(y => y - 10)} style={styles.controlBtn}>
+                <Feather name="arrow-up" size={16} color="#475569" />
+              </TouchableOpacity>
+              <TouchableOpacity onPress={() => setCropOffsetY(y => y + 10)} style={styles.controlBtn}>
+                <Feather name="arrow-down" size={16} color="#475569" />
+              </TouchableOpacity>
+              <TouchableOpacity onPress={() => setCropZoom(z => Math.min(z + 0.1, 3))} style={styles.controlBtn}>
+                <Feather name="zoom-in" size={16} color="#475569" />
+              </TouchableOpacity>
+              <TouchableOpacity onPress={() => setCropZoom(z => Math.max(z - 0.1, 1))} style={styles.controlBtn}>
+                <Feather name="zoom-out" size={16} color="#475569" />
+              </TouchableOpacity>
+            </View>
+
+            <View style={{ flexDirection: 'row', gap: 12 }}>
+              <TouchableOpacity style={[styles.cancelBtn, { flex: 1 }]} onPress={() => setShowCropModal(false)}>
+                <Text style={styles.cancelBtnText}>Cancel</Text>
+              </TouchableOpacity>
+              <TouchableOpacity style={[styles.saveBtn, { flex: 1 }]} onPress={handleSaveCrop}>
+                <Text style={styles.saveBtnText}>Apply</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
     </KeyboardAvoidingView>
   );
 };
@@ -591,6 +736,65 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: '#64748B',
     fontWeight: '500',
+  },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(15, 23, 42, 0.5)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 20,
+  },
+  modalContent: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 16,
+    padding: 24,
+    width: '100%',
+    maxWidth: 440,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 10 },
+    shadowOpacity: 0.1,
+    shadowRadius: 20,
+    elevation: 10,
+  },
+  modalTitle: {
+    fontSize: 18,
+    fontWeight: '700',
+    color: '#0F172A',
+    marginBottom: 20,
+  },
+  controlBtn: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: '#F1F5F9',
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
+  },
+  cancelBtn: {
+    paddingVertical: 14,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
+    alignItems: 'center',
+  },
+  cancelBtnText: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#64748B',
+  },
+  saveBtn: {
+    paddingVertical: 14,
+    borderRadius: 12,
+    backgroundColor: '#3b82f6',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  saveBtnText: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#FFFFFF',
   },
 });
 

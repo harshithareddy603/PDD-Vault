@@ -297,11 +297,11 @@ const Dashboard = () => {
             {/* Table head (web only) */}
             {isWeb && (
               <View style={[s.tableRow, s.tableHead]}>
-                <Text style={[s.thCell, { flex: 2.5 }]}>DOCUMENT</Text>
-                <Text style={[s.thCell, { flex: 1.2 }]}>CATEGORY</Text>
-                <Text style={[s.thCell, { flex: 1.2 }]}>STATUS</Text>
-                <Text style={[s.thCell, { flex: 1.5 }]}>UPLOAD DATE</Text>
-                <Text style={[s.thCell, { flex: 0.8, textAlign: 'right' }]}>ACTIONS</Text>
+                <View style={{ flex: 2.5 }}><Text style={s.thCell}>DOCUMENT</Text></View>
+                <View style={{ flex: 1.2 }}><Text style={s.thCell}>CATEGORY</Text></View>
+                <View style={{ flex: 1.2 }}><Text style={s.thCell}>STATUS</Text></View>
+                <View style={{ flex: 1.5 }}><Text style={s.thCell}>UPLOAD DATE</Text></View>
+                <View style={{ flex: 0.8, alignItems: 'flex-end' }}><Text style={s.thCell}>ACTIONS</Text></View>
               </View>
             )}
 

@@ -7,6 +7,49 @@ import { supabase } from "../services/supabase";
 import { Feather, MaterialCommunityIcons } from '@expo/vector-icons';
 import { Avatar } from 'react-native-paper';
 
+const cropImageWeb = (imageUri: string, zoom: number, offsetX: number, offsetY: number) => {
+  return new Promise<string>((resolve, reject) => {
+    const img = new window.Image();
+    img.src = imageUri;
+    img.onload = () => {
+      const canvas = document.createElement('canvas');
+      const size = 300;
+      canvas.width = size;
+      canvas.height = size;
+      const ctx = canvas.getContext('2d');
+      if (!ctx) {
+        reject(new Error("Failed to get canvas context"));
+        return;
+      }
+
+      ctx.fillStyle = '#FFFFFF';
+      ctx.fillRect(0, 0, size, size);
+
+      const minDimension = Math.min(img.width, img.height);
+      const sWidth = minDimension / zoom;
+      const sHeight = minDimension / zoom;
+      
+      const sx = (img.width - sWidth) / 2 - (offsetX / 250) * sWidth;
+      const sy = (img.height - sHeight) / 2 - (offsetY / 250) * sHeight;
+
+      ctx.drawImage(
+        img,
+        Math.max(0, Math.min(sx, img.width - sWidth)),
+        Math.max(0, Math.min(sy, img.height - sHeight)),
+        sWidth,
+        sHeight,
+        0,
+        0,
+        size,
+        size
+      );
+
+      resolve(canvas.toDataURL('image/jpeg', 0.8));
+    };
+    img.onerror = (e) => reject(e);
+  });
+};
+
 const ProfilePage = () => {
   const { user, signOut, sendPasswordResetEmail, verifyPasswordResetOtp, updatePassword } = useAuth();
   
@@ -22,6 +65,12 @@ const ProfilePage = () => {
   const [newPassword, setNewPassword] = useState("");
   const [confirmNewPassword, setConfirmNewPassword] = useState("");
   const [resetBusy, setResetBusy] = useState(false);
+
+  const [rawPhotoUri, setRawPhotoUri] = useState<string | null>(null);
+  const [showCropModal, setShowCropModal] = useState(false);
+  const [cropZoom, setCropZoom] = useState(1);
+  const [cropOffsetX, setCropOffsetX] = useState(0);
+  const [cropOffsetY, setCropOffsetY] = useState(0);
 
   useEffect(() => {
     if (user?.user_metadata) {
@@ -46,52 +95,25 @@ const ProfilePage = () => {
     }
   };
 
-  const handleUpdateAvatar = async () => {
+  const uploadCroppedAvatar = async (uri: string, mimeType: string) => {
+    setSaving(true);
     try {
-      const result = await ImagePicker.launchImageLibraryAsync({
-        mediaTypes: ImagePicker.MediaTypeOptions.Images,
-        allowsEditing: true,
-        aspect: [1, 1],
-        quality: 0.7,
-      });
-
-      if (result.canceled) return;
-
-      setSaving(true);
-      const asset = result.assets[0];
-
-      // Check file size (limit to 3MB)
-      if (asset.fileSize && asset.fileSize > 3 * 1024 * 1024) {
-        Alert.alert("Image Too Large", "Please select an image smaller than 3MB.");
-        setSaving(false);
-        return;
-      }
-
-      // Fix for web: some browsers return base64 instead of a file extension
-      let extension = asset.uri.split('.').pop()?.split('?')[0].split('#')[0] || 'jpg';
+      let extension = uri.split('.').pop()?.split('?')[0].split('#')[0] || 'jpg';
       if (extension.length > 5 || extension.includes(';')) {
-        extension = 'jpg'; // Fallback for base64 data URIs
+        extension = 'jpg';
       }
       
       const fileName = `${user?.id}-${Date.now()}.${extension}`;
       const filePath = fileName;
 
-      let fileToUpload;
-      if (Platform.OS === 'web') {
-        // For web, we can fetch the blob directly from the URI
-        const response = await fetch(asset.uri);
-        fileToUpload = await response.blob();
-      } else {
-        // For mobile, we use the URI directly or convert to blob
-        const response = await fetch(asset.uri);
-        fileToUpload = await response.blob();
-      }
+      const response = await fetch(uri);
+      const fileToUpload = await response.blob();
 
       const { error: uploadError } = await supabase.storage
         .from('avatars')
         .upload(filePath, fileToUpload, {
           upsert: true,
-          contentType: asset.mimeType || 'image/jpeg',
+          contentType: mimeType,
           cacheControl: '3600'
         });
 
@@ -107,17 +129,53 @@ const ProfilePage = () => {
 
       if (updateError) throw updateError;
 
-      // Force refresh and get latest user data from server
       const { data: refreshData, error: refreshError } = await supabase.auth.refreshSession();
       if (refreshError) console.error("Session refresh error:", refreshError);
-      
-      console.log("Avatar updated successfully. New URL:", publicUrl);
-      console.log("Current user metadata:", refreshData.user?.user_metadata);
 
       Alert.alert("Success", "Profile picture updated! If it doesn't show on other devices, please sign out and sign back in on those devices.");
     } catch (error: any) {
       console.error("Avatar Update Error:", error);
-      Alert.alert("Error", error.message || "Failed to update profile picture. Ensure the 'avatars' bucket exists in Supabase.");
+      Alert.alert("Error", error.message || "Failed to update profile picture.");
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleUpdateAvatar = async () => {
+    try {
+      const result = await ImagePicker.launchImageLibraryAsync({
+        mediaTypes: ImagePicker.MediaTypeOptions.Images,
+        allowsEditing: Platform.OS !== 'web',
+        aspect: [1, 1],
+        quality: 0.7,
+      });
+
+      if (result.canceled) return;
+
+      const asset = result.assets[0];
+      if (Platform.OS === 'web') {
+        setRawPhotoUri(asset.uri);
+        setCropZoom(1);
+        setCropOffsetX(0);
+        setCropOffsetY(0);
+        setShowCropModal(true);
+      } else {
+        await uploadCroppedAvatar(asset.uri, asset.mimeType || 'image/jpeg');
+      }
+    } catch (error: any) {
+      Alert.alert("Error", error.message || "Failed to update profile picture.");
+    }
+  };
+
+  const handleSaveCrop = async () => {
+    if (!rawPhotoUri) return;
+    try {
+      setSaving(true);
+      const croppedUri = await cropImageWeb(rawPhotoUri, cropZoom, cropOffsetX, cropOffsetY);
+      await uploadCroppedAvatar(croppedUri, 'image/jpeg');
+      setShowCropModal(false);
+    } catch (err: any) {
+      Alert.alert("Error", err.message || "Failed to crop image.");
     } finally {
       setSaving(false);
     }
@@ -385,6 +443,78 @@ const ProfilePage = () => {
           </View>
         </View>
       </Modal>
+
+      {/* Image Crop Modal (Web only) */}
+      <Modal visible={showCropModal} transparent={true} animationType="slide">
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContent}>
+            <Text style={styles.modalTitle}>Crop Profile Picture</Text>
+            
+            {/* Cropping Preview Area */}
+            <View style={{
+              width: 200,
+              height: 200,
+              borderRadius: 100,
+              overflow: 'hidden',
+              alignSelf: 'center',
+              backgroundColor: '#F1F5F9',
+              borderWidth: 2,
+              borderColor: '#3B82F6',
+              marginBottom: 20,
+              justifyContent: 'center',
+              alignItems: 'center',
+            }}>
+              {rawPhotoUri && (
+                <Image 
+                  source={{ uri: rawPhotoUri }} 
+                  style={{
+                    width: 200,
+                    height: 200,
+                    transform: [
+                      { scale: cropZoom },
+                      { translateX: cropOffsetX },
+                      { translateY: cropOffsetY }
+                    ]
+                  }}
+                  resizeMode="contain"
+                />
+              )}
+            </View>
+
+            {/* Adjustment Controls */}
+            <Text style={{ fontSize: 13, color: '#64748B', marginBottom: 8, textAlign: 'center' }}>Adjust Image Position</Text>
+            <View style={{ flexDirection: 'row', justifyContent: 'center', gap: 10, marginBottom: 20 }}>
+              <TouchableOpacity onPress={() => setCropOffsetX(x => x - 10)} style={styles.controlBtn}>
+                <Feather name="arrow-left" size={16} color="#475569" />
+              </TouchableOpacity>
+              <TouchableOpacity onPress={() => setCropOffsetX(x => x + 10)} style={styles.controlBtn}>
+                <Feather name="arrow-right" size={16} color="#475569" />
+              </TouchableOpacity>
+              <TouchableOpacity onPress={() => setCropOffsetY(y => y - 10)} style={styles.controlBtn}>
+                <Feather name="arrow-up" size={16} color="#475569" />
+              </TouchableOpacity>
+              <TouchableOpacity onPress={() => setCropOffsetY(y => y + 10)} style={styles.controlBtn}>
+                <Feather name="arrow-down" size={16} color="#475569" />
+              </TouchableOpacity>
+              <TouchableOpacity onPress={() => setCropZoom(z => Math.min(z + 0.1, 3))} style={styles.controlBtn}>
+                <Feather name="zoom-in" size={16} color="#475569" />
+              </TouchableOpacity>
+              <TouchableOpacity onPress={() => setCropZoom(z => Math.max(z - 0.1, 1))} style={styles.controlBtn}>
+                <Feather name="zoom-out" size={16} color="#475569" />
+              </TouchableOpacity>
+            </View>
+
+            <View style={{ flexDirection: 'row', gap: 12 }}>
+              <TouchableOpacity style={[styles.cancelBtn, { flex: 1 }]} onPress={() => setShowCropModal(false)}>
+                <Text style={styles.cancelBtnText}>Cancel</Text>
+              </TouchableOpacity>
+              <TouchableOpacity style={[styles.saveBtn, { flex: 1 }]} onPress={handleSaveCrop}>
+                <Text style={styles.saveBtnText}>Apply</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
     </AppLayout>
   );
 };
@@ -644,6 +774,16 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     color: '#0F172A',
     marginBottom: 20,
+  },
+  controlBtn: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: '#F1F5F9',
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
   },
 });
 
