@@ -181,7 +181,7 @@ const Documents = () => {
   }, [documents, searchQuery, activeFilter, ownerFilter, familyMemberFilter, sortBy, members]);
 
   return (
-    <AppLayout>
+    <AppLayout scrollable={false}>
       <View style={styles.container}>
         {isOffline && (
           <View style={styles.offlineBanner}>
@@ -728,6 +728,7 @@ const styles = StyleSheet.create({
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.3,
     shadowRadius: 8,
+    zIndex: 10,
   },
   centerContent: {
     flex: 1,

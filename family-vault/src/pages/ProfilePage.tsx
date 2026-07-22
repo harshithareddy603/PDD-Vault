@@ -8,7 +8,7 @@ import { Feather, MaterialCommunityIcons } from '@expo/vector-icons';
 import { Avatar } from 'react-native-paper';
 
 const ProfilePage = () => {
-  const { user, signOut } = useAuth();
+  const { user, signOut, sendPasswordResetEmail, verifyPasswordResetOtp, updatePassword } = useAuth();
   
   const [name, setName] = useState("");
   const [phone, setPhone] = useState("");
@@ -17,6 +17,11 @@ const ProfilePage = () => {
   const [saving, setSaving] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
   const [showImageModal, setShowImageModal] = useState(false);
+  const [showResetModal, setShowResetModal] = useState(false);
+  const [resetOtpCode, setResetOtpCode] = useState("");
+  const [newPassword, setNewPassword] = useState("");
+  const [confirmNewPassword, setConfirmNewPassword] = useState("");
+  const [resetBusy, setResetBusy] = useState(false);
 
   useEffect(() => {
     if (user?.user_metadata) {
@@ -120,11 +125,51 @@ const ProfilePage = () => {
 
   const handleResetPassword = async () => {
     if (!user?.email) return;
-    const { error } = await supabase.auth.resetPasswordForEmail(user.email);
+    setSaving(true);
+    const { error } = await sendPasswordResetEmail(user.email);
+    setSaving(false);
     if (error) {
       Alert.alert("Error", error.message);
     } else {
-      Alert.alert("Success", "Password reset email sent");
+      Alert.alert("Success", "Verification code sent to your email.");
+      setShowResetModal(true);
+    }
+  };
+
+  const handleConfirmResetPassword = async () => {
+    if (!resetOtpCode || !newPassword || !confirmNewPassword) {
+      Alert.alert("Error", "Please fill in all fields.");
+      return;
+    }
+    if (newPassword !== confirmNewPassword) {
+      Alert.alert("Error", "Passwords do not match.");
+      return;
+    }
+    if (!user?.email) return;
+
+    setResetBusy(true);
+    try {
+      const { error: verifyError } = await verifyPasswordResetOtp(user.email, resetOtpCode);
+      if (verifyError) {
+        Alert.alert("Error", verifyError.message);
+        setResetBusy(false);
+        return;
+      }
+
+      const { error: updateError } = await updatePassword(newPassword);
+      if (updateError) {
+        Alert.alert("Error", updateError.message);
+      } else {
+        Alert.alert("Success", "Your password has been reset successfully.");
+        setShowResetModal(false);
+        setResetOtpCode("");
+        setNewPassword("");
+        setConfirmNewPassword("");
+      }
+    } catch (e: any) {
+      Alert.alert("Error", e.message || "Failed to reset password.");
+    } finally {
+      setResetBusy(false);
     }
   };
 
@@ -278,6 +323,66 @@ const ProfilePage = () => {
               <Text style={styles.zoomedAvatarText}>{userInitials}</Text>
             </View>
           )}
+        </View>
+      </Modal>
+
+      {/* Password Reset Verification Modal */}
+      <Modal visible={showResetModal} transparent={true} animationType="slide">
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContent}>
+            <Text style={styles.modalTitle}>Reset Password</Text>
+            <ScrollView style={{ marginBottom: 12 }} showsVerticalScrollIndicator={false}>
+              <View style={styles.inputGroup}>
+                <Text style={styles.label}>6-Digit Verification Code</Text>
+                <TextInput 
+                  style={styles.input} 
+                  value={resetOtpCode} 
+                  onChangeText={setResetOtpCode} 
+                  placeholder="Enter 6-digit code"
+                  keyboardType="number-pad"
+                />
+              </View>
+
+              <View style={styles.inputGroup}>
+                <Text style={styles.label}>New Password</Text>
+                <TextInput 
+                  style={styles.input} 
+                  value={newPassword} 
+                  onChangeText={setNewPassword} 
+                  placeholder="Enter new password"
+                  secureTextEntry
+                />
+              </View>
+
+              <View style={styles.inputGroup}>
+                <Text style={styles.label}>Confirm New Password</Text>
+                <TextInput 
+                  style={styles.input} 
+                  value={confirmNewPassword} 
+                  onChangeText={setConfirmNewPassword} 
+                  placeholder="Confirm new password"
+                  secureTextEntry
+                />
+              </View>
+
+              <View style={{ flexDirection: 'row', gap: 12, marginTop: 16 }}>
+                <TouchableOpacity 
+                  style={styles.cancelBtn} 
+                  onPress={() => setShowResetModal(false)}
+                  disabled={resetBusy}
+                >
+                  <Text style={styles.cancelBtnText}>Cancel</Text>
+                </TouchableOpacity>
+                <TouchableOpacity 
+                  style={styles.saveBtn} 
+                  onPress={handleConfirmResetPassword}
+                  disabled={resetBusy}
+                >
+                  {resetBusy ? <ActivityIndicator color="#fff" /> : <Text style={styles.saveBtnText}>Save</Text>}
+                </TouchableOpacity>
+              </View>
+            </ScrollView>
+          </View>
         </View>
       </Modal>
     </AppLayout>
@@ -514,6 +619,31 @@ const styles = StyleSheet.create({
     fontSize: 80,
     color: '#FFFFFF',
     fontWeight: 'bold',
+  },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(15, 23, 42, 0.5)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 20,
+  },
+  modalContent: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 16,
+    padding: 24,
+    width: '100%',
+    maxWidth: 440,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 10 },
+    shadowOpacity: 0.1,
+    shadowRadius: 20,
+    elevation: 10,
+  },
+  modalTitle: {
+    fontSize: 18,
+    fontWeight: '700',
+    color: '#0F172A',
+    marginBottom: 20,
   },
 });
 

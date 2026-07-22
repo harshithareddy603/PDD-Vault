@@ -297,6 +297,8 @@ const s = StyleSheet.create({
   },
   headerRow: {
     flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 12,
     alignItems: 'center',
     justifyContent: 'space-between',
     marginBottom: 24,

@@ -42,14 +42,14 @@ const DOC_SUBS = [
 const MOBILE_NAV = [
   { to: 'Dashboard',     label: 'Home',    icon: 'home-outline'          as const },
   { to: 'Documents',     label: 'Docs',    icon: 'file-document-outline' as const },
-  { to: 'Notifications', label: 'Alerts',  icon: 'bell-outline'          as const },
+  { to: 'Search',        label: 'Search',  icon: 'magnify'               as const },
   { to: 'Family',        label: 'Family',  icon: 'account-group-outline' as const },
   { to: 'Menu',          label: 'More',    icon: 'menu'                  as const },
 ];
 
 // ─── Component ───────────────────────────────────────────────────────────────
 
-export const AppLayout = ({ children }: { children: ReactNode }) => {
+export const AppLayout = ({ children, scrollable = true }: { children: ReactNode; scrollable?: boolean }) => {
   const { user, signOut } = useAuth();
   const { documents } = useDocuments();
   const navigation = useNavigation<any>();
@@ -300,12 +300,16 @@ export const AppLayout = ({ children }: { children: ReactNode }) => {
         </View>
 
         {/* Scroll area */}
-        <ScrollView
-          contentContainerStyle={ms.scrollContent}
-          showsVerticalScrollIndicator={false}
-        >
-          <View style={ms.contentInner}>{children}</View>
-        </ScrollView>
+        {scrollable ? (
+          <ScrollView
+            contentContainerStyle={ms.scrollContent}
+            showsVerticalScrollIndicator={false}
+          >
+            <View style={ms.contentInner}>{children}</View>
+          </ScrollView>
+        ) : (
+          <View style={[ms.contentInner, { flex: 1, height: '100%' }]}>{children}</View>
+        )}
 
         {/* Bottom tab bar */}
         <View style={ms.bottomBar}>
@@ -372,7 +376,7 @@ export const AppLayout = ({ children }: { children: ReactNode }) => {
 
               <View style={ms.drawerGrid}>
                 {[
-                  { to: 'Search', label: 'Search', icon: 'magnify', color: '#8B5CF6', bg: '#EDE9FE' },
+                  { to: 'Notifications', label: 'Alerts', icon: 'bell-outline', color: '#F97316', bg: '#FFEDD5' },
                   { to: 'Analytics', label: 'Analytics', icon: 'chart-bar', color: '#10B981', bg: '#D1FAE5' },
                   { to: 'Settings', label: 'Settings', icon: 'cog-outline', color: '#64748B', bg: '#F1F5F9' },
                   { to: 'Profile', label: 'Profile', icon: 'account-outline', color: '#3B82F6', bg: '#DBEAFE' },
