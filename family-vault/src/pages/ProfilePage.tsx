@@ -29,8 +29,8 @@ const cropImageWeb = (imageUri: string, zoom: number, offsetX: number, offsetY: 
       const sWidth = minDimension / zoom;
       const sHeight = minDimension / zoom;
       
-      const sx = (img.width - sWidth) / 2 - (offsetX / 250) * sWidth;
-      const sy = (img.height - sHeight) / 2 - (offsetY / 250) * sHeight;
+      const sx = (img.width - sWidth) / 2 - (offsetX / 200) * sWidth;
+      const sy = (img.height - sHeight) / 2 - (offsetY / 200) * sHeight;
 
       ctx.drawImage(
         img,
@@ -476,7 +476,7 @@ const ProfilePage = () => {
                       { translateY: cropOffsetY }
                     ]
                   }}
-                  resizeMode="contain"
+                  resizeMode="cover"
                 />
               )}
             </View>
