@@ -65,6 +65,8 @@ const ProfilePage = () => {
   const [newPassword, setNewPassword] = useState("");
   const [confirmNewPassword, setConfirmNewPassword] = useState("");
   const [resetBusy, setResetBusy] = useState(false);
+  const [showNewPassword, setShowNewPassword] = useState(false);
+  const [showConfirmNewPassword, setShowConfirmNewPassword] = useState(false);
 
   const [rawPhotoUri, setRawPhotoUri] = useState<string | null>(null);
   const [showCropModal, setShowCropModal] = useState(false);
@@ -403,24 +405,40 @@ const ProfilePage = () => {
 
               <View style={styles.inputGroup}>
                 <Text style={styles.label}>New Password</Text>
-                <TextInput 
-                  style={styles.input} 
-                  value={newPassword} 
-                  onChangeText={setNewPassword} 
-                  placeholder="Enter new password"
-                  secureTextEntry
-                />
+                <View style={styles.passwordInputContainer}>
+                  <TextInput 
+                    style={styles.passwordInput} 
+                    value={newPassword} 
+                    onChangeText={setNewPassword} 
+                    placeholder="Enter new password"
+                    secureTextEntry={!showNewPassword}
+                  />
+                  <TouchableOpacity 
+                    onPress={() => setShowNewPassword(!showNewPassword)}
+                    style={styles.eyeIcon}
+                  >
+                    <Feather name={showNewPassword ? "eye" : "eye-off"} size={18} color="#64748B" />
+                  </TouchableOpacity>
+                </View>
               </View>
 
               <View style={styles.inputGroup}>
                 <Text style={styles.label}>Confirm New Password</Text>
-                <TextInput 
-                  style={styles.input} 
-                  value={confirmNewPassword} 
-                  onChangeText={setConfirmNewPassword} 
-                  placeholder="Confirm new password"
-                  secureTextEntry
-                />
+                <View style={styles.passwordInputContainer}>
+                  <TextInput 
+                    style={styles.passwordInput} 
+                    value={confirmNewPassword} 
+                    onChangeText={setConfirmNewPassword} 
+                    placeholder="Confirm new password"
+                    secureTextEntry={!showConfirmNewPassword}
+                  />
+                  <TouchableOpacity 
+                    onPress={() => setShowConfirmNewPassword(!showConfirmNewPassword)}
+                    style={styles.eyeIcon}
+                  >
+                    <Feather name={showConfirmNewPassword ? "eye" : "eye-off"} size={18} color="#64748B" />
+                  </TouchableOpacity>
+                </View>
               </View>
 
               <View style={{ flexDirection: 'row', gap: 12, marginTop: 16 }}>
@@ -784,6 +802,28 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     borderWidth: 1,
     borderColor: '#E2E8F0',
+  },
+  passwordInputContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
+    borderRadius: 12,
+    backgroundColor: '#F8FAFC',
+    overflow: 'hidden',
+  },
+  passwordInput: {
+    flex: 1,
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    fontSize: 15,
+    color: '#0F172A',
+  },
+  eyeIcon: {
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
 });
 
