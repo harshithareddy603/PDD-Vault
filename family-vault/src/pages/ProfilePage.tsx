@@ -351,7 +351,7 @@ const ProfilePage = () => {
           </View>
           <View style={styles.cardContent}>
             <Text style={styles.infoText}>
-              A 6-digit verification code will be sent to your registered email address.
+              A 6-digit verification code will be sent to your registered email address. (Check spam folder if you can't find it).
             </Text>
             <TouchableOpacity style={styles.outlineBtn} onPress={handleResetPassword}>
               <Text style={styles.outlineBtnText}>Reset Password</Text>
