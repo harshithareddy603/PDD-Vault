@@ -10,7 +10,7 @@ import React from 'react';
 import { Text, Platform } from 'react-native';
 
 // Feather → MDI name mapping
-const FEATHER_TO_MDI: Record<string, string> = {
+const FEATHER_TO_MDI = {
   'search': 'magnify',
   'bell': 'bell-outline',
   'bell-off': 'bell-off-outline',
@@ -56,19 +56,13 @@ const FEATHER_TO_MDI: Record<string, string> = {
   'clock': 'clock-outline',
 };
 
-function makeIconComponent(nameMapper?: (name: string) => string) {
+function makeIconComponent(nameMapper) {
   const Icon = ({
     name,
     size = 24,
     color = '#000',
     style,
     ...rest
-  }: {
-    name: string;
-    size?: number;
-    color?: string;
-    style?: any;
-    [key: string]: any;
   }) => {
     if (Platform.OS !== 'web') {
       // On native this stub isn't used, but just in case:
