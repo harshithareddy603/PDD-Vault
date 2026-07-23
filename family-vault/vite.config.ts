@@ -25,6 +25,11 @@ export default defineConfig(({ mode }) => ({
       "react-native-svg": "react-native-svg/lib/commonjs/ReactNativeSVG.web",
       "@react-native/assets-registry/registry": path.resolve(__dirname, "./src/stubs/assets-registry.js"),
       "@react-native/assets-registry": path.resolve(__dirname, "./src/stubs/assets-registry.js"),
+      // Stub out react-native-vector-icons on web — it uses CJS require() for font
+      // files that cannot run in the browser. react-native-paper falls back to
+      // Material Design CSS icons automatically when this stub is used.
+      "react-native-vector-icons": path.resolve(__dirname, "./src/stubs/vector-icons.js"),
+      "@expo/vector-icons": path.resolve(__dirname, "./src/stubs/vector-icons.js"),
     },
     extensions: [
       ".web.mjs",
