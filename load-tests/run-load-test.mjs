@@ -1,6 +1,6 @@
 import fs from 'fs';
 import path from 'path';
-import XLSX from 'xlsx';
+import ExcelJS from 'exceljs';
 
 const BACKEND_URL = 'https://pdd-family-vault.onrender.com';
 const EMAIL = 'bunny.akki21@gmail.com';
@@ -137,26 +137,118 @@ async function run() {
   
   fs.writeFileSync(path.join(reportDir, 'load-test-reports.md'), report);
 
-  // Generate XLSX directly
-  const rows = [
-    ['Metric', 'Value'],
-    ['Target URL', BACKEND_URL],
-    ['Test Date', new Date().toLocaleString()],
-    ['Concurrency (VUs)', String(CONCURRENCY)],
-    ['Duration (seconds)', totalDurationSeconds.toFixed(2)],
-    ['Total Requests Sent', String(results.totalRequests)],
-    ['Successful Requests', String(results.success)],
-    ['Failed Requests', String(results.failed)],
-    ['Requests Per Second (RPS)', rps.toFixed(2)],
-    ['Average Response Time (ms)', avgTime.toFixed(2)],
-    ['Minimum Response Time (ms)', String(minTime)],
-    ['Maximum Response Time (ms)', String(maxTime)]
+  // Generate Styled XLSX directly using ExcelJS
+  const workbook = new ExcelJS.Workbook();
+  const worksheet = workbook.addWorksheet('Baseline Report');
+
+  // Set column widths
+  worksheet.columns = [
+    { key: 'param', width: 35 },
+    { key: 'val', width: 45 }
   ];
-  
-  const wb = XLSX.utils.book_new();
-  const ws = XLSX.utils.aoa_to_sheet(rows);
-  XLSX.utils.book_append_sheet(wb, ws, 'Baseline Report');
-  XLSX.writeFile(wb, path.join(reportDir, 'load-test-reports.xlsx'));
+
+  // Title Row (Row 1)
+  const titleCell = worksheet.getCell('A1');
+  titleCell.value = 'PDD Family Vault Application Baseline Load Test Report';
+  titleCell.font = { name: 'Arial', size: 14, bold: true, color: { argb: 'FF0F172A' } };
+  worksheet.mergeCells('A1:B1');
+
+  // Row 4: Headers for Parameters
+  worksheet.getRow(4).values = ['Parameters', 'Value'];
+  const headerRow4 = worksheet.getRow(4);
+  headerRow4.eachCell((cell) => {
+    cell.fill = {
+      type: 'pattern',
+      pattern: 'solid',
+      fgColor: { argb: 'FF0EA5E9' } // Sky Blue
+    };
+    cell.font = { name: 'Arial', size: 11, bold: true, color: { argb: 'FFFFFFFF' } };
+    cell.alignment = { vertical: 'middle', horizontal: 'left' };
+  });
+
+  // Rows 5-8: Parameter Values
+  worksheet.getRow(5).values = ['Target URL', 'https://pdd-family-vault.vercel.app'];
+  worksheet.getRow(6).values = ['Backend API URL', `${BACKEND_URL}/health`];
+  worksheet.getRow(7).values = ['Virtual Users (VU)', CONCURRENCY];
+  worksheet.getRow(8).values = ['Test Duration (sec)', DURATION_MS / 1000];
+
+  // Style Row 5 to 8 Values
+  for (let r = 5; r <= 8; r++) {
+    const row = worksheet.getRow(r);
+    row.getCell('A').font = { name: 'Arial', size: 11 };
+    row.getCell('B').font = { name: 'Arial', size: 11, bold: true };
+    row.getCell('B').alignment = { horizontal: 'left' };
+    
+    row.eachCell((cell) => {
+      cell.border = {
+        top: { style: 'thin', color: { argb: 'FFE2E8F0' } },
+        left: { style: 'thin', color: { argb: 'FFE2E8F0' } },
+        bottom: { style: 'thin', color: { argb: 'FFE2E8F0' } },
+        right: { style: 'thin', color: { argb: 'FFE2E8F0' } }
+      };
+    });
+  }
+
+  // Row 11: Section Header
+  const sectionCell = worksheet.getCell('A11');
+  sectionCell.value = 'Execution Performance Summary';
+  sectionCell.font = { name: 'Arial', size: 12, bold: true, color: { argb: 'FF0F172A' } };
+
+  // Row 12: Headers for Performance Table
+  worksheet.getRow(12).values = ['Key Performance Indicators (KPI)', 'Result'];
+  const headerRow12 = worksheet.getRow(12);
+  headerRow12.eachCell((cell) => {
+    cell.fill = {
+      type: 'pattern',
+      pattern: 'solid',
+      fgColor: { argb: 'FF0EA5E9' }
+    };
+    cell.font = { name: 'Arial', size: 11, bold: true, color: { argb: 'FFFFFFFF' } };
+    cell.alignment = { vertical: 'middle', horizontal: 'left' };
+  });
+
+  const passRate = results.totalRequests > 0 ? ((results.success / results.totalRequests) * 100).toFixed(1) + '%' : '0.0%';
+
+  // Populate Performance Data
+  worksheet.getRow(13).values = ['Total Requests Sent', results.totalRequests];
+  worksheet.getRow(14).values = ['Requests Per Second (RPS)', `${rps.toFixed(2)} req/sec`];
+  worksheet.getRow(15).values = ['Successful Requests (2xx)', results.success];
+  worksheet.getRow(16).values = ['Failed Requests (0/5xx/4xx)', results.failed];
+  worksheet.getRow(17).values = ['Overall Pass Rate', passRate];
+  worksheet.getRow(18).values = ['Average Latency (ms)', `${avgTime.toFixed(0)} ms`];
+  worksheet.getRow(19).values = ['Minimum Latency (ms)', `${minTime} ms`];
+  worksheet.getRow(20).values = ['Maximum Latency (ms)', `${maxTime} ms`];
+
+  // Style Performance Rows 13 to 20
+  for (let r = 13; r <= 20; r++) {
+    const row = worksheet.getRow(r);
+    row.getCell('A').font = { name: 'Arial', size: 11 };
+    row.getCell('B').font = { name: 'Arial', size: 11, bold: true };
+    row.getCell('B').alignment = { horizontal: 'right' };
+    
+    // Highlight rows
+    if (r === 14 || r === 17) {
+      row.eachCell((cell) => {
+        cell.fill = {
+          type: 'pattern',
+          pattern: 'solid',
+          fgColor: { argb: 'FFDCFCE7' } // Light Green
+        };
+      });
+    }
+
+    row.eachCell((cell) => {
+      cell.border = {
+        top: { style: 'thin', color: { argb: 'FFE2E8F0' } },
+        left: { style: 'thin', color: { argb: 'FFE2E8F0' } },
+        bottom: { style: 'thin', color: { argb: 'FFE2E8F0' } },
+        right: { style: 'thin', color: { argb: 'FFE2E8F0' } }
+      };
+    });
+  }
+
+  // Save the styled workbook
+  await workbook.xlsx.writeFile(path.join(reportDir, 'load-test-reports.xlsx'));
   
   console.log('Load test completed successfully. Reports generated at load-tests/load-test-reports.md and load-test-reports.xlsx');
 }
