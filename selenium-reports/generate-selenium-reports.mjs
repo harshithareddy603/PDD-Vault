@@ -1,8 +1,11 @@
 import fs from 'fs';
 import path from 'path';
+import { fileURLToPath } from 'url';
 import ExcelJS from 'exceljs';
 
-const REPORT_DIR = './selenium-reports';
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+const REPORT_DIR = __dirname;
 const REPORT_FILE = 'selenium-test-report.xlsx';
 
 const testCases = [
