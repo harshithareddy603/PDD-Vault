@@ -1,1 +1,6 @@
-/* React Native uses StyleSheet.create instead of CSS files. This file is now empty. */
+/* Required for React Native Web: flex:1 containers need a height anchor up to the root */
+html, body, #root {
+  height: 100%;
+  margin: 0;
+  padding: 0;
+}

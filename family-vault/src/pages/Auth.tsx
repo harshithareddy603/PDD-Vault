@@ -251,7 +251,7 @@ const Auth = () => {
   return (
     <KeyboardAvoidingView 
       behavior={Platform.OS === "ios" ? "padding" : "height"}
-      style={styles.container}
+      style={[styles.container, Platform.OS === 'web' && { minHeight: '100vh' as any }]}
     >
       <ScrollView contentContainerStyle={styles.scrollContent}>
         <View style={styles.logoSection}>
@@ -529,6 +529,8 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#F8FAFC',
+    // On web, flex:1 alone won't fill the viewport without a height anchor.
+    // minHeight is applied via inline Platform style above.
   },
   scrollContent: {
     padding: 24,
