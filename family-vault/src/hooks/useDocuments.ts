@@ -82,29 +82,29 @@ export const useDocuments = () => {
     const fileName = file.name || `file-${Date.now()}`;
     const path = `${user.id}/${Date.now()}-${fileName}`;
     
-    setUploadProgress(10);
-    
-    try {
-      let fileToUpload;
-      if (isWeb) {
-        // On web, we can fetch the blob from the uri (which is a blob url or local path)
-        const response = await fetch(file.uri);
-        fileToUpload = await response.blob();
-      } else {
-        // On mobile, we use a similar approach or the uri directly
-        const response = await fetch(file.uri);
-        fileToUpload = await response.blob();
-      }
-
-      console.log("Starting storage upload to path:", path);
-      const { data, error } = await supabase.storage
-        .from("documents")
-        .upload(path, fileToUpload, { 
-          upsert: true,
-          contentType: file.type || 'application/octet-stream'
-        });
+      setUploadProgress(0.1);
       
-      setUploadProgress(100);
+      try {
+        let fileToUpload;
+        if (isWeb) {
+          // On web, we can fetch the blob from the uri (which is a blob url or local path)
+          const response = await fetch(file.uri);
+          fileToUpload = await response.blob();
+        } else {
+          // On mobile, we use a similar approach or the uri directly
+          const response = await fetch(file.uri);
+          fileToUpload = await response.blob();
+        }
+  
+        console.log("Starting storage upload to path:", path);
+        const { data, error } = await supabase.storage
+          .from("documents")
+          .upload(path, fileToUpload, { 
+            upsert: true,
+            contentType: file.type || 'application/octet-stream'
+          });
+        
+        setUploadProgress(1.0);
 
       if (error) {
         console.error("Storage Upload Error:", error);
