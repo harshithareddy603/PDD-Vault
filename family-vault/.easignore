@@ -1,0 +1,38 @@
+# EAS Build ignore file - exclude files not needed for building
+
+# Dependencies (EAS installs these fresh)
+node_modules/
+
+# Web build output
+dist/
+web-build/
+
+# Local native build artifacts
+android/
+ios/
+
+# Local dev tools
+jdk17/
+
+# Test files
+**/__tests__/
+**/*.test.ts
+**/*.test.tsx
+**/*.spec.ts
+**/*.spec.tsx
+
+# Logs and temp files
+*.log
+.DS_Store
+
+# Editor dirs
+.vscode/
+.idea/
+
+# Local env (sensitive)
+# .env  <-- keep this, EAS needs env vars
+
+# Load/security test files
+../load-tests/
+../selenium-tests/
+../vulnerability-tests/
