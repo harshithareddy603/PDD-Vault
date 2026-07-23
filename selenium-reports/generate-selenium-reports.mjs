@@ -60,7 +60,7 @@ const testCases = [
 
   // Forgot Password (10)
   { testId: 'TC-AUTH-043', module: 'Authentication', feature: 'Forgot Password', name: 'Verify email input rendering', desc: 'Ensure forgot password email input field renders correctly on screen.' },
-  { testId: 'TC-AUTH-044', module: 'Authentication', feature: 'Forgot Password', name: 'Verify empty email validation checks', desc: 'Ensure clicking send button with empty field triggers required email validation.' },
+  { testId: 'TC-AUTH-044', module: 'Authentication', feature: 'Forgot Password', name: 'Verify forgot email empty check', desc: 'Ensure clicking send button with empty field triggers required email validation.' },
   { testId: 'TC-AUTH-045', module: 'Authentication', feature: 'Forgot Password', name: 'Verify invalid email format warning', desc: 'Ensure typing malformed email domain triggers invalid format alert.' },
   { testId: 'TC-AUTH-046', module: 'Authentication', feature: 'Forgot Password', name: 'Verify non-existent email security check', desc: 'Ensure submitting non-registered email behaves securely without leaking info.' },
   { testId: 'TC-AUTH-047', module: 'Authentication', feature: 'Forgot Password', name: 'Verify submit button loader spinner', desc: 'Ensure send code button disables and shows loader during reset dispatch API.' },
@@ -166,7 +166,7 @@ const testCases = [
   { testId: 'TC-DOCS-019', module: 'Documents', feature: 'Document List', name: 'Verify offline banner alert rendering', desc: 'Ensure disconnecting network displays yellow warning offline status banner.' },
   { testId: 'TC-DOCS-020', module: 'Documents', feature: 'Document List', name: 'Verify empty document list prompts UI', desc: 'Ensure "No documents found" is shown if documents list is empty.' },
   { testId: 'TC-DOCS-021', module: 'Documents', feature: 'Document List', name: 'Verify categories graphics matching icons', desc: 'Ensure documents display correct visual graphics based on Category.' },
-  { testId: 'TC-DASH-022', module: 'Documents', feature: 'Document List', name: 'Verify safe status badge color formatting', desc: 'Ensure safe documents display green status styling.' },
+  { testId: 'TC-DASH-022', module: 'Documents', feature: 'Document List', name: 'Verify active safe status badge rendering', desc: 'Ensure safe documents display green status styling.' },
   { testId: 'TC-DOCS-023', module: 'Documents', feature: 'Document List', name: 'Verify warning status badge color formatting', desc: 'Ensure documents expiring within 30 days show yellow status badge.' },
   { testId: 'TC-DOCS-024', module: 'Documents', feature: 'Document List', name: 'Verify critical status badge color formatting', desc: 'Ensure expired documents show red status badge.' },
   { testId: 'TC-DOCS-025', module: 'Documents', feature: 'Document List', name: 'Verify document upload timestamp format', desc: 'Ensure document card formats and shows correct uploaded date.' },
@@ -231,7 +231,7 @@ const testCases = [
   { testId: 'TC-DOCS-076', module: 'Documents', feature: 'Edit Document', name: 'Verify category change selection save', desc: 'Ensure changing category selection saves updated category index.' },
   { testId: 'TC-DOCS-077', module: 'Documents', feature: 'Edit Document', name: 'Verify expiry picker field update', desc: 'Ensure picking new date updates expiry date parameters in database.' },
   { testId: 'TC-DOCS-078', module: 'Documents', feature: 'Edit Document', name: 'Verify priority status toggle save', desc: 'Ensure toggling priority flag switch updates document priority status.' },
-  { testId: 'TC-DOCS-079', module: 'Documents', feature: 'Edit Document', name: 'Verify save button disable spinner', desc: 'Ensure update button is disabled and shows loader while save API is active.' },
+  { testId: 'TC-DOCS-079', module: 'Documents', feature: 'Edit Document', name: 'Verify edit save button disable spinner', desc: 'Ensure update button is disabled and shows loader while save API is active.' },
   { testId: 'TC-DOCS-080', module: 'Documents', feature: 'Edit Document', name: 'Verify close edits form actions', desc: 'Ensure clicking cancel closes edit form and retains old values.' },
   { testId: 'TC-DOCS-081', module: 'Documents', feature: 'Edit Document', name: 'Verify update success message toast', desc: 'Ensure document update displays "Document updated successfully" toast.' },
   { testId: 'TC-DOCS-082', module: 'Documents', feature: 'Edit Document', name: 'Verify tags list addition saving', desc: 'Ensure typing tags inside input adds them to document tags array.' },
@@ -265,7 +265,7 @@ const testCases = [
   { testId: 'TC-FAM-004', module: 'Family', feature: 'Family Management', name: 'Verify member profile details names list', desc: 'Ensure member cards display correct name, relationship, and email details.' },
   { testId: 'TC-FAM-005', module: 'Family', feature: 'Family Management', name: 'Verify member document count badges rendering', desc: 'Ensure each family member card displays count of documents tagged to them.' },
   { testId: 'TC-FAM-006', module: 'Family', feature: 'Family Management', name: 'Verify document count badge number updates', desc: 'Ensure adding document for a member updates card document count.' },
-  { testId: 'TC-FAM-007', module: 'Family', feature: 'Family Management', name: 'Verify layout grid responsive columns scaling', desc: 'Ensure family members align correctly in responsive grid view.' },
+  { testId: 'TC-FAM-007', module: 'Family', feature: 'Family Management', name: 'Verify family members grid responsive resizing', desc: 'Ensure family members align correctly in responsive grid view.' },
   { testId: 'TC-FAM-008', module: 'Family', feature: 'Family Management', name: 'Verify profile card hover shadows animation', desc: 'Ensure member cards show shadow highlight scaling transitions on Web.' },
   { testId: 'TC-FAM-009', module: 'Family', feature: 'Family Management', name: 'Verify accessibility tab indexing cards', desc: 'Ensure keyboard focus tab cycles correctly through member card profiles.' },
   { testId: 'TC-FAM-010', module: 'Family', feature: 'Family Management', name: 'Verify empty member database states rendering', desc: 'Ensure page displays default owner details when no members are present.' },
@@ -298,7 +298,7 @@ const testCases = [
   { testId: 'TC-FAM-033', module: 'Family', feature: 'Member Actions', name: 'Verify update relationship tag save', desc: 'Ensure changing relationship tags updates database values correctly.' },
   { testId: 'TC-FAM-034', module: 'Family', feature: 'Member Actions', name: 'Verify update profile loading status spinner', desc: 'Ensure update button is disabled and shows loader while API is active.' },
   { testId: 'TC-FAM-035', module: 'Family', feature: 'Member Actions', name: 'Verify cancel edits form close actions', desc: 'Ensure clicking cancel closes edit form and retains old values.' },
-  { testId: 'TC-FAM-036', module: 'Family', feature: 'Member Actions', name: 'Verify update success message toast alert', desc: 'Ensure successful profile updates display "Member details updated" toast.' },
+  { testId: 'TC-FAM-036', module: 'Family', feature: 'Member Actions', name: 'Verify family member update success alert', desc: 'Ensure successful profile updates display "Member details updated" toast.' },
   { testId: 'TC-FAM-037', module: 'Family', feature: 'Member Actions', name: 'Verify delete member action popup open', desc: 'Ensure clicking remove member opens confirm delete modal window.' },
   { testId: 'TC-FAM-038', module: 'Family', feature: 'Member Actions', name: 'Verify cancel deletion closes modal popups', desc: 'Ensure clicking cancel in delete confirmation closes prompt window.' },
   { testId: 'TC-FAM-039', module: 'Family', feature: 'Member Actions', name: 'Verify confirm delete member API updates', desc: 'Ensure confirming deletion removes card from family screen grid.' },
@@ -347,7 +347,7 @@ const testCases = [
 
   // Reset Password (15)
   { testId: 'TC-PRF-031', module: 'Profile', feature: 'Reset Password Modal', name: 'Verify reset button triggers OTP request', desc: 'Ensure clicking Reset Password sends code and opens verification modal.' },
-  { testId: 'TC-PRF-032', module: 'Profile', feature: 'Reset Password Modal', name: 'Verify check spam folder note rendering', desc: 'Ensure check spam folder reminder text displays in reset section.' },
+  { testId: 'TC-PRF-032', module: 'Profile', feature: 'Reset Password Modal', name: 'Verify check spam folder instruction layout', desc: 'Ensure check spam folder reminder text displays in reset section.' },
   { testId: 'TC-PRF-033', module: 'Profile', feature: 'Reset Password Modal', name: 'Verify input verification code displays', desc: 'Ensure code input field renders inside reset password modal.' },
   { testId: 'TC-PRF-034', module: 'Profile', feature: 'Reset Password Modal', name: 'Verify empty inputs validation warning alert', desc: 'Ensure clicking Save with empty fields triggers validation errors.' },
   { testId: 'TC-PRF-035', module: 'Profile', feature: 'Reset Password Modal', name: 'Verify code field numeric restriction checks', desc: 'Ensure verification code input only accepts numeric digit entries.' },
@@ -357,7 +357,7 @@ const testCases = [
   { testId: 'TC-PRF-039', module: 'Profile', feature: 'Reset Password Modal', name: 'Verify mismatched passwords validation alert', desc: 'Ensure entering mismatched passwords displays validation error.' },
   { testId: 'TC-PRF-040', module: 'Profile', feature: 'Reset Password Modal', name: 'Verify password length limits validation check', desc: 'Ensure password shorter than 6 characters displays length warning.' },
   { testId: 'TC-PRF-041', module: 'Profile', feature: 'Reset Password Modal', name: 'Verify incorrect OTP verification error', desc: 'Ensure typing incorrect 6-digit code displays invalid token error.' },
-  { testId: 'TC-PRF-042', module: 'Profile', feature: 'Reset Password Modal', name: 'Verify correct OTP and password update save', desc: 'Ensure correct code and passwords update user password successfully.' },
+  { testId: 'TC-PRF-042', module: 'Profile', feature: 'Reset Password Modal', name: 'Verify inline OTP password reset saving', desc: 'Ensure correct code and passwords update user password successfully.' },
   { testId: 'TC-PRF-043', module: 'Profile', feature: 'Reset Password Modal', name: 'Verify password update success status toast', desc: 'Ensure password resets display success notification banner.' },
   { testId: 'TC-PRF-044', module: 'Profile', feature: 'Reset Password Modal', name: 'Verify modal dismiss action on save', desc: 'Ensure successful password update hides reset modal overlay.' },
   { testId: 'TC-PRF-045', module: 'Profile', feature: 'Reset Password Modal', name: 'Verify cancel close modal actions', desc: 'Ensure clicking cancel button closes reset password modal overlay.' },
@@ -374,10 +374,10 @@ const testCases = [
   { testId: 'TC-SEC-007', module: 'Security & Multi-Tab', feature: 'Security Checks', name: 'Verify unauthorized route access block profile', desc: 'Ensure accessing /profile directly without login redirects to /auth.' },
   { testId: 'TC-SEC-008', module: 'Security & Multi-Tab', feature: 'Security Checks', name: 'Verify invalid authorization token API rejection', desc: 'Ensure APIs validate JWT signatures and reject modified storage tokens.' },
   { testId: 'TC-SEC-009', module: 'Security & Multi-Tab', feature: 'Security Checks', name: 'Verify logout session invalidation backend api', desc: 'Ensure signing out clears session states in Supabase auth databases.' },
-  { testId: 'TC-SEC-010', module: 'Security & Multi-Tab', feature: 'Security Checks', name: 'Verify browser back block post-logout auth', desc: 'Ensure hitting browser back after sign out retains redirection blocks.' },
+  { testId: 'TC-SEC-010', module: 'Security & Multi-Tab', feature: 'Security Checks', name: 'Verify history back navigation blocked post-signout', desc: 'Ensure hitting browser back after sign out retains redirection blocks.' },
 
   // Multi-Tab (10)
-  { testId: 'TC-SEC-011', module: 'Security & Multi-Tab', feature: 'Multi-Tab Sync', name: 'Verify session retention across dual tabs', desc: 'Ensure opening new browser tab retains logged-in user profile session.' },
+  { testId: 'TC-SEC-011', module: 'Security & Multi-Tab', feature: 'Multi-Tab Sync', name: 'Verify duplicate tab session persistence', desc: 'Ensure opening new browser tab retains logged-in user profile session.' },
   { testId: 'TC-SEC-012', module: 'Security & Multi-Tab', feature: 'Multi-Tab Sync', name: 'Verify storage session sync reloads tabs', desc: 'Ensure storage changes in tab A sync session tokens to tab B instantly.' },
   { testId: 'TC-SEC-013', module: 'Security & Multi-Tab', feature: 'Multi-Tab Sync', name: 'Verify live document upload sync tabs', desc: 'Ensure uploading document in tab A lists document in tab B on refocus.' },
   { testId: 'TC-SEC-014', module: 'Security & Multi-Tab', feature: 'Multi-Tab Sync', name: 'Verify live document delete sync tabs', desc: 'Ensure deleting document in tab A removes it from the list in tab B.' },
@@ -386,7 +386,7 @@ const testCases = [
   { testId: 'TC-SEC-017', module: 'Security & Multi-Tab', feature: 'Multi-Tab Sync', name: 'Verify live member deletion sync tabs', desc: 'Ensure deleting family member in tab A removes card in tab B.' },
   { testId: 'TC-SEC-018', module: 'Security & Multi-Tab', feature: 'Multi-Tab Sync', name: 'Verify profile details changes sync tabs', desc: 'Ensure updating user profile in tab A reflects welcome names in tab B.' },
   { testId: 'TC-SEC-019', module: 'Security & Multi-Tab', feature: 'Multi-Tab Sync', name: 'Verify token update password sync tabs', desc: 'Ensure password reset session changes update token stores across tabs.' },
-  { testId: 'TC-SEC-020', module: 'Security & Multi-Tab', feature: 'Multi-Tab Sync', name: 'Verify dual tabs logout synchronization', desc: 'Ensure logging out from tab A automatically logs out active session on tab B.' }
+  { testId: 'TC-SEC-020', module: 'Security & Multi-Tab', feature: 'Multi-Tab Sync', name: 'Verify multiple tabs logout session clear', desc: 'Ensure logging out from tab A automatically logs out active session on tab B.' }
 ];
 
 async function generateReport() {
