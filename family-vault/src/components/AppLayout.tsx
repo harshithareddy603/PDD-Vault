@@ -82,7 +82,7 @@ export const AppLayout = ({ children, scrollable = true }: { children: ReactNode
   // ── Web sidebar layout ───────────────────────────────────────────────────
   if (Platform.OS === 'web' && width >= 768) {
     return (
-      <View style={ws.root}>
+      <View style={[ws.root, { minHeight: '100vh' as any }]}>
         {/* ── Sidebar ── */}
         <View style={ws.sidebar}>
           {/* Logo */}
@@ -261,7 +261,7 @@ export const AppLayout = ({ children, scrollable = true }: { children: ReactNode
 
   // ── Mobile layout ────────────────────────────────────────────────────────
   return (
-    <SafeAreaView style={ms.safe}>
+    <SafeAreaView style={[ms.safe, Platform.OS === 'web' && { minHeight: '100vh' as any }]}>
       <View style={ms.wrapper}>
         {/* Mobile header */}
         <View style={ms.header}>
