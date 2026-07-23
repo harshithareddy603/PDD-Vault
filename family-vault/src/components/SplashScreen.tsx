@@ -1,4 +1,4 @@
-import { View, Text, StyleSheet, TouchableOpacity, TextInput, ScrollView, Image } from 'react-native'
+import { View, Text, StyleSheet, TouchableOpacity, TextInput, ScrollView, Image, Platform } from 'react-native'
 import React, { useEffect, useState } from "react";
 import { ProgressBar } from 'react-native-paper';
 import { MaterialCommunityIcons, Feather } from '@expo/vector-icons';
@@ -56,8 +56,12 @@ export const SplashScreen = () => {
 
 const styles = StyleSheet.create({
   container: {
-    ...StyleSheet.absoluteFillObject,
-    backgroundColor: '#4a3aff', // Matching Dashboard brand color
+    flex: 1,
+    // absoluteFillObject needs a positioned parent with height; on web use minHeight instead
+    ...(Platform.OS === 'web'
+      ? { minHeight: '100vh' as any, width: '100%' as any }
+      : StyleSheet.absoluteFillObject),
+    backgroundColor: '#4a3aff',
     alignItems: 'center',
     justifyContent: 'center',
     zIndex: 50,
