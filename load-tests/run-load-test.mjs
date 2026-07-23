@@ -135,7 +135,22 @@ async function run() {
   }
   
   fs.writeFileSync(path.join(reportDir, 'load-test-reports.md'), report);
-  console.log('Load test completed successfully. Report generated at load-tests/load-test-reports.md');
+
+  const csvReport = `Metric,Value
+Target URL,${BACKEND_URL}
+Test Date,${new Date().toLocaleString().replace(/,/g, '')}
+Concurrency (VUs),${CONCURRENCY}
+Duration (seconds),${totalDurationSeconds.toFixed(2)}
+Total Requests Sent,${results.totalRequests}
+Successful Requests,${results.success}
+Failed Requests,${results.failed}
+Requests Per Second (RPS),${rps.toFixed(2)}
+Average Response Time (ms),${avgTime.toFixed(2)}
+Minimum Response Time (ms),${minTime}
+Maximum Response Time (ms),${maxTime}
+`;
+  fs.writeFileSync(path.join(reportDir, 'load-test-reports.csv'), csvReport);
+  console.log('Load test completed successfully. Reports generated at load-tests/load-test-reports.md and load-test-reports.csv');
 }
 
 run().catch(console.error);
