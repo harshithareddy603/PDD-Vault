@@ -14,7 +14,7 @@
     "dev:web-vite": "vite",
     "build:apk": "npx expo prebuild --platform android && cd android && .\\gradlew assembleRelease",
     "build:apk-debug": "npx expo prebuild --platform android && cd android && .\\gradlew assembleDebug",
-    "vercel-build": "npm run build",
+    "vercel-build": "vite build",
     "lint": "eslint ."
   },
   "engines": {
