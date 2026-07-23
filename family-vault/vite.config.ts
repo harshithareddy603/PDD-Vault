@@ -6,6 +6,10 @@ import reactNativeWeb from "vite-plugin-react-native-web";
 
 // https://vitejs.dev/config/
 export default defineConfig(({ mode }) => ({
+  define: {
+    __VITE_SUPABASE_URL__: JSON.stringify(process.env.VITE_SUPABASE_URL ?? ''),
+    __VITE_SUPABASE_ANON_KEY__: JSON.stringify(process.env.VITE_SUPABASE_ANON_KEY ?? ''),
+  },
   server: {
     host: "::",
     port: 8080,
