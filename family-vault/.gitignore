@@ -22,3 +22,9 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+
+# Expo & Native builds
+.expo/
+android/
+ios/
+jdk17/

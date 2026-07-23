@@ -6,6 +6,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { Provider as PaperProvider } from 'react-native-paper';
 import { AuthProvider } from "./hooks/useAuth";
 import { ProtectedRoute } from "./components/ProtectedRoute";
+import OTAUpdateHandler from "./components/OTAUpdateHandler";
 
 // Page Imports
 import Index from "./pages/Index";
@@ -26,6 +27,7 @@ const queryClient = new QueryClient();
 const App = () => {
   return (
     <QueryClientProvider client={queryClient}>
+      <OTAUpdateHandler />
       <PaperProvider>
         <NavigationContainer
           documentTitle={{

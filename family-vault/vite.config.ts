@@ -19,6 +19,7 @@ export default defineConfig(({ mode }) => ({
       "@": path.resolve(__dirname, "./src"),
       "react-native": "react-native-web",
       "react-native-svg": "react-native-svg/lib/commonjs/ReactNativeSVG.web",
+      "@react-native/assets-registry/registry": path.resolve(__dirname, "./src/stubs/assets-registry.js"),
       "@react-native/assets-registry": path.resolve(__dirname, "./src/stubs/assets-registry.js"),
     },
     extensions: [
@@ -37,6 +38,11 @@ export default defineConfig(({ mode }) => ({
       ".json"
     ],
     dedupe: ["react", "react-dom", "react/jsx-runtime", "react/jsx-dev-runtime", "@tanstack/react-query", "@tanstack/query-core"],
+  },
+  esbuild: {
+    loader: "tsx",
+    include: /\.[jt]sx?$/,
+    exclude: [],
   },
   optimizeDeps: {
     esbuildOptions: {
