@@ -1,5 +1,6 @@
 import fs from 'fs';
 import path from 'path';
+import XLSX from 'xlsx';
 
 const BACKEND_URL = 'https://pdd-family-vault.onrender.com';
 const EMAIL = 'bunny.akki21@gmail.com';
@@ -136,21 +137,28 @@ async function run() {
   
   fs.writeFileSync(path.join(reportDir, 'load-test-reports.md'), report);
 
-  const csvReport = `Metric,Value
-Target URL,${BACKEND_URL}
-Test Date,${new Date().toLocaleString().replace(/,/g, '')}
-Concurrency (VUs),${CONCURRENCY}
-Duration (seconds),${totalDurationSeconds.toFixed(2)}
-Total Requests Sent,${results.totalRequests}
-Successful Requests,${results.success}
-Failed Requests,${results.failed}
-Requests Per Second (RPS),${rps.toFixed(2)}
-Average Response Time (ms),${avgTime.toFixed(2)}
-Minimum Response Time (ms),${minTime}
-Maximum Response Time (ms),${maxTime}
-`;
-  fs.writeFileSync(path.join(reportDir, 'load-test-reports.csv'), csvReport);
-  console.log('Load test completed successfully. Reports generated at load-tests/load-test-reports.md and load-test-reports.csv');
+  // Generate XLSX directly
+  const rows = [
+    ['Metric', 'Value'],
+    ['Target URL', BACKEND_URL],
+    ['Test Date', new Date().toLocaleString()],
+    ['Concurrency (VUs)', String(CONCURRENCY)],
+    ['Duration (seconds)', totalDurationSeconds.toFixed(2)],
+    ['Total Requests Sent', String(results.totalRequests)],
+    ['Successful Requests', String(results.success)],
+    ['Failed Requests', String(results.failed)],
+    ['Requests Per Second (RPS)', rps.toFixed(2)],
+    ['Average Response Time (ms)', avgTime.toFixed(2)],
+    ['Minimum Response Time (ms)', String(minTime)],
+    ['Maximum Response Time (ms)', String(maxTime)]
+  ];
+  
+  const wb = XLSX.utils.book_new();
+  const ws = XLSX.utils.aoa_to_sheet(rows);
+  XLSX.utils.book_append_sheet(wb, ws, 'Baseline Report');
+  XLSX.writeFile(wb, path.join(reportDir, 'load-test-reports.xlsx'));
+  
+  console.log('Load test completed successfully. Reports generated at load-tests/load-test-reports.md and load-test-reports.xlsx');
 }
 
 run().catch(console.error);
