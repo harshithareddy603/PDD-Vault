@@ -7,7 +7,7 @@ type AuthCtx = {
   session: Session | null;
   user: User | null;
   loading: boolean;
-  signUp: (input: { email: string; password: string; name: string; phone?: string; photo: File }) => Promise<{ error: Error | null }>;
+  signUp: (input: { email: string; password: string; name: string; phone?: string; photo?: File | any }) => Promise<{ error: Error | null }>;
   signIn: (input: { email: string; password: string }) => Promise<{ error: Error | null }>;
   signOut: () => Promise<void>;
   checkEmailExists: (email: string) => Promise<boolean>;
@@ -37,34 +37,40 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   }, []);
 
   const signUp: AuthCtx["signUp"] = useCallback(async ({ email, password, name, phone, photo }) => {
-    // photo in RN is { uri, name, type }
-    const fileExt = (photo as any).name ? (photo as any).name.split('.').pop() : 'jpg';
-    const fileName = `${Math.random().toString(36).substring(2)}.${fileExt}`;
-    const filePath = `${fileName}`;
+    let publicUrl = "";
 
-    let fileToUpload;
-    try {
-      const response = await fetch((photo as any).uri);
-      fileToUpload = await response.blob();
-    } catch (e) {
-      console.error("Failed to fetch photo blob, using raw photo object as fallback:", e);
-      fileToUpload = photo;
+    if (photo && (photo as any).uri) {
+      try {
+        const fileExt = (photo as any).name ? (photo as any).name.split('.').pop() : 'jpg';
+        const fileName = `${Math.random().toString(36).substring(2)}.${fileExt}`;
+        const filePath = `${fileName}`;
+
+        let fileToUpload;
+        try {
+          const response = await fetch((photo as any).uri);
+          fileToUpload = await response.blob();
+        } catch (e) {
+          console.error("Failed to fetch photo blob, using raw photo object as fallback:", e);
+          fileToUpload = photo;
+        }
+
+        const { error: uploadError } = await supabase.storage
+          .from('avatars')
+          .upload(filePath, fileToUpload, {
+            contentType: (photo as any).type || `image/${fileExt}`,
+            upsert: true
+          });
+
+        if (!uploadError) {
+          const { data } = supabase.storage
+            .from('avatars')
+            .getPublicUrl(filePath);
+          publicUrl = data?.publicUrl || "";
+        }
+      } catch (e) {
+        console.warn("Avatar upload skipped or failed:", e);
+      }
     }
-
-    const { error: uploadError } = await supabase.storage
-      .from('avatars')
-      .upload(filePath, fileToUpload, {
-        contentType: (photo as any).type || `image/${fileExt}`,
-        upsert: true
-      });
-
-    if (uploadError) {
-      return { error: new Error(`Failed to upload photo: ${uploadError.message}`) };
-    }
-
-    const { data: { publicUrl } } = supabase.storage
-      .from('avatars')
-      .getPublicUrl(filePath);
 
     const { error } = await supabase.auth.signUp({
       email,

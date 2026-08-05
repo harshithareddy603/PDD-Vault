@@ -161,8 +161,8 @@ const Auth = () => {
           navigation.replace("Dashboard"); 
         }
       } else if (mode === "signup") {
-        if (!name || !phone || !photo) {
-          setError("Please fill in all fields and select a profile photo.");
+        if (!name) {
+          setError("Please enter your full name.");
           setBusy(false);
           return;
         }
@@ -173,13 +173,13 @@ const Auth = () => {
           return;
         }
 
-        if (photo.size > 3 * 1024 * 1024) {
+        if (photo && photo.size > 3 * 1024 * 1024) {
           setError("Profile photo must be less than 3MB.");
           setBusy(false);
           return;
         }
         
-        const { error: signUpError } = await signUp({ email, password, name, phone, photo: photo as any });
+        const { error: signUpError } = await signUp({ email, password, name, phone, photo });
         if (signUpError) {
           setError(signUpError.message);
         } else {
@@ -310,7 +310,7 @@ const Auth = () => {
                   />
                 </View>
                 <View style={styles.inputGroup}>
-                  <Text style={styles.label}>Mobile Number</Text>
+                  <Text style={styles.label}>Mobile Number (optional)</Text>
                   <TextInput 
                     style={styles.input}
                     value={phone}
@@ -320,7 +320,7 @@ const Auth = () => {
                   />
                 </View>
                 <View style={styles.inputGroup}>
-                  <Text style={styles.label}>Profile Photo (Max 3MB)</Text>
+                  <Text style={styles.label}>Profile Photo (optional, Max 3MB)</Text>
                   <TouchableOpacity style={styles.photoButton} onPress={pickImage}>
                     <Feather name="image" size={16} color="#64748B" style={{ marginRight: 8 }} />
                     <Text style={styles.photoButtonText}>
