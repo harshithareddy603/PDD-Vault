@@ -62,46 +62,43 @@ const Analytics = () => {
 
   const docCount = documents.length;
 
-  // Real Growth Rate Calculation based on created_at date
+  // 30-Day Vault Expansion & Growth Rate Calculation
   const now = new Date();
-  const currentYear = now.getFullYear();
-  const currentMonth = now.getMonth();
+  const thirtyDaysAgo = new Date(now.getTime() - 30 * 86_400_000);
 
-  const lastMonthDate = new Date(currentYear, currentMonth - 1, 1);
-  const lastMonthYear = lastMonthDate.getFullYear();
-  const lastMonth = lastMonthDate.getMonth();
-
-  let thisMonthCount = 0;
-  let lastMonthCount = 0;
+  let recentUploadsCount = 0;
+  let olderUploadsCount = 0;
 
   documents.forEach((d) => {
     if (!d.created_at) return;
     const dDate = new Date(d.created_at);
-    if (dDate.getFullYear() === currentYear && dDate.getMonth() === currentMonth) {
-      thisMonthCount++;
-    } else if (dDate.getFullYear() === lastMonthYear && dDate.getMonth() === lastMonth) {
-      lastMonthCount++;
+    if (dDate >= thirtyDaysAgo) {
+      recentUploadsCount++;
+    } else {
+      olderUploadsCount++;
     }
   });
 
   let growthRateText = "0%";
-  let growthSubtext = "vs last month";
+  let growthSubtext = "in last 30 days";
 
-  if (lastMonthCount === 0) {
-    if (thisMonthCount > 0) {
+  if (olderUploadsCount === 0) {
+    if (recentUploadsCount > 0) {
       growthRateText = "+100%";
-      growthSubtext = `${thisMonthCount} new upload${thisMonthCount !== 1 ? 's' : ''} this month`;
-    } else if (docCount > 0) {
-      growthRateText = "0%";
-      growthSubtext = "No new uploads this month";
+      growthSubtext = `${recentUploadsCount} new document${recentUploadsCount !== 1 ? 's' : ''} added recently`;
     } else {
       growthRateText = "0%";
       growthSubtext = "No documents uploaded";
     }
   } else {
-    const percentChange = Math.round(((thisMonthCount - lastMonthCount) / lastMonthCount) * 100);
-    growthRateText = percentChange >= 0 ? `+${percentChange}%` : `${percentChange}%`;
-    growthSubtext = `${thisMonthCount} this month vs ${lastMonthCount} last month`;
+    if (recentUploadsCount > 0) {
+      const growthPct = Math.round((recentUploadsCount / olderUploadsCount) * 100);
+      growthRateText = `+${growthPct}%`;
+      growthSubtext = `${recentUploadsCount} new document${recentUploadsCount !== 1 ? 's' : ''} added in last 30 days`;
+    } else {
+      growthRateText = "0%";
+      growthSubtext = "Vault up-to-date (no new uploads in 30 days)";
+    }
   }
 
   // Active categories count
@@ -153,7 +150,7 @@ const Analytics = () => {
           iconColor="#8B5CF6"
         />
         <StatCard
-          label="Monthly Growth"
+          label="Vault Growth (30d)"
           value={growthRateText}
           subtext={growthSubtext}
           iconName="trending-up"
