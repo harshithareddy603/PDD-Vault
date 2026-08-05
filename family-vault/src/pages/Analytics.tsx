@@ -12,6 +12,8 @@ import { AppLayout } from '../components/AppLayout';
 import { Feather, MaterialCommunityIcons } from '@expo/vector-icons';
 import { useDocuments } from '../hooks/useDocuments';
 
+import { useTheme } from '../context/ThemeContext';
+
 // ─── Stat Card Component ─────────────────────────────────────────────────────
 
 interface StatCardProps {
@@ -32,31 +34,34 @@ const StatCard = ({
   iconBg,
   iconColor,
   isFeather = false,
-}: StatCardProps) => (
-  <View style={s.card}>
-    <View style={s.cardHeader}>
-      <View style={[s.iconBox, { backgroundColor: iconBg }]}>
-        {isFeather ? (
-          <Feather name={iconName as any} size={18} color={iconColor} />
-        ) : (
-          <MaterialCommunityIcons name={iconName as any} size={20} color={iconColor} />
-        )}
+}: StatCardProps) => {
+  const { colors } = useTheme();
+  return (
+    <View style={[s.card, { backgroundColor: colors.card, borderColor: colors.border }]}>
+      <View style={s.cardHeader}>
+        <View style={[s.iconBox, { backgroundColor: iconBg }]}>
+          {isFeather ? (
+            <Feather name={iconName as any} size={18} color={iconColor} />
+          ) : (
+            <MaterialCommunityIcons name={iconName as any} size={20} color={iconColor} />
+          )}
+        </View>
       </View>
+      <Text style={[s.cardLabel, { color: colors.subtext }]}>{label}</Text>
+      <Text style={[s.cardValue, { color: colors.text }]}>{value}</Text>
+      <Text style={s.cardSubtext}>{subtext}</Text>
     </View>
-    <Text style={s.cardLabel}>{label}</Text>
-    <Text style={s.cardValue}>{value}</Text>
-    <Text style={s.cardSubtext}>{subtext}</Text>
-  </View>
-);
+  );
+};
 
 // ─── Main Analytics Page ─────────────────────────────────────────────────────
 
 const Analytics = () => {
   const { documents } = useDocuments();
-  const isWeb = Platform.OS === 'web';
+  const { colors, isDark } = useTheme();
 
   const docCount = documents.length;
-  
+
   // Calculate dynamic stats
   const activeCategories = new Set(documents.map((d) => d.category)).size;
   const displayViews = docCount * 2;
@@ -65,7 +70,7 @@ const Analytics = () => {
   return (
     <AppLayout>
       <View style={s.header}>
-        <Text style={s.pageTitle}>Usage Analytics</Text>
+        <Text style={[s.pageTitle, { color: colors.text }]}>Usage Analytics</Text>
       </View>
 
       {/* Grid of stats */}
@@ -75,7 +80,7 @@ const Analytics = () => {
           value={docCount}
           subtext={docCount > 0 ? `Active documents` : "No uploads yet"}
           iconName="upload"
-          iconBg="#EFF6FF"
+          iconBg={isDark ? '#1e3a8a' : '#EFF6FF'}
           iconColor="#3B82F6"
           isFeather
         />
@@ -84,7 +89,7 @@ const Analytics = () => {
           value={displayViews}
           subtext={docCount > 0 ? `Total views recorded` : "No views yet"}
           iconName="eye"
-          iconBg="#ECFDF5"
+          iconBg={isDark ? '#063022' : '#ECFDF5'}
           iconColor="#10B981"
           isFeather
         />
@@ -93,7 +98,7 @@ const Analytics = () => {
           value={activeCategories}
           subtext={activeCategories > 0 ? `${activeCategories} active types` : "No categories yet"}
           iconName="chart-bar"
-          iconBg="#F5F3FF"
+          iconBg={isDark ? '#2e1065' : '#F5F3FF'}
           iconColor="#8B5CF6"
         />
         <StatCard
@@ -101,7 +106,7 @@ const Analytics = () => {
           value={growthRate}
           subtext={docCount > 0 ? "vs last month" : "No updates yet"}
           iconName="trending-up"
-          iconBg="#FFF7ED"
+          iconBg={isDark ? '#332010' : '#FFF7ED'}
           iconColor="#F97316"
           isFeather
         />

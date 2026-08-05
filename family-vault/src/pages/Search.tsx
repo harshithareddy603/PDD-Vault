@@ -15,6 +15,7 @@ import type { DocumentRow } from '../services/supabase';
 import { useNavigation } from '@react-navigation/native';
 import { MaterialCommunityIcons, Feather } from '@expo/vector-icons';
 import { DocumentLogo } from '../components/DocumentLogo';
+import { useTheme } from '../context/ThemeContext';
 
 // ─── constants ────────────────────────────────────────────────────────────────
 
@@ -53,50 +54,63 @@ const STAT_META: Record<string, { bg: string; text: string; label: string }> = {
   expired: { bg: '#FEE2E2', text: '#DC2626', label: 'Expired'  },
 };
 
-function formatDate(s?: string | null) {
-  if (!s) return 'N/A';
-  return new Date(s).toLocaleDateString('en-GB', {
-    day: '2-digit',
-    month: '2-digit',
+function formatDate(dateStr?: string | null) {
+  if (!dateStr) return 'N/A';
+  return new Date(dateStr).toLocaleDateString('en-GB', {
     year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
   });
 }
 
-// ─── Dropdown (custom for cross-platform) ────────────────────────────────────
+// ─── Custom Dropdown ──────────────────────────────────────────────────────────
 
-interface DropProps {
+const Dropdown = ({
+  label,
+  options,
+  value,
+  onChange,
+}: {
   label: string;
   options: string[];
   value: string;
   onChange: (v: string) => void;
-}
-
-const Dropdown = ({ label, options, value, onChange }: DropProps) => {
+}) => {
   const [open, setOpen] = useState(false);
+  const { colors } = useTheme();
+
   return (
-    <View style={{ zIndex: open ? 10 : 1 }}>
-      <Text style={dp.label}>{label}</Text>
-      <TouchableOpacity style={dp.trigger} onPress={() => setOpen((v) => !v)}>
-        <Feather name="filter" size={13} color="#64748B" style={{ marginRight: 6 }} />
-        <Text style={dp.triggerText}>{value}</Text>
+    <View style={{ zIndex: open ? 50 : 1, position: 'relative' }}>
+      <Text style={[dp.label, { color: colors.subtext }]}>{label}</Text>
+      <TouchableOpacity
+        style={[dp.trigger, { backgroundColor: colors.inputBg, borderColor: colors.border }]}
+        onPress={() => setOpen((v) => !v)}
+        activeOpacity={0.7}
+      >
+        <Feather name="filter" size={13} color={colors.subtext} style={{ marginRight: 6 }} />
+        <Text style={[dp.triggerText, { color: colors.text }]}>{value}</Text>
         <MaterialCommunityIcons
           name={open ? 'chevron-up' : 'chevron-down'}
           size={16}
-          color="#64748B"
+          color={colors.subtext}
         />
       </TouchableOpacity>
       {open && (
-        <View style={dp.menu}>
+        <View style={[dp.menu, { backgroundColor: colors.card, borderColor: colors.border }]}>
           {options.map((opt) => (
             <TouchableOpacity
               key={opt}
-              style={[dp.menuItem, value === opt && dp.menuItemActive]}
+              style={[
+                dp.menuItem,
+                { borderBottomColor: colors.border },
+                value === opt && { backgroundColor: colors.primaryBg },
+              ]}
               onPress={() => {
                 onChange(opt);
                 setOpen(false);
               }}
             >
-              <Text style={[dp.menuText, value === opt && dp.menuTextActive]}>
+              <Text style={[dp.menuText, { color: colors.text }, value === opt && { color: colors.primary, fontWeight: '600' }]}>
                 {opt}
               </Text>
             </TouchableOpacity>
@@ -108,30 +122,26 @@ const Dropdown = ({ label, options, value, onChange }: DropProps) => {
 };
 
 const dp = StyleSheet.create({
-  label: { fontSize: 13, fontWeight: '500', color: '#374151', marginBottom: 6 },
+  label: { fontSize: 13, fontWeight: '500', marginBottom: 6 },
   trigger: {
     flexDirection: 'row',
     alignItems: 'center',
     borderWidth: 1,
-    borderColor: '#D1D5DB',
     borderRadius: 8,
     paddingHorizontal: 12,
     paddingVertical: 10,
-    backgroundColor: '#FFFFFF',
   },
-  triggerText: { flex: 1, fontSize: 13.5, color: '#374151' },
+  triggerText: { flex: 1, fontSize: 13.5 },
   menu: {
     position: 'absolute',
     top: 72,
     left: 0,
     right: 0,
-    backgroundColor: '#FFFFFF',
     borderWidth: 1,
-    borderColor: '#E2E8F0',
     borderRadius: 8,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.08,
+    shadowOpacity: 0.1,
     shadowRadius: 12,
     elevation: 8,
     zIndex: 20,
@@ -140,67 +150,23 @@ const dp = StyleSheet.create({
     paddingHorizontal: 14,
     paddingVertical: 10,
     borderBottomWidth: 1,
-    borderBottomColor: '#F1F5F9',
   },
-  menuItemActive: { backgroundColor: '#EFF6FF' },
-  menuText: { fontSize: 13.5, color: '#374151' },
-  menuTextActive: { color: '#3B82F6', fontWeight: '600' },
+  menuText: { fontSize: 13.5 },
 });
 
-// ─── Checkbox ─────────────────────────────────────────────────────────────────
-
-const CheckItem = ({
-  label,
-  value,
-  onChange,
-}: {
-  label: string;
-  value: boolean;
-  onChange: (v: boolean) => void;
-}) => (
-  <TouchableOpacity
-    style={ck.row}
-    onPress={() => onChange(!value)}
-    activeOpacity={0.7}
-  >
-    <View style={[ck.box, value && ck.boxChecked]}>
-      {value && (
-        <MaterialCommunityIcons name="check" size={12} color="#FFFFFF" />
-      )}
-    </View>
-    <Text style={ck.label}>{label}</Text>
-  </TouchableOpacity>
-);
-
-const ck = StyleSheet.create({
-  row: { flexDirection: 'row', alignItems: 'center', gap: 8 },
-  box: {
-    width: 16,
-    height: 16,
-    borderRadius: 4,
-    borderWidth: 1.5,
-    borderColor: '#CBD5E1',
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: '#FFFFFF',
-  },
-  boxChecked: { backgroundColor: '#3B82F6', borderColor: '#3B82F6' },
-  label: { fontSize: 13, color: '#374151', fontWeight: '500' },
-});
-
-// ─── Main page ────────────────────────────────────────────────────────────────
+// ─── Main Screen ──────────────────────────────────────────────────────────────
 
 const Search = () => {
   const { documents } = useDocuments();
   const navigation = useNavigation<any>();
-  const [previewDoc, setPreviewDoc] = useState<DocumentRow | null>(null);
+  const { colors, isDark } = useTheme();
 
-  // Filter state
   const [query, setQuery]       = useState('');
   const [category, setCategory] = useState('All Categories');
   const [status, setStatus]     = useState('All Status');
   const [searched, setSearched] = useState(false);
   const [results, setResults]   = useState<DocumentRow[]>([]);
+  const [previewDoc, setPreviewDoc] = useState<DocumentRow | null>(null);
 
   const isWeb = Platform.OS === 'web';
 
@@ -240,19 +206,19 @@ const Search = () => {
   return (
     <AppLayout>
       {/* Title */}
-      <Text style={s.pageTitle}>Advanced Search</Text>
+      <Text style={[s.pageTitle, { color: colors.text }]}>Advanced Search</Text>
 
       {/* Filter card */}
-      <View style={s.card}>
+      <View style={[s.card, { backgroundColor: colors.card, borderColor: colors.border }]}>
         {/* Search term */}
         <View style={s.fieldGroup}>
-          <Text style={s.fieldLabel}>Search Term</Text>
-          <View style={s.inputWrap}>
-            <Feather name="search" size={14} color="#94A3B8" style={s.inputIcon} />
+          <Text style={[s.fieldLabel, { color: colors.subtext }]}>Search Term</Text>
+          <View style={[s.inputWrap, { backgroundColor: colors.inputBg, borderColor: colors.border }]}>
+            <Feather name="search" size={14} color={colors.subtext} style={s.inputIcon} />
             <TextInput
-              style={s.input}
+              style={[s.input, { color: colors.text }]}
               placeholder="Search documents by name..."
-              placeholderTextColor="#94A3B8"
+              placeholderTextColor={colors.mutedText}
               value={query}
               onChangeText={setQuery}
             />
@@ -281,8 +247,11 @@ const Search = () => {
 
         {/* Buttons */}
         <View style={s.buttonRow}>
-          <TouchableOpacity style={s.resetBtn} onPress={handleReset}>
-            <Text style={s.resetBtnText}>Reset Filters</Text>
+          <TouchableOpacity
+            style={[s.resetBtn, { backgroundColor: colors.surface, borderColor: colors.border }]}
+            onPress={handleReset}
+          >
+            <Text style={[s.resetBtnText, { color: colors.text }]}>Reset Filters</Text>
           </TouchableOpacity>
           <TouchableOpacity style={s.searchBtn} onPress={handleSearch}>
             <Text style={s.searchBtnText}>Search Documents</Text>
@@ -292,8 +261,8 @@ const Search = () => {
 
       {/* Results */}
       {searched && (
-        <View style={s.resultsCard}>
-          <Text style={s.resultsTitle}>
+        <View style={[s.resultsCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
+          <Text style={[s.resultsTitle, { color: colors.text }]}>
             {results.length} result{results.length !== 1 ? 's' : ''} found
           </Text>
 
@@ -302,20 +271,20 @@ const Search = () => {
               <MaterialCommunityIcons
                 name="file-search-outline"
                 size={40}
-                color="#CBD5E1"
+                color={colors.subtext}
               />
-              <Text style={s.emptyText}>No documents match your filters.</Text>
+              <Text style={[s.emptyText, { color: colors.subtext }]}>No documents match your filters.</Text>
             </View>
           ) : (
             <View>
               {/* Table header (web) */}
               {isWeb && (
-                <View style={[s.tableRow, s.tableHead]}>
-                  <Text style={[s.th, { flex: 2.5 }]}>DOCUMENT</Text>
-                  <Text style={[s.th, { flex: 1.2 }]}>CATEGORY</Text>
-                  <Text style={[s.th, { flex: 1.2 }]}>STATUS</Text>
-                  <Text style={[s.th, { flex: 1.5 }]}>UPLOAD DATE</Text>
-                  <Text style={[s.th, { flex: 0.8, textAlign: 'right' }]}>
+                <View style={[s.tableRow, s.tableHead, { backgroundColor: colors.surface, borderBottomColor: colors.border }]}>
+                  <Text style={[s.th, { flex: 2.5, color: colors.subtext }]}>DOCUMENT</Text>
+                  <Text style={[s.th, { flex: 1.2, color: colors.subtext }]}>CATEGORY</Text>
+                  <Text style={[s.th, { flex: 1.2, color: colors.subtext }]}>STATUS</Text>
+                  <Text style={[s.th, { flex: 1.5, color: colors.subtext }]}>UPLOAD DATE</Text>
+                  <Text style={[s.th, { flex: 0.8, textAlign: 'right', color: colors.subtext }]}>
                     ACTIONS
                   </Text>
                 </View>
@@ -328,11 +297,11 @@ const Search = () => {
                     key={d.id}
                     style={[
                       s.tableRow,
-                      i < results.length - 1 && s.tableRowDivider,
+                      i < results.length - 1 && { borderBottomWidth: 1, borderBottomColor: colors.border },
                     ]}
                   >
                     <View style={[s.tdName, { flex: isWeb ? 2.5 : 3 }]}>
-                      <View style={s.logoWrap}>
+                      <View style={[s.logoWrap, { backgroundColor: colors.surface, borderColor: colors.border }]}>
                         <DocumentLogo
                           name={d.name}
                           category={d.category}
@@ -340,27 +309,27 @@ const Search = () => {
                           size={18}
                         />
                       </View>
-                      <Text style={s.docName} numberOfLines={1}>
+                      <Text style={[s.docName, { color: colors.text }]} numberOfLines={1}>
                         {d.name}
                       </Text>
                     </View>
                     <View style={{ flex: isWeb ? 1.2 : undefined }}>
-                      <View style={[s.pill, { backgroundColor: cat.bg }]}>
-                        <Text style={[s.pillText, { color: cat.text }]}>
+                      <View style={[s.pill, { backgroundColor: isDark ? colors.surface : cat.bg }]}>
+                        <Text style={[s.pillText, { color: isDark ? colors.text : cat.text }]}>
                           {d.category}
                         </Text>
                       </View>
                     </View>
                     <View style={{ flex: isWeb ? 1.2 : undefined }}>
-                      <View style={[s.pill, { backgroundColor: stat.bg }]}>
-                        <Text style={[s.pillText, { color: stat.text }]}>
+                      <View style={[s.pill, { backgroundColor: isDark ? colors.surface : stat.bg }]}>
+                        <Text style={[s.pillText, { color: isDark ? colors.text : stat.text }]}>
                           {stat.label}
                         </Text>
                       </View>
                     </View>
                     {isWeb && (
                       <View style={{ flex: 1.5 }}>
-                        <Text style={s.dateText}>{formatDate(d.created_at)}</Text>
+                        <Text style={[s.dateText, { color: colors.subtext }]}>{formatDate(d.created_at)}</Text>
                       </View>
                     )}
                     <View
@@ -370,7 +339,7 @@ const Search = () => {
                       }}
                     >
                       <TouchableOpacity
-                        style={s.viewBtn}
+                        style={[s.viewBtn, { borderColor: colors.border }]}
                         onPress={() => setPreviewDoc(d)}
                       >
                         <Text style={s.viewBtnText}>View</Text>

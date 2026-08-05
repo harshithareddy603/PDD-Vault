@@ -13,9 +13,12 @@ import { useDocuments } from '../hooks/useDocuments';
 import { useNavigation } from '@react-navigation/native';
 import { Feather, MaterialCommunityIcons } from '@expo/vector-icons';
 
+import { useTheme } from '../context/ThemeContext';
+
 const NotificationsPage = () => {
   const { documents } = useDocuments();
   const navigation = useNavigation<any>();
+  const { colors, isDark } = useTheme();
   const isWeb = Platform.OS === 'web';
 
   // Dynamic statistics
@@ -26,7 +29,7 @@ const NotificationsPage = () => {
   // Format date helper
   const formatDate = (dateStr?: string | null) => {
     if (!dateStr) return 'N/A';
-    return new Date(dateStr).toLocaleDateString('en-CA'); // YYYY-MM-DD format matching screenshot
+    return new Date(dateStr).toLocaleDateString('en-CA');
   };
 
   // Compile active alerts from real document status
@@ -58,64 +61,76 @@ const NotificationsPage = () => {
   return (
     <AppLayout>
       <View style={s.header}>
-        <Text style={s.pageTitle}>Alerts & Reminders</Text>
-        <Text style={s.subtitle}>{activeAlertsCount} active alert{activeAlertsCount !== 1 ? 's' : ''}</Text>
+        <Text style={[s.pageTitle, { color: colors.text }]}>Alerts & Reminders</Text>
+        <Text style={[s.subtitle, { color: colors.subtext }]}>{activeAlertsCount} active alert{activeAlertsCount !== 1 ? 's' : ''}</Text>
       </View>
 
       {/* Top 3 Quick Stats Cards */}
       <View style={s.statsGrid}>
         {/* Card 1: Expiring Soon */}
-        <View style={s.statCard}>
-          <View style={[s.iconBox, s.orangeBg]}>
+        <View style={[s.statCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
+          <View style={[s.iconBox, { backgroundColor: isDark ? '#332010' : '#FFF7ED' }]}>
             <Feather name="clock" size={17} color="#F97316" />
           </View>
-          <Text style={s.cardTitle}>Expiring Soon</Text>
+          <Text style={[s.cardTitle, { color: colors.text }]}>Expiring Soon</Text>
           <Text style={[s.cardValue, s.orangeText]}>{expiringSoonCount}</Text>
-          <Text style={s.cardDesc}>Documents expiring within 60 days</Text>
+          <Text style={[s.cardDesc, { color: colors.subtext }]}>Documents expiring within 60 days</Text>
         </View>
 
         {/* Card 2: Expired */}
-        <View style={s.statCard}>
-          <View style={[s.iconBox, s.redBg]}>
+        <View style={[s.statCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
+          <View style={[s.iconBox, { backgroundColor: isDark ? '#3b1212' : '#FEE2E2' }]}>
             <Feather name="alert-circle" size={17} color="#EF4444" />
           </View>
-          <Text style={s.cardTitle}>Expired</Text>
+          <Text style={[s.cardTitle, { color: colors.text }]}>Expired</Text>
           <Text style={[s.cardValue, s.redText]}>{expiredCount}</Text>
-          <Text style={s.cardDesc}>Documents that have expired</Text>
+          <Text style={[s.cardDesc, { color: colors.subtext }]}>Documents that have expired</Text>
         </View>
 
         {/* Card 3: Reminder Settings */}
         <TouchableOpacity
-          style={s.statCard}
+          style={[s.statCard, { backgroundColor: colors.card, borderColor: colors.border }]}
           onPress={() => navigation.navigate('Settings')}
           activeOpacity={0.8}
         >
-          <View style={[s.iconBox, s.blueBg]}>
+          <View style={[s.iconBox, { backgroundColor: isDark ? '#1e3a8a' : '#EFF6FF' }]}>
             <Feather name="bell" size={17} color="#3B82F6" />
           </View>
-          <Text style={s.cardTitle}>Reminder Settings</Text>
-          <Text style={[s.cardDesc, { marginTop: 12 }]}>Configure your notification preferences</Text>
+          <Text style={[s.cardTitle, { color: colors.text }]}>Reminder Settings</Text>
+          <Text style={[s.cardDesc, { color: colors.subtext, marginTop: 12 }]}>Configure your notification preferences</Text>
         </TouchableOpacity>
       </View>
 
       {/* Active Alerts Panel */}
-      <View style={s.panelCard}>
-        <Text style={s.panelTitle}>Active Alerts</Text>
+      <View style={[s.panelCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
+        <Text style={[s.panelTitle, { color: colors.text }]}>Active Alerts</Text>
 
         <View style={s.alertsList}>
           {activeAlerts.length === 0 ? (
             <View style={s.emptyState}>
-              <Feather name="bell-off" size={32} color="#CBD5E1" />
-              <Text style={s.emptyStateText}>No active alerts at the moment.</Text>
+              <Feather name="bell-off" size={32} color={colors.subtext} />
+              <Text style={[s.emptyStateText, { color: colors.subtext }]}>No active alerts at the moment.</Text>
             </View>
           ) : (
             activeAlerts.map((alert) => (
               <View
                 key={alert.id}
-                style={[s.alertRow, alert.isExpired ? s.expiredAlertBg : s.expiringAlertBg]}
+                style={[
+                  s.alertRow,
+                  {
+                    backgroundColor: isDark
+                      ? alert.isExpired
+                        ? '#3b1212'
+                        : '#332010'
+                      : alert.isExpired
+                      ? '#FFF5F5'
+                      : '#FFFBEB',
+                    borderColor: colors.border,
+                  },
+                ]}
               >
                 <View style={s.alertLeft}>
-                  <View style={[s.alertIconCircle, alert.isExpired ? s.alertIconRed : s.alertIconOrange]}>
+                  <View style={[s.alertIconCircle, { backgroundColor: isDark ? colors.card : alert.isExpired ? '#FEE2E2' : '#FEF3C7' }]}>
                     <Feather
                       name={alert.isExpired ? 'alert-circle' : 'clock'}
                       size={15}
@@ -123,12 +138,12 @@ const NotificationsPage = () => {
                     />
                   </View>
                   <View style={s.alertMeta}>
-                    <Text style={s.alertMessage}>{alert.message}</Text>
-                    <Text style={s.alertDate}>{alert.date}</Text>
+                    <Text style={[s.alertMessage, { color: colors.text }]}>{alert.message}</Text>
+                    <Text style={[s.alertDate, { color: colors.subtext }]}>{alert.date}</Text>
                   </View>
                 </View>
                 <TouchableOpacity
-                  style={s.viewBtn}
+                  style={[s.viewBtn, { borderColor: colors.border }]}
                   onPress={() => navigation.navigate('Documents', { search: alert.document.name })}
                 >
                   <Text style={s.viewBtnText}>View</Text>

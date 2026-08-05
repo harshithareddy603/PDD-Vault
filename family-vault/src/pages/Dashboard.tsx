@@ -17,6 +17,8 @@ import { DocumentLogo } from '../components/DocumentLogo';
 import { useNavigation } from '@react-navigation/native';
 import { MaterialCommunityIcons, Feather } from '@expo/vector-icons';
 
+import { useTheme } from '../context/ThemeContext';
+
 // ─── helpers ─────────────────────────────────────────────────────────────────
 
 const CATEGORY_META: Record<string, { bg: string; text: string }> = {
@@ -62,25 +64,26 @@ interface StatCardProps {
   iconColor: string;
 }
 
-const StatCard = ({ label, value, iconName, iconBg, iconColor }: StatCardProps) => (
-  <View style={sc.card}>
-    <View style={[sc.iconWrap, { backgroundColor: iconBg }]}>
-      <MaterialCommunityIcons name={iconName as any} size={22} color={iconColor} />
+const StatCard = ({ label, value, iconName, iconBg, iconColor }: StatCardProps) => {
+  const { colors } = useTheme();
+  return (
+    <View style={[sc.card, { backgroundColor: colors.card, borderColor: colors.border }]}>
+      <View style={[sc.iconWrap, { backgroundColor: iconBg }]}>
+        <MaterialCommunityIcons name={iconName as any} size={22} color={iconColor} />
+      </View>
+      <Text style={[sc.value, { color: colors.text }]}>{value}</Text>
+      <Text style={[sc.label, { color: colors.subtext }]}>{label}</Text>
     </View>
-    <Text style={sc.value}>{value}</Text>
-    <Text style={sc.label}>{label}</Text>
-  </View>
-);
+  );
+};
 
 const sc = StyleSheet.create({
   card: {
     flex: 1,
-    backgroundColor: '#FFFFFF',
     borderRadius: 12,
     padding: 16,
     alignItems: 'flex-start',
     borderWidth: 1,
-    borderColor: '#E2E8F0',
     minWidth: 120,
   },
   iconWrap: {
@@ -94,12 +97,10 @@ const sc = StyleSheet.create({
   value: {
     fontSize: 24,
     fontWeight: '700',
-    color: '#1E293B',
     marginBottom: 2,
   },
   label: {
     fontSize: 12,
-    color: '#64748B',
     fontWeight: '500',
   },
 });
@@ -111,6 +112,7 @@ const Dashboard = () => {
   const { documents, loading } = useDocuments();
   const { members } = useFamily();
   const navigation = useNavigation<any>();
+  const { colors, isDark } = useTheme();
   const [previewDoc, setPreviewDoc] = useState<DocumentRow | null>(null);
 
   const name = (user?.user_metadata?.name as string | undefined) || 'User';
@@ -145,8 +147,8 @@ const Dashboard = () => {
     <AppLayout>
       {/* Welcome header */}
       <View style={s.welcome}>
-        <Text style={s.welcomeTitle}>Welcome back, {name}!</Text>
-        <Text style={s.welcomeSub}>
+        <Text style={[s.welcomeTitle, { color: colors.text }]}>Welcome back, {name}!</Text>
+        <Text style={[s.welcomeSub, { color: colors.subtext }]}>
           Smart Doc's happening with your documents
         </Text>
       </View>
@@ -157,28 +159,28 @@ const Dashboard = () => {
           label="Total Documents"
           value={totalDocs}
           iconName="file-document-outline"
-          iconBg="#DBEAFE"
+          iconBg={isDark ? '#1e3a8a' : '#DBEAFE'}
           iconColor="#3B82F6"
         />
         <StatCard
           label="Expiring Soon"
           value={expiringSoon}
           iconName="clock-alert-outline"
-          iconBg="#FFEDD5"
+          iconBg={isDark ? '#332010' : '#FFEDD5'}
           iconColor="#F97316"
         />
         <StatCard
           label="Expired"
           value={expired}
           iconName="alert-circle-outline"
-          iconBg="#FEE2E2"
+          iconBg={isDark ? '#3b1212' : '#FEE2E2'}
           iconColor="#EF4444"
         />
         <StatCard
           label="Family Members"
           value={familyCount}
           iconName="account-group-outline"
-          iconBg="#D1FAE5"
+          iconBg={isDark ? '#063022' : '#D1FAE5'}
           iconColor="#10B981"
         />
       </View>
@@ -186,21 +188,21 @@ const Dashboard = () => {
       {/* Middle section: Quick Actions + Recent Alerts */}
       <View style={[s.midRow, isWeb && s.midRowWide]}>
         {/* Quick Actions */}
-        <View style={[s.midCard, { flex: isWeb ? 1 : undefined }]}>
-          <Text style={s.cardTitle}>Quick Actions</Text>
+        <View style={[s.midCard, { flex: isWeb ? 1 : undefined, backgroundColor: colors.card, borderColor: colors.border }]}>
+          <Text style={[s.cardTitle, { color: colors.text }]}>Quick Actions</Text>
           {[
             {
               label: 'Upload Document',
               icon: 'upload-outline',
               color: '#10B981',
-              bg: '#D1FAE5',
+              bg: isDark ? '#063022' : '#D1FAE5',
               screen: 'Documents',
             },
             {
               label: 'Scan Document',
               icon: 'scan-helper',
               color: '#3B82F6',
-              bg: '#DBEAFE',
+              bg: isDark ? '#1e3a8a' : '#DBEAFE',
               screen: 'Documents',
               params: { triggerScan: true },
             },
@@ -208,13 +210,13 @@ const Dashboard = () => {
               label: 'Search Documents',
               icon: 'magnify',
               color: '#8B5CF6',
-              bg: '#EDE9FE',
+              bg: isDark ? '#2e1065' : '#EDE9FE',
               screen: 'Search',
             },
           ].map((action) => (
             <TouchableOpacity
               key={action.label}
-              style={s.actionRow}
+              style={[s.actionRow, { borderBottomColor: colors.border }]}
               onPress={() => navigation.navigate(action.screen, (action as any).params)}
             >
               <View style={[s.actionIcon, { backgroundColor: action.bg }]}>
@@ -224,22 +226,22 @@ const Dashboard = () => {
                   color={action.color}
                 />
               </View>
-              <Text style={s.actionLabel}>{action.label}</Text>
-              <MaterialCommunityIcons name="chevron-right" size={16} color="#94A3B8" />
+              <Text style={[s.actionLabel, { color: colors.text }]}>{action.label}</Text>
+              <MaterialCommunityIcons name="chevron-right" size={16} color={colors.subtext} />
             </TouchableOpacity>
           ))}
         </View>
 
         {/* Recent Alerts */}
-        <View style={[s.midCard, { flex: isWeb ? 1 : undefined }]}>
+        <View style={[s.midCard, { flex: isWeb ? 1 : undefined, backgroundColor: colors.card, borderColor: colors.border }]}>
           <View style={s.cardHeaderRow}>
-            <Text style={s.cardTitle}>Recent Alerts</Text>
+            <Text style={[s.cardTitle, { color: colors.text }]}>Recent Alerts</Text>
             <TouchableOpacity onPress={() => navigation.navigate('Notifications')}>
               <Text style={s.viewAll}>View All</Text>
             </TouchableOpacity>
           </View>
           {recentAlerts.length === 0 ? (
-            <Text style={s.emptySmall}>No active alerts</Text>
+            <Text style={[s.emptySmall, { color: colors.subtext }]}>No active alerts</Text>
           ) : (
             recentAlerts.map((d) => {
               const isExpired = d.status === 'expired';
@@ -249,7 +251,7 @@ const Dashboard = () => {
                   )
                 : null;
               return (
-                <View key={d.id} style={s.alertItem}>
+                <View key={d.id} style={[s.alertItem, { borderBottomColor: colors.border }]}>
                   <MaterialCommunityIcons
                     name={isExpired ? 'alert-circle' : 'clock-outline'}
                     size={14}
@@ -257,12 +259,12 @@ const Dashboard = () => {
                     style={{ marginTop: 2 }}
                   />
                   <View style={{ flex: 1 }}>
-                    <Text style={s.alertText} numberOfLines={1}>
+                    <Text style={[s.alertText, { color: colors.text }]} numberOfLines={1}>
                       {isExpired
                         ? `${d.name} has expired`
                         : `${d.name} will expire in ${days} days`}
                     </Text>
-                    <Text style={s.alertDate}>{formatDate(d.expiry_date)}</Text>
+                    <Text style={[s.alertDate, { color: colors.subtext }]}>{formatDate(d.expiry_date)}</Text>
                   </View>
                 </View>
               );
@@ -272,9 +274,9 @@ const Dashboard = () => {
       </View>
 
       {/* Recent Documents table */}
-      <View style={s.tableCard}>
-        <View style={s.tableHeader}>
-          <Text style={s.cardTitle}>Recent Documents</Text>
+      <View style={[s.tableCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
+        <View style={[s.tableHeader, { borderBottomColor: colors.border }]}>
+          <Text style={[s.cardTitle, { color: colors.text }]}>Recent Documents</Text>
           <TouchableOpacity onPress={() => navigation.navigate('Documents')}>
             <Text style={s.viewAll}>View All</Text>
           </TouchableOpacity>
@@ -284,7 +286,7 @@ const Dashboard = () => {
           <ActivityIndicator size="small" color="#3B82F6" style={{ marginVertical: 24 }} />
         ) : recentDocs.length === 0 ? (
           <View style={s.emptyTable}>
-            <Text style={s.emptyText}>No documents yet.</Text>
+            <Text style={[s.emptyText, { color: colors.subtext }]}>No documents yet.</Text>
             <TouchableOpacity
               style={s.addBtn}
               onPress={() => navigation.navigate('Documents')}
@@ -296,12 +298,12 @@ const Dashboard = () => {
           <View>
             {/* Table head (web only) */}
             {isWeb && (
-              <View style={[s.tableRow, s.tableHead]}>
-                <View style={{ flex: 2.5 }}><Text style={s.thCell}>DOCUMENT</Text></View>
-                <View style={{ flex: 1.2 }}><Text style={s.thCell}>CATEGORY</Text></View>
-                <View style={{ flex: 1.2 }}><Text style={s.thCell}>STATUS</Text></View>
-                <View style={{ flex: 1.5 }}><Text style={s.thCell}>UPLOAD DATE</Text></View>
-                <View style={{ flex: 0.8, alignItems: 'flex-end' }}><Text style={s.thCell}>ACTIONS</Text></View>
+              <View style={[s.tableRow, s.tableHead, { backgroundColor: colors.surface, borderBottomColor: colors.border }]}>
+                <View style={{ flex: 2.5 }}><Text style={[s.thCell, { color: colors.subtext }]}>DOCUMENT</Text></View>
+                <View style={{ flex: 1.2 }}><Text style={[s.thCell, { color: colors.subtext }]}>CATEGORY</Text></View>
+                <View style={{ flex: 1.2 }}><Text style={[s.thCell, { color: colors.subtext }]}>STATUS</Text></View>
+                <View style={{ flex: 1.5 }}><Text style={[s.thCell, { color: colors.subtext }]}>UPLOAD DATE</Text></View>
+                <View style={{ flex: 0.8, alignItems: 'flex-end' }}><Text style={[s.thCell, { color: colors.subtext }]}>ACTIONS</Text></View>
               </View>
             )}
 
@@ -313,12 +315,12 @@ const Dashboard = () => {
                   key={d.id}
                   style={[
                     s.tableRow,
-                    i < recentDocs.length - 1 && s.tableRowBorder,
+                    i < recentDocs.length - 1 && { borderBottomWidth: 1, borderBottomColor: colors.border },
                   ]}
                 >
                   {/* Document name */}
                   <View style={[s.tdName, { flex: isWeb ? 2.5 : 3 }]}>
-                    <View style={s.docLogoWrap}>
+                    <View style={[s.docLogoWrap, { backgroundColor: colors.surface, borderColor: colors.border }]}>
                       <DocumentLogo
                         name={d.name}
                         category={d.category}
@@ -326,7 +328,7 @@ const Dashboard = () => {
                         size={20}
                       />
                     </View>
-                    <Text style={s.docName} numberOfLines={1}>
+                    <Text style={[s.docName, { color: colors.text }]} numberOfLines={1}>
                       {d.name}
                     </Text>
                   </View>
@@ -334,9 +336,9 @@ const Dashboard = () => {
                   {/* Category badge */}
                   <View style={[s.tdCell, { flex: isWeb ? 1.2 : undefined }]}>
                     <View
-                      style={[s.badge, { backgroundColor: cat.bg }]}
+                      style={[s.badge, { backgroundColor: isDark ? colors.surface : cat.bg }]}
                     >
-                      <Text style={[s.badgeText, { color: cat.text }]}>
+                      <Text style={[s.badgeText, { color: isDark ? colors.text : cat.text }]}>
                         {d.category}
                       </Text>
                     </View>
@@ -345,9 +347,9 @@ const Dashboard = () => {
                   {/* Status badge */}
                   <View style={[s.tdCell, { flex: isWeb ? 1.2 : undefined }]}>
                     <View
-                      style={[s.badge, { backgroundColor: stat.bg }]}
+                      style={[s.badge, { backgroundColor: isDark ? colors.surface : stat.bg }]}
                     >
-                      <Text style={[s.badgeText, { color: stat.text }]}>
+                      <Text style={[s.badgeText, { color: isDark ? colors.text : stat.text }]}>
                         {stat.label}
                       </Text>
                     </View>
@@ -356,14 +358,14 @@ const Dashboard = () => {
                   {/* Date (web only) */}
                   {isWeb && (
                     <View style={[s.tdCell, { flex: 1.5 }]}>
-                      <Text style={s.dateText}>{formatDate(d.created_at)}</Text>
+                      <Text style={[s.dateText, { color: colors.subtext }]}>{formatDate(d.created_at)}</Text>
                     </View>
                   )}
 
                   {/* Action */}
                   <View style={[s.tdCell, { flex: isWeb ? 0.8 : undefined, alignItems: 'flex-end' }]}>
                     <TouchableOpacity
-                      style={s.viewBtn}
+                      style={[s.viewBtn, { borderColor: colors.border }]}
                       onPress={() => setPreviewDoc(d)}
                     >
                       <Text style={s.viewBtnText}>View</Text>

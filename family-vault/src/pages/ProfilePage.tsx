@@ -6,6 +6,7 @@ import { useAuth } from "../hooks/useAuth";
 import { supabase } from "../services/supabase";
 import { Feather, MaterialCommunityIcons } from '@expo/vector-icons';
 import { Avatar } from 'react-native-paper';
+import { useTheme } from "../context/ThemeContext";
 
 const cropImageWeb = (imageUri: string, zoom: number, offsetX: number, offsetY: number) => {
   return new Promise<string>((resolve, reject) => {
@@ -29,22 +30,11 @@ const cropImageWeb = (imageUri: string, zoom: number, offsetX: number, offsetY: 
       const sWidth = minDimension / zoom;
       const sHeight = minDimension / zoom;
       
-      const sx = (img.width - sWidth) / 2 - (offsetX / 200) * sWidth;
-      const sy = (img.height - sHeight) / 2 - (offsetY / 200) * sHeight;
+      const sx = (img.width - sWidth) / 2 - offsetX;
+      const sy = (img.height - sHeight) / 2 - offsetY;
 
-      ctx.drawImage(
-        img,
-        Math.max(0, Math.min(sx, img.width - sWidth)),
-        Math.max(0, Math.min(sy, img.height - sHeight)),
-        sWidth,
-        sHeight,
-        0,
-        0,
-        size,
-        size
-      );
-
-      resolve(canvas.toDataURL('image/jpeg', 0.8));
+      ctx.drawImage(img, sx, sy, sWidth, sHeight, 0, 0, size, size);
+      resolve(canvas.toDataURL('image/jpeg', 0.9));
     };
     img.onerror = (e) => reject(e);
   });
@@ -52,6 +42,7 @@ const cropImageWeb = (imageUri: string, zoom: number, offsetX: number, offsetY: 
 
 const ProfilePage = () => {
   const { user, signOut, sendPasswordResetEmail, verifyPasswordResetOtp, updatePassword } = useAuth();
+  const { colors, isDark } = useTheme();
   
   const [name, setName] = useState("");
   const [phone, setPhone] = useState("");
@@ -262,17 +253,17 @@ const ProfilePage = () => {
             </TouchableOpacity>
           </View>
           <View style={styles.profileSummary}>
-            <Text style={styles.userName}>{name || "User"}</Text>
-            <Text style={styles.userEmail}>{user?.email}</Text>
+            <Text style={[styles.userName, { color: colors.text }]}>{name || "User"}</Text>
+            <Text style={[styles.userEmail, { color: colors.subtext }]}>{user?.email}</Text>
           </View>
         </View>
 
         {/* Profile Details Card */}
-        <View style={styles.card}>
+        <View style={[styles.card, { backgroundColor: colors.card, borderColor: colors.border }]}>
           <View style={styles.cardHeader}>
             <View style={styles.cardHeaderLeft}>
               <Feather name="user" size={18} color="#3b82f6" />
-              <Text style={styles.cardTitle}>Profile Details</Text>
+              <Text style={[styles.cardTitle, { color: colors.text }]}>Profile Details</Text>
             </View>
             {!isEditing && (
               <TouchableOpacity onPress={() => setIsEditing(true)}>
@@ -283,18 +274,26 @@ const ProfilePage = () => {
           
           <View style={styles.form}>
             <View style={styles.inputGroup}>
-              <Text style={styles.label}>Full Name</Text>
+              <Text style={[styles.label, { color: colors.subtext }]}>Full Name</Text>
               <TextInput 
-                style={[styles.input, !isEditing && styles.disabledInput]}
+                style={[
+                  styles.input,
+                  { backgroundColor: isEditing ? colors.inputBg : colors.surface, borderColor: colors.border, color: colors.text },
+                  !isEditing && { color: colors.subtext },
+                ]}
                 value={name}
                 onChangeText={setName}
                 editable={isEditing}
               />
             </View>
             <View style={styles.inputGroup}>
-              <Text style={styles.label}>Phone Number</Text>
+              <Text style={[styles.label, { color: colors.subtext }]}>Phone Number</Text>
               <TextInput 
-                style={[styles.input, !isEditing && styles.disabledInput]}
+                style={[
+                  styles.input,
+                  { backgroundColor: isEditing ? colors.inputBg : colors.surface, borderColor: colors.border, color: colors.text },
+                  !isEditing && { color: colors.subtext },
+                ]}
                 value={phone}
                 onChangeText={setPhone}
                 editable={isEditing}
@@ -302,19 +301,28 @@ const ProfilePage = () => {
               />
             </View>
             <View style={styles.inputGroup}>
-              <Text style={styles.label}>Blood Group (optional)</Text>
+              <Text style={[styles.label, { color: colors.subtext }]}>Blood Group (optional)</Text>
               <TextInput 
-                style={[styles.input, !isEditing && styles.disabledInput]}
+                style={[
+                  styles.input,
+                  { backgroundColor: isEditing ? colors.inputBg : colors.surface, borderColor: colors.border, color: colors.text },
+                  !isEditing && { color: colors.subtext },
+                ]}
                 value={bloodGroup}
                 onChangeText={setBloodGroup}
                 editable={isEditing}
                 placeholder="e.g. O+"
+                placeholderTextColor={colors.mutedText}
               />
             </View>
             <View style={styles.inputGroup}>
-              <Text style={styles.label}>Address (optional)</Text>
+              <Text style={[styles.label, { color: colors.subtext }]}>Address (optional)</Text>
               <TextInput 
-                style={[styles.input, !isEditing && styles.disabledInput]}
+                style={[
+                  styles.input,
+                  { backgroundColor: isEditing ? colors.inputBg : colors.surface, borderColor: colors.border, color: colors.text },
+                  !isEditing && { color: colors.subtext },
+                ]}
                 value={address}
                 onChangeText={setAddress}
                 editable={isEditing}
@@ -325,11 +333,11 @@ const ProfilePage = () => {
             {isEditing && (
               <View style={styles.formActions}>
                 <TouchableOpacity 
-                  style={styles.cancelBtn} 
+                  style={[styles.cancelBtn, { borderColor: colors.border }]} 
                   onPress={() => setIsEditing(false)}
                   disabled={saving}
                 >
-                  <Text style={styles.cancelBtnText}>Cancel</Text>
+                  <Text style={[styles.cancelBtnText, { color: colors.text }]}>Cancel</Text>
                 </TouchableOpacity>
                 <TouchableOpacity 
                   style={styles.saveBtn} 
@@ -344,18 +352,18 @@ const ProfilePage = () => {
         </View>
 
         {/* Security Card */}
-        <View style={styles.card}>
+        <View style={[styles.card, { backgroundColor: colors.card, borderColor: colors.border }]}>
           <View style={styles.cardHeader}>
             <View style={styles.cardHeaderLeft}>
               <Feather name="shield" size={18} color="#3b82f6" />
-              <Text style={styles.cardTitle}>Security</Text>
+              <Text style={[styles.cardTitle, { color: colors.text }]}>Security</Text>
             </View>
           </View>
           <View style={styles.cardContent}>
-            <Text style={styles.infoText}>
+            <Text style={[styles.infoText, { color: colors.subtext }]}>
               A 6-digit verification code will be sent to your registered email address. (Check spam folder if you can't find it).
             </Text>
-            <TouchableOpacity style={styles.outlineBtn} onPress={handleResetPassword}>
+            <TouchableOpacity style={[styles.outlineBtn, { borderColor: colors.border }]} onPress={handleResetPassword}>
               <Text style={styles.outlineBtnText}>Reset Password</Text>
             </TouchableOpacity>
           </View>

@@ -20,11 +20,14 @@ import { useNavigation } from '@react-navigation/native';
 import { Feather, MaterialCommunityIcons } from '@expo/vector-icons';
 import { Checkbox } from 'react-native-paper';
 
+import { useTheme } from '../context/ThemeContext';
+
 const Family = () => {
   const { user } = useAuth();
   const { members, loading, addMember, updateMember, deleteMember } = useFamily();
   const { documents } = useDocuments();
   const navigation = useNavigation<any>();
+  const { colors, isDark } = useTheme();
 
   const [open, setOpen] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
@@ -100,8 +103,8 @@ const Family = () => {
         {/* Header Row */}
         <View style={s.headerRow}>
           <View>
-            <Text style={s.pageTitle}>Family Management</Text>
-            <Text style={s.subtitle}>{members.length + 1} family members</Text>
+            <Text style={[s.pageTitle, { color: colors.text }]}>Family Management</Text>
+            <Text style={[s.subtitle, { color: colors.subtext }]}>{members.length + 1} family members</Text>
           </View>
           <TouchableOpacity style={s.addBtn} onPress={() => setOpen(true)} activeOpacity={0.8}>
             <Feather name="plus" size={15} color="#FFFFFF" style={{ marginRight: 6 }} />
@@ -114,7 +117,7 @@ const Family = () => {
         ) : (
           <View style={s.grid}>
             {/* 1. Owner Card */}
-            <View style={s.card}>
+            <View style={[s.card, { backgroundColor: colors.card, borderColor: colors.border }]}>
               {/* Role Pill */}
               <View style={[s.pill, s.ownerPill]}>
                 <Text style={s.ownerPillText}>owner</Text>
@@ -127,16 +130,16 @@ const Family = () => {
                 </View>
 
                 {/* Details */}
-                <Text style={s.memberName} numberOfLines={1}>
+                <Text style={[s.memberName, { color: colors.text }]} numberOfLines={1}>
                   {ownerName}
                 </Text>
-                <Text style={s.memberEmail} numberOfLines={1}>
+                <Text style={[s.memberEmail, { color: colors.subtext }]} numberOfLines={1}>
                   {ownerEmail}
                 </Text>
 
                 {/* Docs Count */}
                 <View style={s.bottomRow}>
-                  <Text style={s.docsCount}>{ownerDocsCount} documents</Text>
+                  <Text style={[s.docsCount, { color: colors.subtext }]}>{ownerDocsCount} documents</Text>
                   <TouchableOpacity onPress={() => navigation?.navigate('Profile' as any)}>
                     <Text style={s.linkText}>View Profile</Text>
                   </TouchableOpacity>
@@ -157,18 +160,18 @@ const Family = () => {
               const mDocs = documents.filter((d) => d.family_member_id === m.id);
 
               return (
-                <View key={m.id} style={s.card}>
+                <View key={m.id} style={[s.card, { backgroundColor: colors.card, borderColor: colors.border }]}>
                   {/* Role Pill & Action Menu */}
                   <View style={s.cardTopBar}>
-                    <View style={[s.pill, s.familyPill]}>
-                      <Text style={s.familyPillText}>family</Text>
+                    <View style={[s.pill, s.familyPill, isDark && { backgroundColor: '#1e3a8a' }]}>
+                      <Text style={[s.familyPillText, isDark && { color: '#93c5fd' }]}>family</Text>
                     </View>
                     <View style={s.actions}>
                       <TouchableOpacity
                         onPress={() => startEdit(m.id, m.name)}
                         style={s.miniBtn}
                       >
-                        <Feather name="edit-2" size={12} color="#64748B" />
+                        <Feather name="edit-2" size={12} color={colors.subtext} />
                       </TouchableOpacity>
                       <TouchableOpacity
                         onPress={() => handleDelete(m.id, m.name)}
@@ -186,16 +189,16 @@ const Family = () => {
                     </View>
 
                     {/* Details */}
-                    <Text style={s.memberName} numberOfLines={1}>
+                    <Text style={[s.memberName, { color: colors.text }]} numberOfLines={1}>
                       {m.name}
                     </Text>
-                    <Text style={s.memberEmail} numberOfLines={1}>
+                    <Text style={[s.memberEmail, { color: colors.subtext }]} numberOfLines={1}>
                       {email}
                     </Text>
 
                     {/* Docs Count */}
                     <View style={s.bottomRow}>
-                      <Text style={s.docsCount}>{mDocs.length} documents</Text>
+                      <Text style={[s.docsCount, { color: colors.subtext }]}>{mDocs.length} documents</Text>
                       <TouchableOpacity onPress={() => setViewingId(m.id)}>
                         <Text style={s.linkText}>View Profile</Text>
                       </TouchableOpacity>
@@ -211,16 +214,16 @@ const Family = () => {
       {/* Add/Edit Modal */}
       <Modal visible={open} animationType="slide" transparent={true} onRequestClose={() => setOpen(false)}>
         <View style={s.modalOverlay}>
-          <View style={s.modalContent}>
-            <Text style={s.modalTitle}>{editingId ? 'Edit Family Member' : 'Add Family Member'}</Text>
+          <View style={[s.modalContent, { backgroundColor: colors.modalBg, borderColor: colors.border }]}>
+            <Text style={[s.modalTitle, { color: colors.text }]}>{editingId ? 'Edit Family Member' : 'Add Family Member'}</Text>
             <View style={s.inputGroup}>
-              <Text style={s.label}>Full Name</Text>
+              <Text style={[s.label, { color: colors.subtext }]}>Full Name</Text>
               <TextInput
-                style={s.input}
+                style={[s.input, { backgroundColor: colors.inputBg, borderColor: colors.border, color: colors.text }]}
                 value={name}
                 onChangeText={setName}
                 placeholder="Enter full name"
-                placeholderTextColor="#94A3B8"
+                placeholderTextColor={colors.mutedText}
               />
             </View>
             <View style={s.termsContainer}>
@@ -229,7 +232,7 @@ const Family = () => {
                 onPress={() => setTermsAccepted(!termsAccepted)}
                 color="#3B82F6"
               />
-              <Text style={s.termsText}>
+              <Text style={[s.termsText, { color: colors.subtext }]}>
                 Please try to save correct details for accessing the files easily.
               </Text>
             </View>
@@ -241,7 +244,7 @@ const Family = () => {
               <Text style={s.saveButtonText}>{editingId ? 'Save Changes' : 'Add Member'}</Text>
             </TouchableOpacity>
             <TouchableOpacity style={s.cancelButton} onPress={() => { setOpen(false); reset(); }}>
-              <Text style={s.cancelButtonText}>Cancel</Text>
+              <Text style={[s.cancelButtonText, { color: colors.subtext }]}>Cancel</Text>
             </TouchableOpacity>
           </View>
         </View>

@@ -56,7 +56,7 @@ export const AppLayout = ({ children, scrollable = true }: { children: ReactNode
   const navigation = useNavigation<any>();
   const route = useRoute();
   const { width } = useWindowDimensions();
-  const { colors } = useTheme();
+  const { colors, isDark, toggleTheme } = useTheme();
   const [menuOpen, setMenuOpen] = useState(false);
   const [docsExpanded, setDocsExpanded] = useState(
     route.name === 'Documents',
@@ -111,7 +111,10 @@ export const AppLayout = ({ children, scrollable = true }: { children: ReactNode
               return (
                 <View key={item.key}>
                   <TouchableOpacity
-                    style={[ws.navItem, isActive && ws.navItemActive]}
+                    style={[
+                      ws.navItem,
+                      isActive && { backgroundColor: isDark ? '#1e3a8a' : '#EFF6FF' },
+                    ]}
                     onPress={() => {
                       if (item.sub) {
                         setDocsExpanded((v) => !v);
@@ -124,10 +127,14 @@ export const AppLayout = ({ children, scrollable = true }: { children: ReactNode
                     <MaterialCommunityIcons
                       name={item.icon}
                       size={17}
-                      color={isActive ? '#3B82F6' : '#64748B'}
+                      color={isActive ? '#3B82F6' : colors.subtext}
                     />
                     <Text
-                      style={[ws.navLabel, isActive && ws.navLabelActive]}
+                      style={[
+                        ws.navLabel,
+                        { color: isActive ? '#3B82F6' : colors.subtext },
+                        isActive && ws.navLabelActive,
+                      ]}
                     >
                       {item.label}
                     </Text>
@@ -135,7 +142,7 @@ export const AppLayout = ({ children, scrollable = true }: { children: ReactNode
                       <MaterialCommunityIcons
                         name={docsExpanded ? 'chevron-up' : 'chevron-down'}
                         size={14}
-                        color="#94A3B8"
+                        color={colors.subtext}
                       />
                     )}
                   </TouchableOpacity>
@@ -172,22 +179,29 @@ export const AppLayout = ({ children, scrollable = true }: { children: ReactNode
           </ScrollView>
 
           {/* Footer nav */}
-          <View style={ws.sidebarFooter}>
+          <View style={[ws.sidebarFooter, { borderTopColor: colors.border }]}>
             {FOOTER_NAV.map((item) => {
               const isActive = route.name === item.key;
               return (
                 <TouchableOpacity
                   key={item.key}
-                  style={[ws.navItem, isActive && ws.navItemActive]}
+                  style={[
+                    ws.navItem,
+                    isActive && { backgroundColor: isDark ? '#1e3a8a' : '#EFF6FF' },
+                  ]}
                   onPress={() => navigation.navigate(item.key)}
                 >
                   <MaterialCommunityIcons
                     name={item.icon}
                     size={17}
-                    color={isActive ? '#3B82F6' : '#64748B'}
+                    color={isActive ? '#3B82F6' : colors.subtext}
                   />
                   <Text
-                    style={[ws.navLabel, isActive && ws.navLabelActive]}
+                    style={[
+                      ws.navLabel,
+                      { color: isActive ? '#3B82F6' : colors.subtext },
+                      isActive && ws.navLabelActive,
+                    ]}
                   >
                     {item.label}
                   </Text>
@@ -203,9 +217,17 @@ export const AppLayout = ({ children, scrollable = true }: { children: ReactNode
           <View style={[ws.header, { backgroundColor: colors.card, borderBottomColor: colors.border }]}>
             <View style={{ flex: 1 }} />
             <View style={ws.headerRight}>
+              {/* Theme toggle icon */}
+              <TouchableOpacity
+                style={[ws.iconBtn, { borderColor: colors.border, backgroundColor: colors.surface }]}
+                onPress={toggleTheme}
+              >
+                <Feather name={isDark ? 'sun' : 'moon'} size={17} color={isDark ? '#F59E0B' : colors.subtext} />
+              </TouchableOpacity>
+
               {/* Search icon */}
               <TouchableOpacity
-                style={[ws.iconBtn, { borderColor: colors.border }]}
+                style={[ws.iconBtn, { borderColor: colors.border, backgroundColor: colors.surface }]}
                 onPress={() => navigation.navigate('Search')}
               >
                 <Feather name="search" size={17} color={colors.subtext} />
@@ -213,7 +235,7 @@ export const AppLayout = ({ children, scrollable = true }: { children: ReactNode
 
               {/* Bell icon */}
               <TouchableOpacity
-                style={[ws.iconBtn, { borderColor: colors.border }]}
+                style={[ws.iconBtn, { borderColor: colors.border, backgroundColor: colors.surface }]}
                 onPress={() => navigation.navigate('Notifications')}
               >
                 <Feather name="bell" size={17} color={colors.subtext} />
@@ -228,7 +250,7 @@ export const AppLayout = ({ children, scrollable = true }: { children: ReactNode
 
               {/* User chip */}
               <TouchableOpacity
-                style={[ws.userChip, { borderColor: colors.border }]}
+                style={[ws.userChip, { borderColor: colors.border, backgroundColor: colors.surface }]}
                 onPress={() => navigation.navigate('Profile')}
               >
                 <View style={[ws.avatar, { overflow: 'hidden' }]}>
@@ -263,10 +285,10 @@ export const AppLayout = ({ children, scrollable = true }: { children: ReactNode
 
   // ── Mobile layout ────────────────────────────────────────────────────────
   return (
-    <SafeAreaView style={[ms.safe, Platform.OS === 'web' && { minHeight: '100vh' as any }]}>
+    <SafeAreaView style={[ms.safe, { backgroundColor: colors.background }, Platform.OS === 'web' && { minHeight: '100vh' as any }]}>
       <View style={ms.wrapper}>
         {/* Mobile header */}
-        <View style={ms.header}>
+        <View style={[ms.header, { backgroundColor: colors.card, borderBottomColor: colors.border }]}>
           <TouchableOpacity
             onPress={() => navigation.navigate('Dashboard')}
             style={ms.logoRow}
@@ -278,17 +300,25 @@ export const AppLayout = ({ children, scrollable = true }: { children: ReactNode
                 color="#fff"
               />
             </View>
-            <Text style={ms.logoText}>SmartDocs</Text>
+            <Text style={[ms.logoText, { color: colors.text }]}>SmartDocs</Text>
           </TouchableOpacity>
 
           <View style={ms.headerRight}>
             <TouchableOpacity
               style={ms.iconBtn}
+              onPress={toggleTheme}
+            >
+              <Feather name={isDark ? 'sun' : 'moon'} size={20} color={isDark ? '#F59E0B' : colors.text} />
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={ms.iconBtn}
               onPress={() => navigation.navigate('Notifications')}
             >
-              <Feather name="bell" size={20} color="#374151" />
+              <Feather name="bell" size={20} color={colors.text} />
               {alertCount > 0 && <View style={ms.notifDot} />}
             </TouchableOpacity>
+
             <TouchableOpacity
               style={ms.iconBtn}
               onPress={async () => {
@@ -296,7 +326,7 @@ export const AppLayout = ({ children, scrollable = true }: { children: ReactNode
                 navigation.navigate('Auth');
               }}
             >
-              <Feather name="log-out" size={20} color="#374151" />
+              <Feather name="log-out" size={20} color={colors.text} />
             </TouchableOpacity>
           </View>
         </View>
@@ -314,7 +344,7 @@ export const AppLayout = ({ children, scrollable = true }: { children: ReactNode
         )}
 
         {/* Bottom tab bar */}
-        <View style={ms.bottomBar}>
+        <View style={[ms.bottomBar, { backgroundColor: colors.card, borderTopColor: colors.border }]}>
           {MOBILE_NAV.map((l) => {
             const active = l.to === 'Menu' ? menuOpen : route.name === l.to;
             return (
@@ -331,16 +361,19 @@ export const AppLayout = ({ children, scrollable = true }: { children: ReactNode
                 }}
               >
                 <View
-                  style={[ms.tabIcon, active && ms.tabIconActive]}
+                  style={[
+                    ms.tabIcon,
+                    active && { backgroundColor: isDark ? 'rgba(59,130,246,0.2)' : 'rgba(59,130,246,0.1)' },
+                  ]}
                 >
                   <MaterialCommunityIcons
                     name={l.icon}
                     size={20}
-                    color={active ? '#3B82F6' : '#6B7280'}
+                    color={active ? '#3B82F6' : colors.subtext}
                   />
                 </View>
                 <Text
-                  style={[ms.tabLabel, active && ms.tabLabelActive]}
+                  style={[ms.tabLabel, { color: active ? '#3B82F6' : colors.subtext }, active && ms.tabLabelActive]}
                 >
                   {l.label}
                 </Text>
@@ -359,8 +392,8 @@ export const AppLayout = ({ children, scrollable = true }: { children: ReactNode
               onPress={() => setMenuOpen(false)}
             />
             {/* Drawer Content */}
-            <View style={ms.drawerContent}>
-              <View style={ms.drawerHeader}>
+            <View style={[ms.drawerContent, { backgroundColor: colors.card, borderColor: colors.border }]}>
+              <View style={[ms.drawerHeader, { borderBottomColor: colors.border }]}>
                 <View style={ms.drawerUserRow}>
                   <View style={ms.drawerAvatar}>
                     {user?.user_metadata?.avatar_url ? (
@@ -370,22 +403,22 @@ export const AppLayout = ({ children, scrollable = true }: { children: ReactNode
                     )}
                   </View>
                   <View style={ms.drawerUserInfo}>
-                    <Text style={ms.drawerUserName}>{fullName}</Text>
-                    <Text style={ms.drawerUserEmail}>{user?.email}</Text>
+                    <Text style={[ms.drawerUserName, { color: colors.text }]}>{fullName}</Text>
+                    <Text style={[ms.drawerUserEmail, { color: colors.subtext }]}>{user?.email}</Text>
                   </View>
                 </View>
               </View>
 
               <View style={ms.drawerGrid}>
                 {[
-                  { to: 'Notifications', label: 'Alerts', icon: 'bell-outline', color: '#F97316', bg: '#FFEDD5' },
-                  { to: 'Analytics', label: 'Analytics', icon: 'chart-bar', color: '#10B981', bg: '#D1FAE5' },
-                  { to: 'Settings', label: 'Settings', icon: 'cog-outline', color: '#64748B', bg: '#F1F5F9' },
-                  { to: 'Profile', label: 'Profile', icon: 'account-outline', color: '#3B82F6', bg: '#DBEAFE' },
+                  { to: 'Notifications', label: 'Alerts', icon: 'bell-outline', color: '#F97316', bg: isDark ? '#332010' : '#FFEDD5' },
+                  { to: 'Analytics', label: 'Analytics', icon: 'chart-bar', color: '#10B981', bg: isDark ? '#063022' : '#D1FAE5' },
+                  { to: 'Settings', label: 'Settings', icon: 'cog-outline', color: '#64748B', bg: isDark ? '#334155' : '#F1F5F9' },
+                  { to: 'Profile', label: 'Profile', icon: 'account-outline', color: '#3B82F6', bg: isDark ? '#1e3a8a' : '#DBEAFE' },
                 ].map((item) => (
                   <TouchableOpacity
                     key={item.to}
-                    style={ms.drawerGridItem}
+                    style={[ms.drawerGridItem, { backgroundColor: colors.surface, borderColor: colors.border }]}
                     onPress={() => {
                       setMenuOpen(false);
                       navigation.navigate(item.to);
@@ -394,10 +427,30 @@ export const AppLayout = ({ children, scrollable = true }: { children: ReactNode
                     <View style={[ms.drawerGridIcon, { backgroundColor: item.bg }]}>
                       <MaterialCommunityIcons name={item.icon as any} size={22} color={item.color} />
                     </View>
-                    <Text style={ms.drawerGridLabel}>{item.label}</Text>
+                    <Text style={[ms.drawerGridLabel, { color: colors.text }]}>{item.label}</Text>
                   </TouchableOpacity>
                 ))}
               </View>
+
+              {/* Theme Toggle Button in Drawer */}
+              <TouchableOpacity
+                style={[
+                  ms.drawerLogoutBtn,
+                  {
+                    backgroundColor: colors.surface,
+                    borderColor: colors.border,
+                    marginBottom: 12,
+                  },
+                ]}
+                onPress={() => {
+                  toggleTheme();
+                }}
+              >
+                <Feather name={isDark ? 'sun' : 'moon'} size={18} color={isDark ? '#F59E0B' : '#3B82F6'} style={{ marginRight: 8 }} />
+                <Text style={{ color: colors.text, fontSize: 13.5, fontWeight: '600' }}>
+                  {isDark ? 'Switch to Light Theme' : 'Switch to Dark Theme'}
+                </Text>
+              </TouchableOpacity>
 
               <TouchableOpacity
                 style={ms.drawerLogoutBtn}
