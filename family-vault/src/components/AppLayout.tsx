@@ -14,6 +14,7 @@ import { useAuth } from '../hooks/useAuth';
 import { useDocuments } from '../hooks/useDocuments';
 import { MaterialCommunityIcons, Feather } from '@expo/vector-icons';
 import { useNavigation, useRoute } from '@react-navigation/native';
+import { useTheme } from '../context/ThemeContext';
 
 // ─── Navigation config ──────────────────────────────────────────────────────
 
@@ -55,6 +56,7 @@ export const AppLayout = ({ children, scrollable = true }: { children: ReactNode
   const navigation = useNavigation<any>();
   const route = useRoute();
   const { width } = useWindowDimensions();
+  const { colors } = useTheme();
   const [menuOpen, setMenuOpen] = useState(false);
   const [docsExpanded, setDocsExpanded] = useState(
     route.name === 'Documents',
@@ -82,9 +84,9 @@ export const AppLayout = ({ children, scrollable = true }: { children: ReactNode
   // ── Web sidebar layout ───────────────────────────────────────────────────
   if (Platform.OS === 'web' && width >= 768) {
     return (
-      <View style={[ws.root, { minHeight: '100vh' as any }]}>
+      <View style={[ws.root, { minHeight: '100vh' as any, backgroundColor: colors.background }]}>
         {/* ── Sidebar ── */}
-        <View style={ws.sidebar}>
+        <View style={[ws.sidebar, { backgroundColor: colors.card, borderRightColor: colors.border }]}>
           {/* Logo */}
           <TouchableOpacity
             style={ws.logoRow}
@@ -97,7 +99,7 @@ export const AppLayout = ({ children, scrollable = true }: { children: ReactNode
                 color="#fff"
               />
             </View>
-            <Text style={ws.logoText}>SmartDocs</Text>
+            <Text style={[ws.logoText, { color: colors.text }]}>SmartDocs</Text>
           </TouchableOpacity>
 
           {/* Nav items */}
@@ -196,25 +198,25 @@ export const AppLayout = ({ children, scrollable = true }: { children: ReactNode
         </View>
 
         {/* ── Main area ── */}
-        <View style={ws.main}>
+        <View style={[ws.main, { backgroundColor: colors.background }]}>
           {/* Top header */}
-          <View style={ws.header}>
+          <View style={[ws.header, { backgroundColor: colors.card, borderBottomColor: colors.border }]}>
             <View style={{ flex: 1 }} />
             <View style={ws.headerRight}>
               {/* Search icon */}
               <TouchableOpacity
-                style={ws.iconBtn}
+                style={[ws.iconBtn, { borderColor: colors.border }]}
                 onPress={() => navigation.navigate('Search')}
               >
-                <Feather name="search" size={17} color="#64748B" />
+                <Feather name="search" size={17} color={colors.subtext} />
               </TouchableOpacity>
 
               {/* Bell icon */}
               <TouchableOpacity
-                style={ws.iconBtn}
+                style={[ws.iconBtn, { borderColor: colors.border }]}
                 onPress={() => navigation.navigate('Notifications')}
               >
-                <Feather name="bell" size={17} color="#64748B" />
+                <Feather name="bell" size={17} color={colors.subtext} />
                 {alertCount > 0 && (
                   <View style={ws.badge}>
                     <Text style={ws.badgeText}>
@@ -226,7 +228,7 @@ export const AppLayout = ({ children, scrollable = true }: { children: ReactNode
 
               {/* User chip */}
               <TouchableOpacity
-                style={ws.userChip}
+                style={[ws.userChip, { borderColor: colors.border }]}
                 onPress={() => navigation.navigate('Profile')}
               >
                 <View style={[ws.avatar, { overflow: 'hidden' }]}>
@@ -240,7 +242,7 @@ export const AppLayout = ({ children, scrollable = true }: { children: ReactNode
                     <Text style={ws.avatarText}>{initials}</Text>
                   )}
                 </View>
-                <Text style={ws.userName} numberOfLines={1}>
+                <Text style={[ws.userName, { color: colors.text }]} numberOfLines={1}>
                   {fullName}
                 </Text>
               </TouchableOpacity>
@@ -249,7 +251,7 @@ export const AppLayout = ({ children, scrollable = true }: { children: ReactNode
 
           {/* Page content */}
           <ScrollView
-            style={ws.scrollArea}
+            style={[ws.scrollArea, { backgroundColor: colors.background }]}
             contentContainerStyle={ws.pageContent}
           >
             {children}

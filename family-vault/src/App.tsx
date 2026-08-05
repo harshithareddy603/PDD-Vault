@@ -8,6 +8,8 @@ import { AuthProvider } from "./hooks/useAuth";
 import { ProtectedRoute } from "./components/ProtectedRoute";
 import OTAUpdateHandler from "./components/OTAUpdateHandler";
 
+import { ThemeProvider } from "./context/ThemeContext";
+
 // Page Imports
 import Index from "./pages/Index";
 import Auth from "./pages/Auth";
@@ -28,7 +30,8 @@ const App = () => {
   return (
     <QueryClientProvider client={queryClient}>
       <OTAUpdateHandler />
-      <PaperProvider>
+      <ThemeProvider>
+        <PaperProvider>
         <NavigationContainer
           documentTitle={{
             formatter: (options, route) => `${options?.title ?? route?.name} - Smart Docs`,
@@ -116,7 +119,8 @@ const App = () => {
           </AuthProvider>
         </NavigationContainer>
       </PaperProvider>
-    </QueryClientProvider>
+    </ThemeProvider>
+  </QueryClientProvider>
   );
 };
 

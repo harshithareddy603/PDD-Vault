@@ -22,7 +22,10 @@
   },
   "expo": {
     "autolinking": {
-      "exclude": ["@expo/dom-webview", "@expo/log-box"]
+      "exclude": [
+        "@expo/dom-webview",
+        "@expo/log-box"
+      ]
     }
   },
   "dependencies": {
@@ -56,6 +59,7 @@
     "react-native-screens": "3.31.1",
     "react-native-svg": "15.2.0",
     "react-native-web": "~0.19.10",
+    "tesseract.js": "^7.0.0",
     "zod": "^3.25.76"
   },
   "devDependencies": {

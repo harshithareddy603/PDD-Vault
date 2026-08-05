@@ -13,6 +13,7 @@ import { AppLayout } from '../components/AppLayout';
 import { Feather, MaterialCommunityIcons } from '@expo/vector-icons';
 import { useAuth } from '../hooks/useAuth';
 import { useNavigation } from '@react-navigation/native';
+import { useTheme } from '../context/ThemeContext';
 
 // ─── Custom Select Dropdown ──────────────────────────────────────────────────
 
@@ -175,6 +176,7 @@ const ck = StyleSheet.create({
 const Settings = () => {
   const { signOut } = useAuth();
   const navigation = useNavigation<any>();
+  const { mode, setMode, colors } = useTheme();
 
   // App Preferences Form States
   const [lang, setLang] = useState('English');
@@ -217,12 +219,23 @@ const Settings = () => {
   return (
     <AppLayout>
       <View style={s.header}>
-        <Text style={s.pageTitle}>General Settings</Text>
+        <Text style={[s.pageTitle, { color: colors.text }]}>General Settings</Text>
       </View>
 
-      <View style={s.card}>
+      <View style={[s.card, { backgroundColor: colors.card, borderColor: colors.border }]}>
         {/* App Preferences */}
-        <Text style={s.sectionTitle}>App Preferences</Text>
+        <Text style={[s.sectionTitle, { color: colors.text }]}>App Preferences</Text>
+
+        <SettingsDropdown
+          label="App Theme Mode"
+          options={['System Default', 'Light Mode', 'Dark Mode']}
+          value={mode === 'system' ? 'System Default' : mode === 'dark' ? 'Dark Mode' : 'Light Mode'}
+          onChange={(val) => {
+            if (val === 'Dark Mode') setMode('dark');
+            else if (val === 'Light Mode') setMode('light');
+            else setMode('system');
+          }}
+        />
 
         <SettingsDropdown
           label="Language"

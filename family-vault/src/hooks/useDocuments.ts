@@ -164,6 +164,26 @@ export const useDocuments = () => {
     return data.signedUrl;
   }, []);
 
+  const checkDuplicateDocument = useCallback((docNumber?: string | null, name?: string | null) => {
+    if (!docNumber && !name) return null;
+    
+    const cleanNum = docNumber ? docNumber.replace(/[^A-Za-z0-9]/g, '').toUpperCase() : '';
+    const cleanName = name ? name.trim().toLowerCase() : '';
+
+    const existing = documents.find((doc) => {
+      if (cleanNum && doc.document_number) {
+        const existingNum = doc.document_number.replace(/[^A-Za-z0-9]/g, '').toUpperCase();
+        if (existingNum === cleanNum) return true;
+      }
+      if (cleanName && doc.name) {
+        if (doc.name.trim().toLowerCase() === cleanName) return true;
+      }
+      return false;
+    });
+
+    return existing || null;
+  }, [documents]);
+
   const addDocument = useCallback(async (input: {
     name: string;
     category: string;
@@ -172,6 +192,8 @@ export const useDocuments = () => {
     priority?: boolean;
     file?: any | null;
     source?: string | null;
+    document_number?: string | null;
+    file_hash?: string | null;
   }) => {
     if (!user) return { error: new Error("Not signed in") };
     let file_url: string | null = null;
@@ -199,6 +221,8 @@ export const useDocuments = () => {
       status,
       file_url,
       source: detectedSource ?? null,
+      document_number: input.document_number ?? null,
+      file_hash: input.file_hash ?? null,
     });
     if (!error) {
       if (input.file && file_url) {
@@ -282,5 +306,6 @@ export const useDocuments = () => {
     deleteDocuments,
     getSignedUrl,
     uploadProgress,
+    checkDuplicateDocument,
   };
 };

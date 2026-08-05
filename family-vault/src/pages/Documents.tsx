@@ -15,24 +15,34 @@ import * as Linking from 'expo-linking';
 import type { DocumentRow } from "../services/supabase";
 import { useRoute, useNavigation } from '@react-navigation/native';
 import * as ImagePicker from 'expo-image-picker';
+import { useTheme } from '../context/ThemeContext';
+import { performLocalOCR } from '../services/ocrService';
 
 const CATEGORIES = ["ID", "Certificate", "Insurance", "Medical", "License", "Resume", "Passport", "Education", "Property", "Other"];
 const FILTER_CHIPS = ["All", ...CATEGORIES, "⚠ Expiring Soon", "❌ Expired"];
 
 const Documents = () => {
   const { members } = useFamily();
-  const { documents, loading, addDocument, deleteDocument, deleteDocuments, getSignedUrl, isOffline, uploadProgress } = useDocumentsWithCache();
+  const { documents, loading, addDocument, deleteDocument, deleteDocuments, getSignedUrl, isOffline, uploadProgress, checkDuplicateDocument } = useDocumentsWithCache();
   const route = useRoute<any>();
   const navigation = useNavigation<any>();
+  const { colors, isDark } = useTheme();
 
   const [open, setOpen] = useState(false);
   const [name, setName] = useState("");
   const [category, setCategory] = useState("ID");
   const [expiry, setExpiry] = useState("");
+  const [docNumber, setDocNumber] = useState("");
   const [owner, setOwner] = useState<string>("self");
   const [file, setFile] = useState<any>(null);
   const [busy, setBusy] = useState(false);
   const [previewDoc, setPreviewDoc] = useState<DocumentRow | null>(null);
+
+  // Local OCR & Duplicate states
+  const [scanning, setScanning] = useState(false);
+  const [ocrConfidence, setOcrConfidence] = useState<number | null>(null);
+  const [duplicateDoc, setDuplicateDoc] = useState<DocumentRow | null>(null);
+  const [showDuplicateModal, setShowDuplicateModal] = useState(false);
 
   const [selectionMode, setSelectionMode] = useState(false);
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
@@ -47,6 +57,36 @@ const Documents = () => {
   const [sortBy, setSortBy] = useState("newest_first");
   const [ownerFilter, setOwnerFilter] = useState<"all" | "myself" | "family">("all");
   const [familyMemberFilter, setFamilyMemberFilter] = useState<string>("all");
+
+  const processFileWithOCR = async (selectedFile: any) => {
+    setFile(selectedFile);
+    setScanning(true);
+    setOcrConfidence(null);
+
+    try {
+      const ocr = await performLocalOCR(selectedFile.uri, selectedFile.name);
+      setScanning(false);
+      if (ocr) {
+        setOcrConfidence(ocr.confidence);
+        if (ocr.name) setName(ocr.name);
+        
+        // Map OCR detected category to app dropdown
+        if (ocr.category === 'Aadhaar' || ocr.category === 'PAN' || ocr.category === 'Voter ID') {
+          setCategory('ID');
+        } else if (ocr.category === 'Driving Licence') {
+          setCategory('License');
+        } else if (CATEGORIES.includes(ocr.category)) {
+          setCategory(ocr.category);
+        }
+
+        if (ocr.expiryDate) setExpiry(ocr.expiryDate);
+        if (ocr.documentNumber) setDocNumber(ocr.documentNumber);
+      }
+    } catch (err) {
+      console.warn("Local OCR error:", err);
+      setScanning(false);
+    }
+  };
 
   const scanDocument = async () => {
     try {
@@ -66,14 +106,15 @@ const Documents = () => {
         const asset = result.assets[0];
         const timestamp = new Date().getTime();
         const scannedName = `Scan_${timestamp}`;
-        setFile({
+        const selectedFile = {
           uri: asset.uri,
           name: `${scannedName}.jpg`,
           type: 'image/jpeg',
           size: asset.fileSize || 0
-        });
+        };
         setName(scannedName);
         setOpen(true);
+        await processFileWithOCR(selectedFile);
       }
     } catch (err) {
       Alert.alert("Error", "Failed to start camera.");
@@ -96,7 +137,7 @@ const Documents = () => {
   }, [route.params?.category]);
 
   const reset = () => {
-    setName(""); setCategory("ID"); setExpiry(""); setOwner("self"); setFile(null);
+    setName(""); setCategory("ID"); setExpiry(""); setDocNumber(""); setOwner("self"); setFile(null); setOcrConfidence(null); setScanning(false);
   };
 
   const pickDocument = async () => {
@@ -108,20 +149,30 @@ const Documents = () => {
 
       if (!result.canceled) {
         const asset = result.assets[0];
-        setFile({
+        const selectedFile = {
           uri: asset.uri,
           name: asset.name,
           type: asset.mimeType || 'application/octet-stream',
           size: asset.size || 0
-        });
+        };
         setName(asset.name.split('.')[0]);
+        await processFileWithOCR(selectedFile);
       }
     } catch (err) {
       Alert.alert("Error", "Failed to pick document");
     }
   };
 
-  const submit = async () => {
+  const submit = async (forceSave: boolean = false) => {
+    if (!forceSave && checkDuplicateDocument) {
+      const dup = checkDuplicateDocument(docNumber, name);
+      if (dup) {
+        setDuplicateDoc(dup);
+        setShowDuplicateModal(true);
+        return;
+      }
+    }
+
     setBusy(true);
     const { error } = await addDocument({
       name,
@@ -129,12 +180,14 @@ const Documents = () => {
       expiry_date: expiry || null,
       family_member_id: owner === "self" ? null : owner,
       file: file as any,
+      document_number: docNumber || null,
     });
     setBusy(false);
     if (error) Alert.alert("Error", error.message);
     else { 
-      Alert.alert("Success", "Document saved"); 
-      setOpen(false); 
+      Alert.alert("Success", "Document saved successfully!"); 
+      setOpen(false);
+      setShowDuplicateModal(false); 
       reset(); 
     }
   };
@@ -345,36 +398,74 @@ const Documents = () => {
       {/* Add Document Modal */}
       <Modal visible={open} animationType="slide" transparent={true}>
         <View style={styles.modalOverlay}>
-          <View style={styles.modalContent}>
-            <Text style={styles.modalTitle}>Add Document</Text>
+          <View style={[styles.modalContent, { backgroundColor: colors.modalBg || colors.card }]}>
+            <Text style={[styles.modalTitle, { color: colors.text }]}>Add Document</Text>
             <ScrollView style={styles.modalForm}>
               <View style={styles.inputGroup}>
-                <Text style={styles.label}>Document name</Text>
-                <TextInput style={styles.input} value={name} onChangeText={setName} placeholder="Enter name" />
+                <Text style={[styles.label, { color: colors.text }]}>File</Text>
+                <TouchableOpacity 
+                  style={[styles.filePicker, busy && styles.disabledInput, { backgroundColor: colors.inputBg, borderColor: colors.border }]} 
+                  onPress={pickDocument}
+                  disabled={busy}
+                >
+                  <Feather name="file" size={18} color={colors.subtext} style={{ marginRight: 8 }} />
+                  <Text style={[styles.filePickerText, { color: colors.text }]}>
+                    {file ? file.name : "Choose File (Images or PDF)"}
+                  </Text>
+                </TouchableOpacity>
+              </View>
+
+              {/* Local AI OCR Scanning Progress & Detection Badge */}
+              {scanning && (
+                <View style={{ flexDirection: 'row', alignItems: 'center', backgroundColor: colors.primaryBg, padding: 10, borderRadius: 8, marginBottom: 12 }}>
+                  <ActivityIndicator size="small" color={colors.primary} style={{ marginRight: 8 }} />
+                  <Text style={{ fontSize: 13, color: colors.primary, fontWeight: '600' }}>
+                    ✨ 100% Local AI Extracting details...
+                  </Text>
+                </View>
+              )}
+
+              {!scanning && ocrConfidence !== null && (
+                <View style={{ flexDirection: 'row', alignItems: 'center', backgroundColor: isDark ? '#064e3b' : '#dcfce7', padding: 10, borderRadius: 8, marginBottom: 12 }}>
+                  <Feather name="check-circle" size={16} color="#16a34a" style={{ marginRight: 8 }} />
+                  <Text style={{ fontSize: 13, color: isDark ? '#86efac' : '#15803d', fontWeight: '600' }}>
+                    ✨ Auto-Detected: {category} ({Math.round(ocrConfidence * 100)}% match)
+                  </Text>
+                </View>
+              )}
+
+              <View style={styles.inputGroup}>
+                <Text style={[styles.label, { color: colors.text }]}>Document name</Text>
+                <TextInput style={[styles.input, { backgroundColor: colors.inputBg, color: colors.text, borderColor: colors.border }]} value={name} onChangeText={setName} placeholder="Enter name" placeholderTextColor={colors.subtext} />
               </View>
               
+              <View style={styles.inputGroup}>
+                <Text style={[styles.label, { color: colors.text }]}>Document ID Number (Aadhaar / PAN / Passport / DL / Policy)</Text>
+                <TextInput style={[styles.input, { backgroundColor: colors.inputBg, color: colors.text, borderColor: colors.border }]} value={docNumber} onChangeText={setDocNumber} placeholder="e.g. 1234-5678-9012 or ABCDE1234F" placeholderTextColor={colors.subtext} />
+              </View>
+
               <View style={styles.inputRow}>
                 <View style={[styles.inputGroup, { flex: 1, marginRight: 8 }]}>
-                  <Text style={styles.label}>Category</Text>
+                  <Text style={[styles.label, { color: colors.text }]}>Category</Text>
                   {Platform.OS === 'web' ? (
                     <select
                       value={category}
                       onChange={(e: any) => setCategory(e.target.value)}
                       style={{
                         borderWidth: 1,
-                        borderColor: '#E2E8F0',
+                        borderColor: colors.border,
                         borderRadius: 12,
                         paddingLeft: 16,
                         paddingRight: 16,
                         paddingTop: 12,
                         paddingBottom: 12,
                         fontSize: 16,
-                        backgroundColor: '#F8FAFC',
+                        backgroundColor: colors.inputBg,
                         outline: 'none',
                         width: '100%',
                         height: 50,
                         cursor: 'pointer',
-                        color: '#0F172A',
+                        color: colors.text,
                       }}
                     >
                       {CATEGORIES.map((cat) => (
@@ -384,39 +475,25 @@ const Documents = () => {
                       ))}
                     </select>
                   ) : (
-                    <TextInput style={styles.input} value={category} onChangeText={setCategory} placeholder="ID, License..." />
+                    <TextInput style={[styles.input, { backgroundColor: colors.inputBg, color: colors.text, borderColor: colors.border }]} value={category} onChangeText={setCategory} placeholder="ID, License..." placeholderTextColor={colors.subtext} />
                   )}
                 </View>
                 <View style={[styles.inputGroup, { flex: 1, marginLeft: 8 }]}>
-                  <Text style={styles.label}>Expiry</Text>
-                  <TextInput style={styles.input} value={expiry} onChangeText={setExpiry} placeholder="YYYY-MM-DD" />
+                  <Text style={[styles.label, { color: colors.text }]}>Expiry</Text>
+                  <TextInput style={[styles.input, { backgroundColor: colors.inputBg, color: colors.text, borderColor: colors.border }]} value={expiry} onChangeText={setExpiry} placeholder="YYYY-MM-DD" placeholderTextColor={colors.subtext} />
                 </View>
-              </View>
-
-              <View style={styles.inputGroup}>
-                <Text style={styles.label}>File</Text>
-                <TouchableOpacity 
-                  style={[styles.filePicker, busy && styles.disabledInput]} 
-                  onPress={pickDocument}
-                  disabled={busy}
-                >
-                  <Feather name="file" size={18} color="#64748B" style={{ marginRight: 8 }} />
-                  <Text style={styles.filePickerText}>
-                    {file ? file.name : "Choose File"}
-                  </Text>
-                </TouchableOpacity>
               </View>
 
               {busy && (
                 <View style={styles.uploadProgressContainer}>
-                  <Text style={styles.uploadLabel}>Uploading document... {Math.round(uploadProgress * 100)}%</Text>
+                  <Text style={[styles.uploadLabel, { color: colors.text }]}>Uploading document... {Math.round(uploadProgress * 100)}%</Text>
                   <ProgressBar progress={uploadProgress} color="#3b82f6" style={styles.uploadBar} />
                 </View>
               )}
 
               <TouchableOpacity 
                 style={[styles.saveButton, busy && styles.disabledButton]} 
-                onPress={submit}
+                onPress={() => submit(false)}
                 disabled={busy}
               >
                 {busy ? (
@@ -434,9 +511,49 @@ const Documents = () => {
                 onPress={() => { setOpen(false); reset(); }}
                 disabled={busy}
               >
-                <Text style={styles.cancelButtonText}>Cancel</Text>
+                <Text style={[styles.cancelButtonText, { color: colors.subtext }]}>Cancel</Text>
               </TouchableOpacity>
             </ScrollView>
+          </View>
+        </View>
+      </Modal>
+
+      {/* Duplicate Conflict Warning Modal */}
+      <Modal visible={showDuplicateModal} animationType="fade" transparent={true}>
+        <View style={styles.modalOverlay}>
+          <View style={[styles.modalContent, { backgroundColor: colors.card, maxWidth: 440 }]}>
+            <View style={{ alignItems: 'center', marginBottom: 12 }}>
+              <MaterialCommunityIcons name="alert-decagram" size={48} color="#F59E0B" />
+              <Text style={[styles.modalTitle, { textAlign: 'center', marginTop: 8, color: colors.text }]}>Duplicate Document Detected</Text>
+            </View>
+            <Text style={{ fontSize: 14, color: colors.subtext, textAlign: 'center', marginBottom: 18, lineHeight: 20 }}>
+              A document with ID / Name <Text style={{ fontWeight: '700', color: colors.text }}>"{duplicateDoc?.document_number || duplicateDoc?.name}"</Text> already exists in your vault under <Text style={{ fontWeight: '700', color: colors.text }}>{duplicateDoc?.name}</Text>.
+            </Text>
+            <View style={{ gap: 10 }}>
+              <TouchableOpacity 
+                style={[styles.saveButton, { backgroundColor: colors.primary }]} 
+                onPress={() => submit(true)}
+              >
+                <Text style={styles.saveButtonText}>Keep Both (Save as New)</Text>
+              </TouchableOpacity>
+              <TouchableOpacity 
+                style={[styles.saveButton, { backgroundColor: '#EF4444' }]} 
+                onPress={async () => {
+                  if (duplicateDoc) {
+                    await deleteDocument(duplicateDoc.id);
+                    await submit(true);
+                  }
+                }}
+              >
+                <Text style={styles.saveButtonText}>Replace Existing Document</Text>
+              </TouchableOpacity>
+              <TouchableOpacity 
+                style={[styles.cancelButton, { marginTop: 4 }]} 
+                onPress={() => setShowDuplicateModal(false)}
+              >
+                <Text style={[styles.cancelButtonText, { color: colors.subtext }]}>Cancel Upload</Text>
+              </TouchableOpacity>
+            </View>
           </View>
         </View>
       </Modal>

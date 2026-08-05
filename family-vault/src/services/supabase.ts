@@ -38,7 +38,7 @@ export const supabase: SupabaseClient = createClient(
     global: {
       // Increase default timeout for slow networks
       fetch: (url, options) => {
-        return fetch(url, { ...options, signal: options?.signal || AbortSignal.timeout(60000) });
+        return fetch(url, { ...options, signal: options?.signal || (AbortSignal as any).timeout?.(60000) });
       },
     },
   }
@@ -73,6 +73,8 @@ export type DocumentRow = {
   status: DocStatus;
   file_url: string | null;
   source: string | null;
+  document_number?: string | null;
+  file_hash?: string | null;
   created_at: string;
   tags?: string[] | null;
 };
