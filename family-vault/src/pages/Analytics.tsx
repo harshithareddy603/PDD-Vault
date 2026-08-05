@@ -62,15 +62,67 @@ const Analytics = () => {
 
   const docCount = documents.length;
 
-  // Calculate dynamic stats
+  // Real Growth Rate Calculation based on created_at date
+  const now = new Date();
+  const currentYear = now.getFullYear();
+  const currentMonth = now.getMonth();
+
+  const lastMonthDate = new Date(currentYear, currentMonth - 1, 1);
+  const lastMonthYear = lastMonthDate.getFullYear();
+  const lastMonth = lastMonthDate.getMonth();
+
+  let thisMonthCount = 0;
+  let lastMonthCount = 0;
+
+  documents.forEach((d) => {
+    if (!d.created_at) return;
+    const dDate = new Date(d.created_at);
+    if (dDate.getFullYear() === currentYear && dDate.getMonth() === currentMonth) {
+      thisMonthCount++;
+    } else if (dDate.getFullYear() === lastMonthYear && dDate.getMonth() === lastMonth) {
+      lastMonthCount++;
+    }
+  });
+
+  let growthRateText = "0%";
+  let growthSubtext = "vs last month";
+
+  if (lastMonthCount === 0) {
+    if (thisMonthCount > 0) {
+      growthRateText = "+100%";
+      growthSubtext = `${thisMonthCount} new upload${thisMonthCount !== 1 ? 's' : ''} this month`;
+    } else if (docCount > 0) {
+      growthRateText = "0%";
+      growthSubtext = "No new uploads this month";
+    } else {
+      growthRateText = "0%";
+      growthSubtext = "No documents uploaded";
+    }
+  } else {
+    const percentChange = Math.round(((thisMonthCount - lastMonthCount) / lastMonthCount) * 100);
+    growthRateText = percentChange >= 0 ? `+${percentChange}%` : `${percentChange}%`;
+    growthSubtext = `${thisMonthCount} this month vs ${lastMonthCount} last month`;
+  }
+
+  // Active categories count
   const activeCategories = new Set(documents.map((d) => d.category)).size;
-  const displayViews = docCount * 2;
-  const growthRate = docCount > 0 ? "+15%" : "0%";
+  const activeDocsCount = documents.filter((d) => d.status === 'safe').length;
+
+  // Category breakdown calculation
+  const categoryCounts: Record<string, number> = {};
+  documents.forEach((d) => {
+    categoryCounts[d.category] = (categoryCounts[d.category] || 0) + 1;
+  });
+
+  const sortedCategories = Object.entries(categoryCounts).sort((a, b) => b[1] - a[1]);
 
   return (
     <AppLayout>
       <View style={s.header}>
         <Text style={[s.pageTitle, { color: colors.text }]}>Usage Analytics</Text>
+        <Text style={{ fontSize: 13, color: colors.subtext, marginTop: 4 }}>
+          Live insights on uploads, document health, and category distribution
+        </Text>
       </View>
 
       {/* Grid of stats */}
@@ -78,38 +130,67 @@ const Analytics = () => {
         <StatCard
           label="Total Uploads"
           value={docCount}
-          subtext={docCount > 0 ? `Active documents` : "No uploads yet"}
+          subtext={docCount > 0 ? `${activeDocsCount} active documents` : "No uploads yet"}
           iconName="upload"
           iconBg={isDark ? '#1e3a8a' : '#EFF6FF'}
           iconColor="#3B82F6"
           isFeather
         />
         <StatCard
-          label="Document Views"
-          value={displayViews}
-          subtext={docCount > 0 ? `Total views recorded` : "No views yet"}
-          iconName="eye"
+          label="Active Documents"
+          value={activeDocsCount}
+          subtext={docCount > 0 ? `${Math.round((activeDocsCount / docCount) * 100)}% in safe status` : "No active documents"}
+          iconName="shield-check"
           iconBg={isDark ? '#063022' : '#ECFDF5'}
           iconColor="#10B981"
-          isFeather
         />
         <StatCard
           label="Active Categories"
           value={activeCategories}
-          subtext={activeCategories > 0 ? `${activeCategories} active types` : "No categories yet"}
+          subtext={activeCategories > 0 ? `${activeCategories} distinct category types` : "No categories yet"}
           iconName="chart-bar"
           iconBg={isDark ? '#2e1065' : '#F5F3FF'}
           iconColor="#8B5CF6"
         />
         <StatCard
-          label="Growth Rate"
-          value={growthRate}
-          subtext={docCount > 0 ? "vs last month" : "No updates yet"}
+          label="Monthly Growth"
+          value={growthRateText}
+          subtext={growthSubtext}
           iconName="trending-up"
           iconBg={isDark ? '#332010' : '#FFF7ED'}
           iconColor="#F97316"
           isFeather
         />
+      </View>
+
+      {/* Category Breakdown Card */}
+      <View style={[s.chartCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
+        <Text style={[s.chartTitle, { color: colors.text }]}>Category Distribution</Text>
+
+        {sortedCategories.length === 0 ? (
+          <Text style={{ fontSize: 13, color: colors.subtext, marginVertical: 12 }}>
+            No document data available to display distribution.
+          </Text>
+        ) : (
+          <View style={{ gap: 16 }}>
+            {sortedCategories.map(([cat, count]) => {
+              const pct = Math.round((count / docCount) * 100);
+              return (
+                <View key={cat} style={{ gap: 6 }}>
+                  <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <Text style={{ fontSize: 13.5, fontWeight: '600', color: colors.text }}>{cat}</Text>
+                    <Text style={{ fontSize: 12.5, fontWeight: '500', color: colors.subtext }}>
+                      {count} doc{count !== 1 ? 's' : ''} ({pct}%)
+                    </Text>
+                  </View>
+                  <View style={{ height: 8, borderRadius: 4, backgroundColor: colors.surface, overflow: 'hidden' }}>
+                    <View style={{ height: 8, borderRadius: 4, backgroundColor: '#3B82F6', width: `${pct}%` }} />
+                  </View>
+                </View>
+              );
+            })}
+          </View>
+        )}
       </View>
     </AppLayout>
   );

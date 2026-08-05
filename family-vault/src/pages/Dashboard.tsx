@@ -146,35 +146,11 @@ const Dashboard = () => {
   return (
     <AppLayout>
       {/* Welcome header */}
-      <View style={s.welcomeRow}>
-        <View>
-          <Text style={[s.welcomeTitle, { color: colors.text }]}>Welcome back, {name}!</Text>
-          <Text style={[s.welcomeSub, { color: colors.subtext }]}>
-            Smart Doc's happening with your documents
-          </Text>
-        </View>
-
-        {/* Dashboard Quick Theme Switcher Button */}
-        <TouchableOpacity
-          style={[
-            s.themePillBtn,
-            {
-              backgroundColor: colors.card,
-              borderColor: colors.border,
-            },
-          ]}
-          onPress={toggleTheme}
-          activeOpacity={0.8}
-        >
-          <MaterialCommunityIcons
-            name={isDark ? 'weather-sunny' : 'weather-night'}
-            size={18}
-            color={isDark ? '#F59E0B' : '#3B82F6'}
-          />
-          <Text style={[s.themePillText, { color: colors.text }]}>
-            {isDark ? 'Light Theme' : 'Dark Theme'}
-          </Text>
-        </TouchableOpacity>
+      <View style={s.welcome}>
+        <Text style={[s.welcomeTitle, { color: colors.text }]}>Welcome back, {name}!</Text>
+        <Text style={[s.welcomeSub, { color: colors.subtext }]}>
+          Smart Doc's happening with your documents
+        </Text>
       </View>
 
       {/* Stat cards row */}
@@ -414,38 +390,13 @@ const Dashboard = () => {
 // ─── Styles ───────────────────────────────────────────────────────────────────
 
 const s = StyleSheet.create({
-  welcomeRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    marginBottom: 24,
-    flexWrap: 'wrap',
-    gap: 12,
-  },
+  welcome: { marginBottom: 24 },
   welcomeTitle: {
     fontSize: 24,
     fontWeight: '700',
     marginBottom: 4,
   },
   welcomeSub: { fontSize: 13 },
-  themePillBtn: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-    paddingHorizontal: 14,
-    paddingVertical: 8,
-    borderRadius: 20,
-    borderWidth: 1,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.05,
-    shadowRadius: 4,
-    elevation: 1,
-  },
-  themePillText: {
-    fontSize: 12.5,
-    fontWeight: '600',
-  },
 
   // Stats
   statsRow: {
