@@ -222,7 +222,11 @@ export const AppLayout = ({ children, scrollable = true }: { children: ReactNode
                 style={[ws.iconBtn, { borderColor: colors.border, backgroundColor: colors.surface }]}
                 onPress={toggleTheme}
               >
-                <Feather name={isDark ? 'sun' : 'moon'} size={17} color={isDark ? '#F59E0B' : colors.subtext} />
+                <MaterialCommunityIcons
+                  name={isDark ? 'weather-sunny' : 'weather-night'}
+                  size={18}
+                  color={isDark ? '#F59E0B' : colors.subtext}
+                />
               </TouchableOpacity>
 
               {/* Search icon */}
@@ -308,7 +312,11 @@ export const AppLayout = ({ children, scrollable = true }: { children: ReactNode
               style={ms.iconBtn}
               onPress={toggleTheme}
             >
-              <Feather name={isDark ? 'sun' : 'moon'} size={20} color={isDark ? '#F59E0B' : colors.text} />
+              <MaterialCommunityIcons
+                name={isDark ? 'weather-sunny' : 'weather-night'}
+                size={20}
+                color={isDark ? '#F59E0B' : colors.text}
+              />
             </TouchableOpacity>
 
             <TouchableOpacity

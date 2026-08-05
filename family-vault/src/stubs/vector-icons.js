@@ -54,6 +54,9 @@ const FEATHER_TO_MDI = {
   'refresh-cw': 'refresh',
   'calendar': 'calendar-outline',
   'clock': 'clock-outline',
+  'sun': 'weather-sunny',
+  'moon': 'weather-night',
+  'monitor': 'laptop',
 };
 
 function makeIconComponent(nameMapper) {
