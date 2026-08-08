@@ -501,15 +501,70 @@ export function parseExtractedText(rawText: string, filename: string = ''): Extr
 }
 
 /**
- * Perform 100% Local OCR/Parsing on an image or PDF file/blob or URL using PDF.js & Tesseract.js
+ * Perform 100% Universal Parsing on ANY file type accepted by upload logic:
+ * - Images (.jpg, .jpeg, .png, .webp, .bmp, .gif, .tiff, .heic)
+ * - PDFs (.pdf - digital & scanned)
+ * - Text/Data files (.txt, .csv, .md, .json, .rtf, .html, .xml, .log)
+ * - Word documents (.doc, .docx)
+ * - Any other file format (safe fallback)
  */
 export async function performLocalOCR(
   imageSource: string | File | Blob,
   filename: string = '',
   onProgress?: (progress: number) => void
 ): Promise<ExtractedDocData> {
+  const ext = filename.split('.').pop()?.toLowerCase() || '';
+
+  // 1. Text & Code Documents (.txt, .csv, .md, .json, .rtf, .html, .log, .xml, .tsv)
+  const isTextFile = ['txt', 'csv', 'md', 'json', 'rtf', 'html', 'log', 'xml', 'tsv'].includes(ext);
+  if (isTextFile) {
+    try {
+      if (onProgress) onProgress(0.5);
+      let text = '';
+      if (imageSource instanceof File || imageSource instanceof Blob) {
+        text = await imageSource.text();
+      } else if (typeof imageSource === 'string' && imageSource.startsWith('data:')) {
+        const base64Str = imageSource.split(',')[1] || imageSource;
+        text = atob(base64Str);
+      } else if (typeof imageSource === 'string') {
+        const res = await fetch(imageSource);
+        text = await res.text();
+      }
+      if (onProgress) onProgress(1.0);
+      if (text && text.trim().length > 0) {
+        return parseExtractedText(text, filename);
+      }
+    } catch (err) {
+      console.warn("Text file reading fallback:", err);
+    }
+  }
+
+  // 2. Word Documents (.doc, .docx)
+  const isWordDoc = ['doc', 'docx'].includes(ext);
+  if (isWordDoc) {
+    try {
+      if (onProgress) onProgress(0.5);
+      let text = '';
+      if (imageSource instanceof File || imageSource instanceof Blob) {
+        text = await imageSource.text();
+      } else if (typeof imageSource === 'string') {
+        const res = await fetch(imageSource);
+        text = await res.text();
+      }
+      // Strip XML/HTML tags and extract clean text strings
+      const cleanText = text.replace(/<[^>]+>/g, ' ').replace(/[^\x20-\x7E\n\r\t]/g, ' ');
+      if (onProgress) onProgress(1.0);
+      if (cleanText.trim().length > 10) {
+        return parseExtractedText(cleanText, filename);
+      }
+    } catch (err) {
+      console.warn("Word doc reading fallback:", err);
+    }
+  }
+
+  // 3. PDF Documents (.pdf)
   const isPdf = 
-    filename.toLowerCase().endsWith('.pdf') || 
+    ext === 'pdf' ||
     (imageSource instanceof File && imageSource.type === 'application/pdf') ||
     (imageSource instanceof Blob && imageSource.type === 'application/pdf') ||
     (typeof imageSource === 'string' && (imageSource.includes('application/pdf') || imageSource.toLowerCase().endsWith('.pdf')));
@@ -527,19 +582,13 @@ export async function performLocalOCR(
     }
   }
 
+  // 4. Image Files (.jpg, .jpeg, .png, .webp, .bmp, .gif, .tiff, camera images)
   try {
     const worker = await createWorker('eng');
-    
-    if (onProgress) {
-      onProgress(0.5);
-    }
-    
+    if (onProgress) onProgress(0.5);
     const ret = await worker.recognize(imageSource);
     await worker.terminate();
-    
-    if (onProgress) {
-      onProgress(1.0);
-    }
+    if (onProgress) onProgress(1.0);
 
     const rawText = ret.data.text || '';
     return parseExtractedText(rawText, filename);
