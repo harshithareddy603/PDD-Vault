@@ -1,4 +1,10 @@
 import { createWorker } from 'tesseract.js';
+import * as pdfjsLib from 'pdfjs-dist';
+
+// Set up PDF.js worker URL for web & mobile browsers
+if (typeof window !== 'undefined' && !pdfjsLib.GlobalWorkerOptions.workerSrc) {
+  pdfjsLib.GlobalWorkerOptions.workerSrc = `https://cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjsLib.version}/pdf.worker.min.js`;
+}
 
 export type DetectedCategory = 
   | 'Aadhaar'
@@ -368,6 +374,65 @@ function mapToAppCategory(category: DetectedCategory): string {
 }
 
 /**
+ * Extract text directly from a PDF file using PDF.js or render page 1 canvas if scanned.
+ */
+async function extractTextOrCanvasFromPDF(pdfSource: string | File | Blob): Promise<{ text: string; imageCanvasUrl: string | null }> {
+  try {
+    let arrayBuffer: ArrayBuffer;
+    if (pdfSource instanceof File || pdfSource instanceof Blob) {
+      arrayBuffer = await pdfSource.arrayBuffer();
+    } else if (typeof pdfSource === 'string' && pdfSource.startsWith('data:')) {
+      const base64Str = pdfSource.split(',')[1] || pdfSource;
+      const binaryStr = atob(base64Str);
+      const len = binaryStr.length;
+      const bytes = new Uint8Array(len);
+      for (let i = 0; i < len; i++) {
+        bytes[i] = binaryStr.charCodeAt(i);
+      }
+      arrayBuffer = bytes.buffer;
+    } else {
+      const res = await fetch(pdfSource as string);
+      arrayBuffer = await res.arrayBuffer();
+    }
+
+    const loadingTask = pdfjsLib.getDocument({ data: arrayBuffer });
+    const pdf = await loadingTask.promise;
+    let fullText = '';
+
+    const numPages = Math.min(pdf.numPages, 3); // Read up to first 3 pages
+    for (let i = 1; i <= numPages; i++) {
+      const page = await pdf.getPage(i);
+      const textContent = await page.getTextContent();
+      const pageText = textContent.items.map((item: any) => item.str).join(' ');
+      fullText += pageText + '\n';
+    }
+
+    let canvasImageUrl: string | null = null;
+    // If text is minimal (e.g. scanned image PDF), render page 1 to canvas for Tesseract OCR
+    if (fullText.trim().length < 30) {
+      const page1 = await pdf.getPage(1);
+      const viewport = page1.getViewport({ scale: 1.5 });
+      if (typeof document !== 'undefined') {
+        const canvas = document.createElement('canvas');
+        const context = canvas.getContext('2d');
+        canvas.height = viewport.height;
+        canvas.width = viewport.width;
+
+        if (context) {
+          await page1.render({ canvasContext: context, viewport }).promise;
+          canvasImageUrl = canvas.toDataURL('image/png');
+        }
+      }
+    }
+
+    return { text: fullText, imageCanvasUrl: canvasImageUrl };
+  } catch (err) {
+    console.warn("PDF extraction error:", err);
+    return { text: '', imageCanvasUrl: null };
+  }
+}
+
+/**
  * 100% Client-Side Text Parser and Classifier
  */
 export function parseExtractedText(rawText: string, filename: string = ''): ExtractedDocData {
@@ -436,18 +501,37 @@ export function parseExtractedText(rawText: string, filename: string = ''): Extr
 }
 
 /**
- * Perform 100% Local OCR on an image file/blob or URL using Tesseract.js
+ * Perform 100% Local OCR/Parsing on an image or PDF file/blob or URL using PDF.js & Tesseract.js
  */
 export async function performLocalOCR(
   imageSource: string | File | Blob,
   filename: string = '',
   onProgress?: (progress: number) => void
 ): Promise<ExtractedDocData> {
+  const isPdf = 
+    filename.toLowerCase().endsWith('.pdf') || 
+    (imageSource instanceof File && imageSource.type === 'application/pdf') ||
+    (imageSource instanceof Blob && imageSource.type === 'application/pdf') ||
+    (typeof imageSource === 'string' && (imageSource.includes('application/pdf') || imageSource.toLowerCase().endsWith('.pdf')));
+
+  if (isPdf) {
+    if (onProgress) onProgress(0.3);
+    const { text, imageCanvasUrl } = await extractTextOrCanvasFromPDF(imageSource);
+    if (onProgress) onProgress(0.8);
+
+    if (text && text.trim().length >= 30) {
+      if (onProgress) onProgress(1.0);
+      return parseExtractedText(text, filename);
+    } else if (imageCanvasUrl) {
+      imageSource = imageCanvasUrl;
+    }
+  }
+
   try {
     const worker = await createWorker('eng');
     
     if (onProgress) {
-      onProgress(0.4);
+      onProgress(0.5);
     }
     
     const ret = await worker.recognize(imageSource);
@@ -460,7 +544,7 @@ export async function performLocalOCR(
     const rawText = ret.data.text || '';
     return parseExtractedText(rawText, filename);
   } catch (error) {
-    console.warn('Tesseract OCR fallback to filename parsing:', error);
+    console.warn('OCR error fallback to filename parsing:', error);
     return parseExtractedText('', filename);
   }
 }
