@@ -17,9 +17,6 @@
     "ios": {
       "supportsTablet": true
     },
-    "updates": {
-      "url": "https://u.expo.dev/150576f9-aab4-44cb-87c5-a5d4431d1b4c"
-    },
     "runtimeVersion": "1.0.0",
     "android": {
       "package": "com.pdd.familyvault",
@@ -31,12 +28,7 @@
     },
     "web": {
       "favicon": "./public/favicon.png"
-    },
-    "extra": {
-      "eas": {
-        "projectId": "150576f9-aab4-44cb-87c5-a5d4431d1b4c"
-      }
-    },
-    "owner": "harshitha-reddy-919"
+    }
   }
 }
+
