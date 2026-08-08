@@ -71,10 +71,8 @@ const Documents = () => {
         if (ocr.name) setName(ocr.name);
         
         // Map OCR detected category to app dropdown
-        if (ocr.category === 'Aadhaar' || ocr.category === 'PAN' || ocr.category === 'Voter ID') {
-          setCategory('ID');
-        } else if (ocr.category === 'Driving Licence') {
-          setCategory('License');
+        if (ocr.appCategory && CATEGORIES.includes(ocr.appCategory)) {
+          setCategory(ocr.appCategory);
         } else if (CATEGORIES.includes(ocr.category)) {
           setCategory(ocr.category);
         }
@@ -87,6 +85,7 @@ const Documents = () => {
       setScanning(false);
     }
   };
+
 
   const scanDocument = async () => {
     try {
