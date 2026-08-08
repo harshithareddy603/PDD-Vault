@@ -36,10 +36,10 @@ const CATEGORY_KEYWORDS: Record<string, string[]> = {
   'Driving Licence': ['driving licence', 'driving license', 'licence no', 'dl no', 'transport department', 'form 7', 'valid till', 'authorization to drive', 'union of india', 'motor vehicle'],
   'Insurance': ['policy', 'policy no', 'sum insured', 'premium', 'term insurance', 'health insurance', 'star health', 'lic', 'hdfc ergo', 'claim', 'insured', 'nominee', 'validity', 'expiry date', 'policyholder'],
   'Medical': ['prescription', 'hospital', 'doctor', 'patient', 'diagnosis', 'blood report', 'lab test', 'clinic', 'rx', 'medical officer', 'dosage', 'pharmacy', 'health record'],
-  'Resume': ['curriculum vitae', 'resume', 'experience', 'education', 'skills', 'projects', 'summary', 'work history', 'b.tech', 'b.e.', 'software engineer', 'career objective'],
+  'Resume': ['curriculum vitae', 'resume', 'experience', 'education', 'skills', 'projects', 'summary', 'work history', 'b.tech', 'b.e.', 'software engineer', 'career objective', 'professional summary'],
   'Voter ID': ['election commission', 'voter id', 'epic no', 'elector photo identity', 'elector', 'voter identity card'],
   'Certificate': ['certificate', 'certified', 'birth certificate', 'marriage certificate', 'degree', 'course completion', 'provisional', 'transfer certificate', 'bonafide'],
-  'Education': ['mark sheet', 'marksheet', 'board of education', 'university', 'school', 'grade card', 'transcript', 'roll no', 'examination', 'passing certificate'],
+  'Education': ['mark sheet', 'marksheet', 'board of education', 'university', 'school', 'grade card', 'transcript', 'roll no', 'examination', 'passing certificate', 'cgpa'],
   'Property': ['property', 'deed', 'sale agreement', 'house tax', 'rent agreement', 'lease deed', 'land record', 'registry', 'khata', 'patta', 'stamp duty']
 };
 
@@ -58,19 +58,39 @@ const MONTH_MAP: Record<string, string> = {
   dec: '12', december: '12'
 };
 
+const LAST_DAY_OF_MONTH: Record<string, string> = {
+  '01': '31', '02': '28', '03': '31', '04': '30',
+  '05': '31', '06': '30', '07': '31', '08': '31',
+  '09': '30', '10': '31', '11': '30', '12': '31'
+};
+
+function toTitleCase(str: string): string {
+  return str
+    .toLowerCase()
+    .split(' ')
+    .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+    .join(' ');
+}
+
 /**
  * Normalizes various date strings to standard YYYY-MM-DD format.
- * Supports:
- * - 31/12/2030, 31-12-2030, 31.12.2030 (DD/MM/YYYY)
- * - 2030-12-31, 2030/12/31 (YYYY-MM-DD)
- * - 31 DEC 2030, 31-OCT-2029, 31/OCT/2029
- * - OCT 31 2029, October 31, 2029
  */
 export function normalizeDate(dateStr: string): string | null {
   if (!dateStr) return null;
   const clean = dateStr.trim();
 
-  // 1. Text Month formats: DD MMM YYYY or DD-MMM-YYYY or DD/MMM/YYYY (e.g. 15-OCT-2029)
+  // 1. Text Month formats with Year: MMM YYYY or Month YYYY (e.g. May 2027)
+  const monthYearMatch = clean.match(/^([a-zA-Z]{3,9})[\s,/-]+(\d{4})$/);
+  if (monthYearMatch) {
+    const [, mStr, y] = monthYearMatch;
+    const month = MONTH_MAP[mStr.toLowerCase()];
+    if (month) {
+      const lastDay = LAST_DAY_OF_MONTH[month] || '28';
+      return `${y}-${month}-${lastDay}`;
+    }
+  }
+
+  // 2. Text Month formats: DD MMM YYYY or DD-MMM-YYYY or DD/MMM/YYYY (e.g. 15-OCT-2029)
   const textMonthMatch1 = clean.match(/^(\d{1,2})[/.\s-]([a-zA-Z]{3,9})[/.\s-](\d{4})$/);
   if (textMonthMatch1) {
     const [, d, mStr, y] = textMonthMatch1;
@@ -81,7 +101,7 @@ export function normalizeDate(dateStr: string): string | null {
     }
   }
 
-  // 2. Text Month formats: MMM DD, YYYY or MMM DD YYYY (e.g. October 15, 2029)
+  // 3. Text Month formats: MMM DD, YYYY or MMM DD YYYY (e.g. October 15, 2029)
   const textMonthMatch2 = clean.match(/^([a-zA-Z]{3,9})[/.\s-](\d{1,2})[,\s]+(\d{4})$/);
   if (textMonthMatch2) {
     const [, mStr, d, y] = textMonthMatch2;
@@ -95,7 +115,7 @@ export function normalizeDate(dateStr: string): string | null {
   // Clean numeric dates
   const numOnly = clean.replace(/[^0-9/-]/g, '').trim();
 
-  // 3. DD/MM/YYYY or DD-MM-YYYY or DD.MM.YYYY
+  // 4. DD/MM/YYYY or DD-MM-YYYY or DD.MM.YYYY
   const match1 = numOnly.match(/^(\d{1,2})[/.-](\d{1,2})[/.-](\d{4})$/);
   if (match1) {
     let [, d, m, y] = match1;
@@ -113,7 +133,7 @@ export function normalizeDate(dateStr: string): string | null {
     }
   }
 
-  // 4. YYYY/MM/DD or YYYY-MM-DD
+  // 5. YYYY/MM/DD or YYYY-MM-DD
   const match2 = numOnly.match(/^(\d{4})[/.-](\d{1,2})[/.-](\d{1,2})$/);
   if (match2) {
     const [, y, m, d] = match2;
@@ -122,19 +142,17 @@ export function normalizeDate(dateStr: string): string | null {
     return `${y}-${monthStr}-${dayStr}`;
   }
 
-  // 5. YYYY only (e.g. Year of Birth 1995)
+  // 6. YYYY only (e.g. Year of Birth 1995 or 2027)
   const match3 = numOnly.match(/^(\d{4})$/);
   if (match3) {
-    return `${match3[1]}-01-01`;
+    return `${match3[1]}-12-31`;
   }
 
   return null;
 }
 
 /**
- * Searches raw OCR text for Expiry / Validity dates matching keywords like:
- * validity, valid till, valid upto, valid up to, valid through, expiry, expiry date,
- * expiration, expires, exp date, val till, val upto, upto, till, due date
+ * Searches raw OCR text for Expiry / Validity / End dates.
  */
 function extractExpiryDate(rawText: string): string | null {
   const expiryKeywords = [
@@ -159,9 +177,9 @@ function extractExpiryDate(rawText: string): string | null {
     'till'
   ];
 
-  const dateRegex = '(\\d{1,2}[/.-](?:\\d{1,2}|[a-zA-Z]{3,9})[/.-]\\d{4}|\\d{4}[/.-]\\d{1,2}[/.-]\\d{1,2}|[a-zA-Z]{3,9}\\s+\\d{1,2},?\\s+\\d{4})';
+  const dateRegex = '(\\d{1,2}[/.-](?:\\d{1,2}|[a-zA-Z]{3,9})[/.-]\\d{4}|\\d{4}[/.-]\\d{1,2}[/.-]\\d{1,2}|[a-zA-Z]{3,9}\\s+\\d{1,2},?\\s+\\d{4}|[a-zA-Z]{3,9}\\s+\\d{4})';
 
-  // Strategy A: Direct keyword match on same line or within 30 characters
+  // Strategy A: Direct keyword match on same line
   for (const kw of expiryKeywords) {
     const pattern = new RegExp(`(?:${kw})[:\\s]*${dateRegex}`, 'i');
     const match = rawText.match(pattern);
@@ -171,19 +189,17 @@ function extractExpiryDate(rawText: string): string | null {
     }
   }
 
-  // Strategy B: Line-by-line scanning where keyword is on one line and date is on same/next line
+  // Strategy B: Line-by-line scanning where keyword is on one line and date is on current/next line
   const lines = rawText.split('\n');
   for (let i = 0; i < lines.length; i++) {
     const lineLower = lines[i].toLowerCase();
     const hasKw = expiryKeywords.some(kw => lineLower.includes(kw.replace('\\.', '.')));
     if (hasKw) {
-      // Look for date in current line
       const currentLineDate = lines[i].match(new RegExp(dateRegex, 'i'));
       if (currentLineDate) {
         const normalized = normalizeDate(currentLineDate[0]);
         if (normalized) return normalized;
       }
-      // Look for date in next line
       if (i + 1 < lines.length) {
         const nextLineDate = lines[i + 1].match(new RegExp(dateRegex, 'i'));
         if (nextLineDate) {
@@ -194,53 +210,123 @@ function extractExpiryDate(rawText: string): string | null {
     }
   }
 
-  return null;
-}
+  // Strategy C: End date of date ranges (e.g., "Aug 2023 - May 2027", "Jul 2025 - Dec 2025", "2021 - 2025")
+  const rangeRegex = /(?:[a-zA-Z]{3,9}\s+\d{4}|\d{4})\s*[-–—to]+\s*([a-zA-Z]{3,9}\s+\d{4}|\d{4})/gi;
+  const rangeMatches = [...rawText.matchAll(rangeRegex)];
+  let latestDate: string | null = null;
+  let maxYear = 0;
 
-/**
- * Extract Name from OCR text based on field labels and heuristics
- */
-function extractPersonName(rawText: string, category: DetectedCategory): string | null {
-  const lines = rawText.split('\n').map(l => l.trim()).filter(l => l.length > 0);
-
-  // 1. Explicit label matching: Name:, Full Name:, Holder Name:, Insured Name:, Customer Name:
-  for (const line of lines) {
-    const labelMatch = line.match(/(?:name|full name|holder name|insured name|patient name|customer name|name\s*\/\s*नाम)[:\s]+([A-Z][a-zA-Z\s]{2,40})/i);
-    if (labelMatch && labelMatch[1]) {
-      const candidate = labelMatch[1].trim();
-      if (!candidate.toLowerCase().includes('government') && !candidate.toLowerCase().includes('department')) {
-        return candidate;
+  for (const match of rangeMatches) {
+    if (match[1]) {
+      const endDateStr = match[1].trim();
+      const normalized = normalizeDate(endDateStr);
+      if (normalized) {
+        const yearStr = normalized.split('-')[0];
+        const yearNum = parseInt(yearStr, 10);
+        if (yearNum > maxYear && yearNum < 2100) {
+          maxYear = yearNum;
+          latestDate = normalized;
+        }
       }
     }
   }
 
-  // 2. Indian ID specific heuristics (Line above "Father's Name" or "S/O" / "D/O" / "W/O")
+  if (latestDate) return latestDate;
+
+  return null;
+}
+
+/**
+ * Extracts document ID or contact identifier (Phone, Registration No, Policy No, PAN, Aadhaar, etc.)
+ */
+function extractDocumentIDNumber(rawText: string, category: DetectedCategory): string | null {
+  // 1. Aadhaar
+  const aadhaarMatch = rawText.match(/\b\d{4}\s?\d{4}\s?\d{4}\b/);
+  if (aadhaarMatch) return aadhaarMatch[0].replace(/\s+/g, '-');
+
+  // 2. PAN Card
+  const panMatch = rawText.match(/\b[A-Z]{5}[0-9]{4}[A-Z]{1}\b/);
+  if (panMatch) return panMatch[0];
+
+  // 3. Passport
+  const passportMatch = rawText.match(/\b[A-Z][0-9]{7}\b/);
+  if (passportMatch && (rawText.toLowerCase().includes('passport') || rawText.toLowerCase().includes('ind'))) {
+    return passportMatch[0];
+  }
+
+  // 4. Driving Licence
+  const dlMatch = rawText.match(/\b([A-Z]{2}[- /]?\d{2}[- /]?\d{4,11})\b/i);
+  if (dlMatch && (rawText.toLowerCase().includes('licence') || rawText.toLowerCase().includes('license') || rawText.toLowerCase().includes('dl'))) {
+    return dlMatch[1].toUpperCase();
+  }
+
+  // 5. Voter ID
+  const voterMatch = rawText.match(/\b[A-Z]{3}[0-9]{7}\b/);
+  if (voterMatch) return voterMatch[0];
+
+  // 6. Explicit ID / Registration / Policy / Roll / Certificate / Employee Number labels
+  const labelMatch = rawText.match(/(?:reg|registration|cert|certificate|roll|id|emp|employee|student|ref|reference|policy|account|invoice)\s*(?:no|num|number)?[\s.:#-]*([A-Z0-9/-]{4,25})/i);
+  if (labelMatch && labelMatch[1]) {
+    return labelMatch[1].trim();
+  }
+
+  // 7. Phone / Contact Number (for Resumes, CVs, and general documents)
+  const phoneMatch = rawText.match(/(?:\+91[\s-]?)?([6-9]\d{9})\b/);
+  if (phoneMatch) {
+    return phoneMatch[0].trim();
+  }
+
+  return null;
+}
+
+/**
+ * Extract Person Name from OCR text (handles Title Case and ALL CAPS names at the top)
+ */
+function extractPersonName(rawText: string, category: DetectedCategory): string | null {
+  const lines = rawText.split('\n').map(l => l.trim()).filter(l => l.length > 0);
+
+  // 1. Explicit label matching: Name:, Full Name:, Holder Name:, Insured Name:
+  for (const line of lines) {
+    const labelMatch = line.match(/(?:name|full name|holder name|insured name|patient name|customer name|name\s*\/\s*नाम)[:\s]+([A-Za-z\s]{3,50})/i);
+    if (labelMatch && labelMatch[1]) {
+      const candidate = labelMatch[1].trim();
+      const lower = candidate.toLowerCase();
+      if (!lower.includes('government') && !lower.includes('department') && !lower.includes('summary')) {
+        return toTitleCase(candidate);
+      }
+    }
+  }
+
+  // 2. Check top 5 lines for a person's name (ALL CAPS or Title Case)
+  const topLines = lines.slice(0, 5);
+  for (const line of topLines) {
+    const cleanLine = line.replace(/[^a-zA-Z\s]/g, '').trim();
+    const wordCount = cleanLine.split(/\s+/).length;
+    
+    if (cleanLine.length >= 4 && cleanLine.length <= 60 && wordCount >= 2 && wordCount <= 5) {
+      const lower = cleanLine.toLowerCase();
+      const invalidWords = [
+        'curriculum', 'vitae', 'resume', 'government', 'department', 'republic',
+        'licence', 'prescription', 'insurance', 'authority', 'commission', 'professional',
+        'summary', 'experience', 'education', 'technical', 'skills', 'certificate', 'hospital'
+      ];
+
+      const isInvalid = invalidWords.some(w => lower.includes(w));
+      if (!isInvalid) {
+        return toTitleCase(cleanLine);
+      }
+    }
+  }
+
+  // 3. Indian ID specific heuristics (Line above "Father's Name" or "S/O" / "D/O" / "W/O")
   for (let i = 0; i < lines.length; i++) {
     const l = lines[i].toLowerCase();
     if (l.includes("father's name") || l.includes("father name") || l.startsWith("s/o") || l.startsWith("d/o") || l.startsWith("w/o")) {
       if (i > 0) {
         const candidateAbove = lines[i - 1].replace(/[^a-zA-Z\s]/g, '').trim();
         if (candidateAbove.length > 3 && candidateAbove.split(' ').length >= 1) {
-          return candidateAbove;
+          return toTitleCase(candidateAbove);
         }
-      }
-    }
-  }
-
-  // 3. Heuristic for capitalized multi-word lines that look like a person's name
-  for (const line of lines) {
-    const cleanLine = line.replace(/[^a-zA-Z\s]/g, '').trim();
-    if (/^[A-Z][a-z]+\s+[A-Z][a-z]+(\s+[A-Z][a-z]+)?$/.test(cleanLine)) {
-      const lower = cleanLine.toLowerCase();
-      if (!lower.includes('government') && 
-          !lower.includes('department') && 
-          !lower.includes('republic') &&
-          !lower.includes('licence') &&
-          !lower.includes('prescriptions') &&
-          !lower.includes('insurance') &&
-          !lower.includes('authority') &&
-          !lower.includes('commission')) {
-        return cleanLine;
       }
     }
   }
@@ -304,93 +390,21 @@ export function parseExtractedText(rawText: string, filename: string = ''): Extr
     }
   }
 
-  let docNumber: string | null = null;
+  const docNumber: string | null = extractDocumentIDNumber(rawText, bestCategory);
+  
+  // DOB extraction
   let dob: string | null = null;
-  let expiryDate: string | null = extractExpiryDate(rawText);
-  let name: string | null = null;
-  let confidence = Math.min(0.6 + maxScore * 0.1, 0.98);
-
-  // --- AADHAAR DETECTION ---
-  const aadhaarMatch = rawText.match(/\b\d{4}\s?\d{4}\s?\d{4}\b/);
-  if (aadhaarMatch) {
-    docNumber = aadhaarMatch[0].replace(/\s+/g, '-');
-    if (bestCategory === 'General' || maxScore < 2) {
-      bestCategory = 'Aadhaar';
-      confidence = 0.95;
-    }
-  }
-
-  // Aadhaar DOB / Year of Birth
   const dobMatch = rawText.match(/(?:dob|date of birth|yob|year of birth)[:\s]*([0-9]{2}[/.-][0-9]{2}[/.-][0-9]{4}|[0-9]{4})/i);
   if (dobMatch) {
     dob = normalizeDate(dobMatch[1]);
   }
 
-  // --- PAN CARD DETECTION ---
-  const panMatch = rawText.match(/\b[A-Z]{5}[0-9]{4}[A-Z]{1}\b/);
-  if (panMatch) {
-    docNumber = panMatch[0];
-    if (bestCategory === 'General' || maxScore < 2) {
-      bestCategory = 'PAN';
-      confidence = 0.98;
-    }
-  }
-
-  // --- PASSPORT DETECTION & MRZ ---
-  const passportMatch = rawText.match(/\b[A-Z][0-9]{7}\b/);
-  if (passportMatch && (textLower.includes('passport') || textLower.includes('republic') || textLower.includes('mrz') || textLower.includes('ind'))) {
-    docNumber = passportMatch[0];
-    bestCategory = 'Passport';
-    confidence = 0.98;
-  }
-
-  // MRZ Code parsing for Passports
-  const mrzLines = rawText.split('\n').filter(line => line.includes('P<IND') || line.match(/^[A-Z0-9<]{30,44}$/));
-  if (mrzLines.length > 0) {
-    bestCategory = 'Passport';
-    confidence = 0.99;
-    const line1 = mrzLines[0];
-    if (line1.startsWith('P<IND')) {
-      const nameParts = line1.substring(5).split('<<');
-      if (nameParts.length >= 2) {
-        const lastName = nameParts[0].replace(/</g, ' ').trim();
-        const firstName = nameParts[1].replace(/</g, ' ').trim();
-        name = `${firstName} ${lastName}`.trim();
-      }
-    }
-  }
-
-  // --- DRIVING LICENCE DETECTION ---
-  const dlMatch = rawText.match(/\b([A-Z]{2}[- /]?\d{2}[- /]?\d{4,11})\b/i);
-  if (dlMatch && (textLower.includes('licence') || textLower.includes('license') || textLower.includes('dl') || textLower.includes('transport'))) {
-    docNumber = dlMatch[1].toUpperCase();
-    bestCategory = 'Driving Licence';
-    confidence = 0.95;
-  }
-
-  // --- VOTER ID DETECTION ---
-  const voterMatch = rawText.match(/\b[A-Z]{3}[0-9]{7}\b/);
-  if (voterMatch) {
-    docNumber = voterMatch[0];
-    bestCategory = 'Voter ID';
-    confidence = 0.95;
-  }
-
-  // --- INSURANCE POLICY NUMBER ---
-  if (bestCategory === 'Insurance' && !docNumber) {
-    const policyMatch = rawText.match(/(?:policy\s*(?:no|num|number)?[:\s]*)([A-Z0-9/-]{6,20})/i);
-    if (policyMatch) {
-      docNumber = policyMatch[1];
-    }
-  }
-
-  // --- PERSON NAME EXTRACTION ---
-  if (!name) {
-    name = extractPersonName(rawText, bestCategory);
-  }
+  const expiryDate: string | null = extractExpiryDate(rawText);
+  const personName: string | null = extractPersonName(rawText, bestCategory);
+  const confidence = Math.min(0.6 + maxScore * 0.1, 0.98);
 
   // --- DOCUMENT TITLE FORMATTING ---
-  const personNamePart = name ? `${name} - ` : '';
+  const personNamePart = personName ? `${personName} - ` : '';
   let docTitle = '';
   
   if (bestCategory === 'Aadhaar') docTitle = `${personNamePart}Aadhaar Card`;
@@ -404,6 +418,7 @@ export function parseExtractedText(rawText: string, filename: string = ''): Extr
   else if (bestCategory === 'Certificate') docTitle = `${personNamePart}Certificate`;
   else if (bestCategory === 'Education') docTitle = `${personNamePart}Education Marksheet`;
   else if (bestCategory === 'Property') docTitle = `${personNamePart}Property Document`;
+  else if (personName) docTitle = `${personName} - Document`;
   else docTitle = filename.replace(/\.[^/.]+$/, '').replace(/[-_]/g, ' ') || 'Uploaded Document';
 
   const appCat = mapToAppCategory(bestCategory);
