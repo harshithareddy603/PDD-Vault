@@ -28,7 +28,12 @@
     },
     "web": {
       "favicon": "./public/favicon.png"
-    }
+    },
+    "extra": {
+      "eas": {
+        "projectId": "6c7c97ea-5a56-4120-a58e-c1d9326e88dd"
+      }
+    },
+    "owner": "harshitha-reddy-919"
   }
 }
-
