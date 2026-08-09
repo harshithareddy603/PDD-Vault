@@ -500,10 +500,11 @@ const Documents = () => {
                 <View style={{ flexDirection: 'row', alignItems: 'center', backgroundColor: isDark ? '#064e3b' : '#dcfce7', padding: 10, borderRadius: 8, marginBottom: 12 }}>
                   <Feather name="check-circle" size={16} color="#16a34a" style={{ marginRight: 8 }} />
                   <Text style={{ fontSize: 13, color: isDark ? '#86efac' : '#15803d', fontWeight: '600' }}>
-                    ✨ Auto-Detected: {category} ({Math.round(ocrConfidence * 100)}% match)
+                    ✨ Auto-Detected: {category}
                   </Text>
                 </View>
               )}
+
 
               <View style={styles.inputGroup}>
                 <Text style={[styles.label, { color: colors.text }]}>Document name</Text>

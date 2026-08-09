@@ -1,5 +1,4 @@
 import postgres from 'postgres';
-import fs from 'fs';
 
 const sql = postgres('postgresql://postgres:Swathireddy@218@db.sxmtcytfvulqevyzfjbz.supabase.co:5432/postgres', {
   ssl: 'require',
@@ -8,18 +7,21 @@ const sql = postgres('postgresql://postgres:Swathireddy@218@db.sxmtcytfvulqevyzf
 
 async function run() {
   try {
-    const query = `
-      ALTER TABLE family_members DROP COLUMN IF EXISTS relation;
-      ALTER TABLE family_members DROP COLUMN IF EXISTS age;
-      ALTER TABLE family_members DROP COLUMN IF EXISTS blood_group;
-      ALTER TABLE family_members DROP COLUMN IF EXISTS address;
-      -- Notify postgrest to reload schema cache
-      NOTIFY pgrst, 'reload schema';
-    `;
-    await sql.unsafe(query);
-    console.log('Columns dropped successfully.');
+    console.log('Adding document_number column to documents table...');
+    await sql.unsafe(`ALTER TABLE documents ADD COLUMN IF NOT EXISTS document_number text;`);
+    console.log('Added document_number column.');
+
+    await sql.unsafe(`ALTER TABLE documents ADD COLUMN IF NOT EXISTS source text;`);
+    console.log('Added source column.');
+
+    await sql.unsafe(`ALTER TABLE documents ADD COLUMN IF NOT EXISTS file_hash text;`);
+    console.log('Added file_hash column.');
+
+    console.log('Reloading PostgREST schema cache...');
+    await sql.unsafe(`NOTIFY pgrst, 'reload schema';`);
+    console.log('PostgREST schema cache reloaded successfully!');
   } catch (err) {
-    console.error('Error executing schema:', err);
+    console.error('Error executing schema update:', err);
   } finally {
     await sql.end();
   }
