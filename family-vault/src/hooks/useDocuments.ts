@@ -77,34 +77,82 @@ export const useDocuments = () => {
     return () => clearTimeout(timer);
   }, [documents, loading]);
 
+const base64Chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
+const base64Lookup = new Uint8Array(256);
+for (let i = 0; i < base64Chars.length; i++) {
+  base64Lookup[base64Chars.charCodeAt(i)] = i;
+}
+
+function base64ToArrayBuffer(base64: string): ArrayBuffer {
+  let bufferLength = base64.length * 0.75;
+  const len = base64.length;
+  if (base64[base64.length - 1] === "=") bufferLength--;
+  if (base64[base64.length - 2] === "=") bufferLength--;
+
+  const arrayBuffer = new ArrayBuffer(bufferLength);
+  const bytes = new Uint8Array(arrayBuffer);
+
+  let p = 0;
+  for (let i = 0; i < len; i += 4) {
+    const encoded1 = base64Lookup[base64.charCodeAt(i)];
+    const encoded2 = base64Lookup[base64.charCodeAt(i + 1)];
+    const encoded3 = base64Lookup[base64.charCodeAt(i + 2)];
+    const encoded4 = base64Lookup[base64.charCodeAt(i + 3)];
+
+    bytes[p++] = (encoded1 << 2) | (encoded2 >> 4);
+    if (encoded3 !== 64 && p < bufferLength) {
+      bytes[p++] = ((encoded2 & 15) << 4) | (encoded3 >> 2);
+    }
+    if (encoded4 !== 64 && p < bufferLength) {
+      bytes[p++] = ((encoded3 & 3) << 6) | (encoded4 & 63);
+    }
+  }
+
+  return arrayBuffer;
+}
+
   const uploadFile = async (file: any): Promise<string | null> => {
     if (!user) return null;
     const fileName = file.name || `file-${Date.now()}`;
-    const path = `${user.id}/${Date.now()}-${fileName}`;
+    const cleanFileName = fileName.replace(/[^a-zA-Z0-9._-]/g, '_');
+    const path = `${user.id}/${Date.now()}-${cleanFileName}`;
     
-      setUploadProgress(0.1);
-      
-      try {
-        let fileToUpload;
-        if (isWeb) {
-          // On web, we can fetch the blob from the uri (which is a blob url or local path)
+    setUploadProgress(0.1);
+    
+    try {
+      let fileToUpload: any;
+      if (isWeb) {
+        if (typeof Blob !== 'undefined' && file instanceof Blob) {
+          fileToUpload = file;
+        } else if (file.uri) {
           const response = await fetch(file.uri);
           fileToUpload = await response.blob();
         } else {
-          // On mobile, we use a similar approach or the uri directly
-          const response = await fetch(file.uri);
-          fileToUpload = await response.blob();
+          fileToUpload = file;
         }
-  
-        console.log("Starting storage upload to path:", path);
-        const { data, error } = await supabase.storage
-          .from("documents")
-          .upload(path, fileToUpload, { 
-            upsert: true,
-            contentType: file.type || 'application/octet-stream'
+      } else {
+        if (file.uri) {
+          console.log("Reading file as base64 for mobile upload:", file.uri);
+          const base64 = await FileSystem.readAsStringAsync(file.uri, {
+            encoding: FileSystem.EncodingType.Base64,
           });
-        
-        setUploadProgress(1.0);
+          fileToUpload = base64ToArrayBuffer(base64);
+        } else {
+          throw new Error("File URI is missing");
+        }
+      }
+
+      console.log("Starting storage upload to path:", path);
+      setUploadProgress(0.5);
+
+      const { data, error } = await supabase.storage
+        .from("documents")
+        .upload(path, fileToUpload, { 
+          upsert: true,
+          contentType: file.type || 'application/octet-stream'
+        });
+      
+      setUploadProgress(1.0);
 
       if (error) {
         console.error("Storage Upload Error:", error);
@@ -118,7 +166,7 @@ export const useDocuments = () => {
       return path;
     } catch (err: any) {
       console.error("File processing error:", err);
-      setError(err.message);
+      setError(err.message || "File upload failed");
       setUploadProgress(0);
       return null;
     }
@@ -148,7 +196,7 @@ export const useDocuments = () => {
       try {
         const downloadRes = await FileSystem.downloadAsync(
           data.signedUrl,
-          FileSystem.documentDirectory + 'temp-' + path.replace(/\//g, '-')
+          FileSystem.documentDirectory + 'temp-' + path.replace(/[\/\\?%*:|"<>]/g, '-')
         );
         if (downloadRes.status === 200) {
           await saveFileLocal(path, downloadRes.uri);
@@ -199,17 +247,23 @@ export const useDocuments = () => {
     let file_url: string | null = null;
     let detectedSource = input.source;
 
-    if (input.file) {
-      // Basic detection
-      const fname = (input.file.name || "").toLowerCase();
-      if (fname.includes("aadhaar")) detectedSource = "aadhaar";
-      else if (fname.includes("pan")) detectedSource = "pan";
-      else if (fname.includes("passport")) detectedSource = "passport";
-      else if (fname.includes("license") || fname.includes("dl")) detectedSource = "license";
-      else if (fname.includes("voter")) detectedSource = "voter_id";
-
-      file_url = await uploadFile(input.file);
+    if (!input.file) {
+      return { error: new Error("File is required. Please select or scan a document before saving.") };
     }
+
+    // Basic detection
+    const fname = (input.file.name || "").toLowerCase();
+    if (fname.includes("aadhaar")) detectedSource = "aadhaar";
+    else if (fname.includes("pan")) detectedSource = "pan";
+    else if (fname.includes("passport")) detectedSource = "passport";
+    else if (fname.includes("license") || fname.includes("dl")) detectedSource = "license";
+    else if (fname.includes("voter")) detectedSource = "voter_id";
+
+    file_url = await uploadFile(input.file);
+    if (!file_url) {
+      return { error: new Error("Failed to upload document file to storage. Please check connection/permissions and try again.") };
+    }
+
     const status = computeStatus(input.expiry_date ?? null);
     const { error } = await supabase.from("documents").insert({
       user_id: user.id,

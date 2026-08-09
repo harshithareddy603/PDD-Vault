@@ -195,6 +195,15 @@ const Documents = () => {
 
 
   const submit = async (forceSave: boolean = false) => {
+    if (!file) {
+      Alert.alert("File Required", "Please select, scan, or pick a document file before saving.");
+      return;
+    }
+    if (!name.trim()) {
+      Alert.alert("Name Required", "Please enter a document name.");
+      return;
+    }
+
     if (!forceSave && checkDuplicateDocument) {
       const dup = checkDuplicateDocument(docNumber, name);
       if (dup) {
@@ -224,9 +233,13 @@ const Documents = () => {
   };
 
   const download = async (path: string) => {
+    if (!path) {
+      Alert.alert("No File", "No file attachment found for this document.");
+      return;
+    }
     const url = await getSignedUrl(path);
     if (url) Linking.openURL(url);
-    else Alert.alert("Error", "Could not get file");
+    else Alert.alert("Error", "Could not get file. Please check your storage or network connection.");
   };
 
   const processedDocuments = useMemo(() => {

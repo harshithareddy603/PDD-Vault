@@ -19,7 +19,7 @@ export const saveFileLocal = async (id: string, content: any) => {
     const fileName = id.replace(/[\/\\?%*:|"<>]/g, '-');
     const fileUri = BASE_DIR + fileName;
     
-    if (typeof content === 'string' && content.startsWith('file://')) {
+    if (typeof content === 'string' && content.includes('://')) {
       await FileSystem.copyAsync({ from: content, to: fileUri });
     }
     return true;
