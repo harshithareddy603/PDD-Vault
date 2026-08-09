@@ -23,7 +23,7 @@ const FILTER_CHIPS = ["All", ...CATEGORIES, "⚠ Expiring Soon", "❌ Expired"];
 
 const Documents = () => {
   const { members } = useFamily();
-  const { documents, loading, addDocument, deleteDocument, deleteDocuments, getSignedUrl, isOffline, uploadProgress, checkDuplicateDocument } = useDocumentsWithCache();
+  const { documents, loading, addDocument, deleteDocument, deleteDocuments, getSignedUrl, openDocumentFile, isOffline, uploadProgress, checkDuplicateDocument } = useDocumentsWithCache();
   const route = useRoute<any>();
   const navigation = useNavigation<any>();
   const { colors, isDark } = useTheme();
@@ -237,9 +237,7 @@ const Documents = () => {
       Alert.alert("No File", "No file attachment found for this document.");
       return;
     }
-    const url = await getSignedUrl(path);
-    if (url) Linking.openURL(url);
-    else Alert.alert("Error", "Could not get file. Please check your storage or network connection.");
+    await openDocumentFile(path);
   };
 
   const processedDocuments = useMemo(() => {

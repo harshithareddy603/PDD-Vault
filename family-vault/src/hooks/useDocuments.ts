@@ -3,7 +3,7 @@ import { supabase, type DocumentRow, type DocStatus } from "../services/supabase
 import { useAuth } from "./useAuth";
 import { saveFileLocal, getFileLocal, deleteFileLocal } from "../lib/db";
 import * as FileSystem from 'expo-file-system';
-import { Platform } from 'react-native';
+import { Platform, Alert, Linking } from 'react-native';
 
 const isWeb = Platform.OS === 'web';
 
@@ -172,6 +172,16 @@ function base64ToArrayBuffer(base64: string): ArrayBuffer {
     }
   };
 
+  const getRemoteSignedUrl = useCallback(async (path: string, expiresIn = 3600) => {
+    if (!path) return null;
+    const { data, error } = await supabase.storage.from("documents").createSignedUrl(path, expiresIn);
+    if (error || !data?.signedUrl) {
+      console.warn("Could not generate remote signed URL:", path, error);
+      return null;
+    }
+    return data.signedUrl;
+  }, []);
+
   const getSignedUrl = useCallback(async (path: string, expiresIn = 3600) => {
     if (!path) {
       console.warn("getSignedUrl called with null/empty path");
@@ -186,31 +196,75 @@ function base64ToArrayBuffer(base64: string): ArrayBuffer {
     }
 
     // 2. If not in cache, fetch from Supabase
-    const { data, error } = await supabase.storage.from("documents").createSignedUrl(path, expiresIn);
-    if (error || !data?.signedUrl) {
-      console.warn("Could not find file in storage:", path);
-      return null;
+    return getRemoteSignedUrl(path, expiresIn);
+  }, [getRemoteSignedUrl]);
+
+  const openDocumentFile = useCallback(async (path: string) => {
+    if (!path) {
+      Alert.alert("Error", "No file path provided for this document.");
+      return false;
     }
 
-    if (!isWeb) {
-      try {
-        const downloadRes = await FileSystem.downloadAsync(
-          data.signedUrl,
-          FileSystem.documentDirectory + 'temp-' + path.replace(/[\/\\?%*:|"<>]/g, '-')
-        );
-        if (downloadRes.status === 200) {
-          await saveFileLocal(path, downloadRes.uri);
-          console.log("Downloaded and cached for future use:", path);
-          return downloadRes.uri;
+    try {
+      // 1. Fetch remote signed URL from Supabase
+      const remoteUrl = await getRemoteSignedUrl(path, 3600);
+
+      if (isWeb) {
+        if (remoteUrl) {
+          await Linking.openURL(remoteUrl);
+          return true;
         }
-      } catch (e) {
-        console.error("Download failed, falling back to signed URL", e);
+        Alert.alert("Error", "Could not generate document view link.");
+        return false;
       }
-    }
 
-    // Fallback: Return the signed URL directly if caching failed
-    return data.signedUrl;
-  }, []);
+      // 2. On Mobile (Android / iOS):
+      let cachedUri = await getFileLocal(path);
+
+      // Download file locally if not cached
+      if (!cachedUri && remoteUrl) {
+        try {
+          const downloadRes = await FileSystem.downloadAsync(
+            remoteUrl,
+            FileSystem.documentDirectory + 'temp-' + path.replace(/[\/\\?%*:|"<>]/g, '-')
+          );
+          if (downloadRes.status === 200) {
+            await saveFileLocal(path, downloadRes.uri);
+            cachedUri = downloadRes.uri;
+          }
+        } catch (e) {
+          console.warn("Download for opening failed:", e);
+        }
+      }
+
+      // 3. On Android: Try ContentProvider URI so Android PDF Readers / Viewers can open it
+      if (cachedUri && Platform.OS === 'android') {
+        try {
+          const contentUri = await FileSystem.getContentUriAsync(cachedUri);
+          const canOpen = await Linking.canOpenURL(contentUri);
+          if (canOpen) {
+            await Linking.openURL(contentUri);
+            return true;
+          }
+        } catch (e) {
+          console.warn("Could not open content URI directly:", e);
+        }
+      }
+
+      // 4. Fallback to opening remote HTTPS URL in native browser / viewer
+      if (remoteUrl) {
+        await Linking.openURL(remoteUrl);
+        return true;
+      }
+
+      Alert.alert("Error", "Could not open file.");
+      return false;
+    } catch (err: any) {
+      console.error("Error opening document file:", err);
+      Alert.alert("Error", "Could not open document: " + (err.message || "Unknown error"));
+      return false;
+    }
+  }, [getRemoteSignedUrl]);
 
   const checkDuplicateDocument = useCallback((docNumber?: string | null, name?: string | null) => {
     if (!docNumber && !name) return null;
@@ -359,6 +413,8 @@ function base64ToArrayBuffer(base64: string): ArrayBuffer {
     deleteDocument,
     deleteDocuments,
     getSignedUrl,
+    getRemoteSignedUrl,
+    openDocumentFile,
     uploadProgress,
     checkDuplicateDocument,
   };

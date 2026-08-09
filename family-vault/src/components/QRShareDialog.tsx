@@ -13,7 +13,7 @@ interface QRShareDialogProps {
 }
 
 export const QRShareDialog = ({ document, isOpen, onClose }: QRShareDialogProps) => {
-  const { getSignedUrl } = useDocuments();
+  const { getRemoteSignedUrl } = useDocuments();
   const [signedUrl, setSignedUrl] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const qrRef = useRef<any>(null);
@@ -25,7 +25,7 @@ export const QRShareDialog = ({ document, isOpen, onClose }: QRShareDialogProps)
         setSignedUrl(null);
         try {
           // Ideally 86400s (24 hours)
-          const url = await getSignedUrl(document.file_url!, 86400); 
+          const url = await getRemoteSignedUrl(document.file_url!, 86400); 
           if (url) {
             setSignedUrl(url);
           } else {
@@ -39,7 +39,7 @@ export const QRShareDialog = ({ document, isOpen, onClose }: QRShareDialogProps)
       };
       fetchUrl();
     }
-  }, [isOpen, document, getSignedUrl]);
+  }, [isOpen, document, getRemoteSignedUrl]);
 
   const handleCopy = async () => {
     if (signedUrl) {

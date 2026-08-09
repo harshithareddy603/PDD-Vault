@@ -11,7 +11,7 @@ interface DocumentPreviewSheetProps {
 }
 
 export const DocumentPreviewSheet = ({ document, isOpen, onClose }: DocumentPreviewSheetProps) => {
-  const { getSignedUrl } = useDocuments();
+  const { getSignedUrl, openDocumentFile } = useDocuments();
   const [signedUrl, setSignedUrl] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
 
@@ -69,12 +69,12 @@ export const DocumentPreviewSheet = ({ document, isOpen, onClose }: DocumentPrev
               {isPdf ? (
                 <View style={styles.centerContent}>
                   <MaterialCommunityIcons name="file-pdf-box" size={64} color="#EF4444" />
-                  <Text style={styles.pdfText}>PDF Preview is not supported directly. Please open in browser.</Text>
+                  <Text style={styles.pdfText}>PDF Document</Text>
                   <TouchableOpacity 
                     style={styles.primaryButton}
-                    onPress={() => Linking.openURL(signedUrl)}
+                    onPress={() => openDocumentFile(document.file_url!)}
                   >
-                    <Feather name="download" size={16} color="#fff" style={styles.icon} />
+                    <Feather name="external-link" size={16} color="#fff" style={styles.icon} />
                     <Text style={styles.primaryButtonText}>Open PDF</Text>
                   </TouchableOpacity>
                 </View>
@@ -95,7 +95,7 @@ export const DocumentPreviewSheet = ({ document, isOpen, onClose }: DocumentPrev
                   </Text>
                   <TouchableOpacity 
                     style={styles.primaryButton}
-                    onPress={() => Linking.openURL(signedUrl)}
+                    onPress={() => openDocumentFile(document.file_url!)}
                   >
                     <Feather name="download" size={16} color="#fff" style={styles.icon} />
                     <Text style={styles.primaryButtonText}>Download File</Text>
