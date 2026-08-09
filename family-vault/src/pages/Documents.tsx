@@ -162,6 +162,38 @@ const Documents = () => {
     }
   };
 
+  const pickImageFromGallery = async () => {
+    try {
+      const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+      if (status !== 'granted') {
+        Alert.alert("Permission Denied", "Gallery permission is required to select photos.");
+        return;
+      }
+
+      const result = await ImagePicker.launchImageLibraryAsync({
+        mediaTypes: ImagePicker.MediaTypeOptions.Images,
+        allowsEditing: true,
+        quality: 0.8,
+      });
+
+      if (!result.canceled) {
+        const asset = result.assets[0];
+        const fileName = asset.fileName || `Photo_${Date.now()}.jpg`;
+        const selectedFile = {
+          uri: asset.uri,
+          name: fileName,
+          type: asset.mimeType || 'image/jpeg',
+          size: asset.fileSize || 0
+        };
+        setName(fileName.split('.')[0]);
+        await processFileWithOCR(selectedFile);
+      }
+    } catch (err) {
+      Alert.alert("Error", "Failed to pick image from gallery.");
+    }
+  };
+
+
   const submit = async (forceSave: boolean = false) => {
     if (!forceSave && checkDuplicateDocument) {
       const dup = checkDuplicateDocument(docNumber, name);
@@ -401,18 +433,58 @@ const Documents = () => {
             <Text style={[styles.modalTitle, { color: colors.text }]}>Add Document</Text>
             <ScrollView style={styles.modalForm}>
               <View style={styles.inputGroup}>
-                <Text style={[styles.label, { color: colors.text }]}>File</Text>
-                <TouchableOpacity 
-                  style={[styles.filePicker, busy && styles.disabledInput, { backgroundColor: colors.inputBg, borderColor: colors.border }]} 
-                  onPress={pickDocument}
-                  disabled={busy}
-                >
-                  <Feather name="file" size={18} color={colors.subtext} style={{ marginRight: 8 }} />
-                  <Text style={[styles.filePickerText, { color: colors.text }]}>
-                    {file ? file.name : "Choose File (Images or PDF)"}
-                  </Text>
-                </TouchableOpacity>
+                <Text style={[styles.label, { color: colors.text }]}>Select Source</Text>
+                
+                {file ? (
+                  <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', backgroundColor: colors.inputBg, padding: 12, borderRadius: 12, borderWidth: 1, borderColor: colors.border }}>
+                    <View style={{ flexDirection: 'row', alignItems: 'center', flex: 1, marginRight: 8 }}>
+                      <Feather name="check-circle" size={18} color="#16a34a" style={{ marginRight: 8 }} />
+                      <Text style={{ fontSize: 14, fontWeight: '500', color: colors.text }} numberOfLines={1}>
+                        {file.name}
+                      </Text>
+                    </View>
+                    <TouchableOpacity 
+                      onPress={() => setFile(null)} 
+                      style={{ paddingHorizontal: 10, paddingVertical: 6, backgroundColor: isDark ? '#374151' : '#e5e7eb', borderRadius: 6 }}
+                    >
+                      <Text style={{ fontSize: 12, fontWeight: '600', color: colors.subtext }}>Change</Text>
+                    </TouchableOpacity>
+                  </View>
+                ) : (
+                  <View style={{ flexDirection: 'row', gap: 8, marginTop: 4 }}>
+                    {/* Option 1: Gallery / Photos */}
+                    <TouchableOpacity 
+                      style={{ flex: 1, alignItems: 'center', justifyContent: 'center', paddingVertical: 12, paddingHorizontal: 6, borderRadius: 12, backgroundColor: colors.inputBg, borderWidth: 1, borderColor: colors.border }}
+                      onPress={pickImageFromGallery}
+                      disabled={busy}
+                    >
+                      <Feather name="image" size={22} color="#3b82f6" style={{ marginBottom: 4 }} />
+                      <Text style={{ fontSize: 11, fontWeight: '600', color: colors.text, textAlign: 'center' }}>Gallery / Photos</Text>
+                    </TouchableOpacity>
+
+                    {/* Option 2: Camera Scan */}
+                    <TouchableOpacity 
+                      style={{ flex: 1, alignItems: 'center', justifyContent: 'center', paddingVertical: 12, paddingHorizontal: 6, borderRadius: 12, backgroundColor: colors.inputBg, borderWidth: 1, borderColor: colors.border }}
+                      onPress={scanDocument}
+                      disabled={busy}
+                    >
+                      <Feather name="camera" size={22} color="#10b981" style={{ marginBottom: 4 }} />
+                      <Text style={{ fontSize: 11, fontWeight: '600', color: colors.text, textAlign: 'center' }}>Take Photo</Text>
+                    </TouchableOpacity>
+
+                    {/* Option 3: Files & PDF */}
+                    <TouchableOpacity 
+                      style={{ flex: 1, alignItems: 'center', justifyContent: 'center', paddingVertical: 12, paddingHorizontal: 6, borderRadius: 12, backgroundColor: colors.inputBg, borderWidth: 1, borderColor: colors.border }}
+                      onPress={pickDocument}
+                      disabled={busy}
+                    >
+                      <Feather name="folder" size={22} color="#8b5cf6" style={{ marginBottom: 4 }} />
+                      <Text style={{ fontSize: 11, fontWeight: '600', color: colors.text, textAlign: 'center' }}>Browse Files</Text>
+                    </TouchableOpacity>
+                  </View>
+                )}
               </View>
+
 
               {/* Local AI OCR Scanning Progress & Detection Badge */}
               {scanning && (
