@@ -1,4 +1,4 @@
-import { View, Text, StyleSheet, TouchableOpacity, TextInput, ScrollView, Image, Modal, ActivityIndicator, Linking, Alert } from 'react-native'
+import { View, Text, StyleSheet, TouchableOpacity, TextInput, ScrollView, Image, Modal, ActivityIndicator, Linking, Alert, Platform } from 'react-native'
 import React, { useEffect, useState } from "react";
 import { useDocuments } from "../hooks/useDocuments";
 import { Feather, MaterialCommunityIcons } from '@expo/vector-icons';
@@ -67,17 +67,28 @@ export const DocumentPreviewSheet = ({ document, isOpen, onClose }: DocumentPrev
           ) : signedUrl ? (
             <View style={styles.previewContainer}>
               {isPdf ? (
-                <View style={styles.centerContent}>
-                  <MaterialCommunityIcons name="file-pdf-box" size={64} color="#EF4444" />
-                  <Text style={styles.pdfText}>PDF Document</Text>
-                  <TouchableOpacity 
-                    style={styles.primaryButton}
-                    onPress={() => openDocumentFile(document.file_url!)}
-                  >
-                    <Feather name="external-link" size={16} color="#fff" style={styles.icon} />
-                    <Text style={styles.primaryButtonText}>Open PDF</Text>
-                  </TouchableOpacity>
-                </View>
+                Platform.OS === 'web' ? (
+                  <iframe
+                    src={signedUrl}
+                    style={{ width: '100%', height: '100%', border: 'none', borderRadius: 12 }}
+                    title="PDF Preview"
+                  />
+                ) : (
+                  <View style={styles.centerContent}>
+                    <MaterialCommunityIcons name="file-pdf-box" size={72} color="#EF4444" />
+                    <Text style={styles.pdfText}>{document.name}</Text>
+                    <Text style={{ fontSize: 13, color: '#64748B', marginTop: 4, marginBottom: 20, textAlign: 'center' }}>
+                      PDF document loaded. Tap below to open in your system PDF viewer.
+                    </Text>
+                    <TouchableOpacity 
+                      style={styles.primaryButton}
+                      onPress={() => openDocumentFile(document.file_url!)}
+                    >
+                      <Feather name="external-link" size={18} color="#fff" style={styles.icon} />
+                      <Text style={styles.primaryButtonText}>Open PDF Document</Text>
+                    </TouchableOpacity>
+                  </View>
+                )
               ) : isImage ? (
                 <Image 
                   source={{ uri: signedUrl }} 

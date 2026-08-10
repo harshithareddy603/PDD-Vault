@@ -237,22 +237,31 @@ function base64ToArrayBuffer(base64: string): ArrayBuffer {
         }
       }
 
-      // 3. On Android: Try ContentProvider URI so Android PDF Readers / Viewers can open it
+      // 3. On Android: Try ContentProvider URI directly so Android PDF Readers / Viewers can open it
       if (cachedUri && Platform.OS === 'android') {
         try {
           const contentUri = await FileSystem.getContentUriAsync(cachedUri);
-          const canOpen = await Linking.canOpenURL(contentUri);
-          if (canOpen) {
-            await Linking.openURL(contentUri);
-            return true;
-          }
+          console.log("Opening content URI on Android:", contentUri);
+          await Linking.openURL(contentUri);
+          return true;
         } catch (e) {
           console.warn("Could not open content URI directly:", e);
         }
       }
 
-      // 4. Fallback to opening remote HTTPS URL in native browser / viewer
+      // 4. On iOS: Try opening cached file URI directly
+      if (cachedUri && Platform.OS === 'ios') {
+        try {
+          await Linking.openURL(cachedUri);
+          return true;
+        } catch (e) {
+          console.warn("Could not open iOS file URI directly:", e);
+        }
+      }
+
+      // 5. Fallback to opening remote HTTPS URL in native browser / viewer
       if (remoteUrl) {
+        console.log("Opening remote URL fallback:", remoteUrl);
         await Linking.openURL(remoteUrl);
         return true;
       }
