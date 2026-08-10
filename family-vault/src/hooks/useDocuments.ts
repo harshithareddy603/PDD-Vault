@@ -77,34 +77,57 @@ export const useDocuments = () => {
     return () => clearTimeout(timer);
   }, [documents, loading]);
 
-const base64Chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
-const base64Lookup = new Uint8Array(256);
-for (let i = 0; i < base64Chars.length; i++) {
-  base64Lookup[base64Chars.charCodeAt(i)] = i;
-}
-
 function base64ToArrayBuffer(base64: string): ArrayBuffer {
-  let bufferLength = base64.length * 0.75;
-  const len = base64.length;
-  if (base64[base64.length - 1] === "=") bufferLength--;
-  if (base64[base64.length - 2] === "=") bufferLength--;
+  const cleanBase64 = base64.replace(/[\r\n\s]/g, '');
+  
+  if (typeof atob === 'function') {
+    try {
+      const binaryString = atob(cleanBase64);
+      const len = binaryString.length;
+      const bytes = new Uint8Array(len);
+      for (let i = 0; i < len; i++) {
+        bytes[i] = binaryString.charCodeAt(i);
+      }
+      return bytes.buffer;
+    } catch (e) {
+      console.warn("atob conversion failed, falling back to manual decode:", e);
+    }
+  }
+
+  const chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
+  const lookup = new Int16Array(256);
+  lookup.fill(-1);
+  for (let i = 0; i < chars.length; i++) {
+    lookup[chars.charCodeAt(i)] = i;
+  }
+
+  let bufferLength = Math.floor(cleanBase64.length * 0.75);
+  if (cleanBase64.endsWith("==")) bufferLength -= 2;
+  else if (cleanBase64.endsWith("=")) bufferLength -= 1;
 
   const arrayBuffer = new ArrayBuffer(bufferLength);
   const bytes = new Uint8Array(arrayBuffer);
-
   let p = 0;
-  for (let i = 0; i < len; i += 4) {
-    const encoded1 = base64Lookup[base64.charCodeAt(i)];
-    const encoded2 = base64Lookup[base64.charCodeAt(i + 1)];
-    const encoded3 = base64Lookup[base64.charCodeAt(i + 2)];
-    const encoded4 = base64Lookup[base64.charCodeAt(i + 3)];
 
-    bytes[p++] = (encoded1 << 2) | (encoded2 >> 4);
-    if (encoded3 !== 64 && p < bufferLength) {
-      bytes[p++] = ((encoded2 & 15) << 4) | (encoded3 >> 2);
+  for (let i = 0; i < cleanBase64.length; i += 4) {
+    const c1 = cleanBase64.charCodeAt(i);
+    const c2 = cleanBase64.charCodeAt(i + 1);
+    const c3 = cleanBase64.charCodeAt(i + 2);
+    const c4 = cleanBase64.charCodeAt(i + 3);
+
+    const e1 = lookup[c1];
+    const e2 = lookup[c2];
+    const e3 = c3 === 61 ? 0 : lookup[c3];
+    const e4 = c4 === 61 ? 0 : lookup[c4];
+
+    if (e1 < 0 || e2 < 0) continue;
+
+    bytes[p++] = (e1 << 2) | (e2 >> 4);
+    if (c3 !== 61 && p < bufferLength) {
+      bytes[p++] = ((e2 & 15) << 4) | (e3 >> 2);
     }
-    if (encoded4 !== 64 && p < bufferLength) {
-      bytes[p++] = ((encoded3 & 3) << 6) | (encoded4 & 63);
+    if (c4 !== 61 && p < bufferLength) {
+      bytes[p++] = ((e3 & 3) << 6) | (e4 & 63);
     }
   }
 

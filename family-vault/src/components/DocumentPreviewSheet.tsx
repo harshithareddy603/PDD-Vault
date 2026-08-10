@@ -11,7 +11,7 @@ interface DocumentPreviewSheetProps {
 }
 
 export const DocumentPreviewSheet = ({ document, isOpen, onClose }: DocumentPreviewSheetProps) => {
-  const { getSignedUrl, openDocumentFile } = useDocuments();
+  const { getSignedUrl, getRemoteSignedUrl, openDocumentFile } = useDocuments();
   const [signedUrl, setSignedUrl] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
 
@@ -78,14 +78,26 @@ export const DocumentPreviewSheet = ({ document, isOpen, onClose }: DocumentPrev
                     <MaterialCommunityIcons name="file-pdf-box" size={72} color="#EF4444" />
                     <Text style={styles.pdfText}>{document.name}</Text>
                     <Text style={{ fontSize: 13, color: '#64748B', marginTop: 4, marginBottom: 20, textAlign: 'center' }}>
-                      PDF document loaded. Tap below to open in your system PDF viewer.
+                      PDF document ready. Choose how you would like to view the file:
                     </Text>
                     <TouchableOpacity 
                       style={styles.primaryButton}
                       onPress={() => openDocumentFile(document.file_url!)}
                     >
                       <Feather name="external-link" size={18} color="#fff" style={styles.icon} />
-                      <Text style={styles.primaryButtonText}>Open PDF Document</Text>
+                      <Text style={styles.primaryButtonText}>Open in App PDF Reader</Text>
+                    </TouchableOpacity>
+
+                    <TouchableOpacity 
+                      style={[styles.primaryButton, { backgroundColor: '#475569', marginTop: 10 }]}
+                      onPress={async () => {
+                        const remoteUrl = await getRemoteSignedUrl(document.file_url!);
+                        if (remoteUrl) Linking.openURL(remoteUrl);
+                        else Alert.alert("Error", "Could not generate file link");
+                      }}
+                    >
+                      <Feather name="globe" size={18} color="#fff" style={styles.icon} />
+                      <Text style={styles.primaryButtonText}>View in Web Browser</Text>
                     </TouchableOpacity>
                   </View>
                 )
