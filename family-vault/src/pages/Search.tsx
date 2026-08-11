@@ -164,22 +164,27 @@ const Search = () => {
   const [query, setQuery]       = useState('');
   const [category, setCategory] = useState('All Categories');
   const [status, setStatus]     = useState('All Status');
-  const [searched, setSearched] = useState(false);
-  const [results, setResults]   = useState<DocumentRow[]>([]);
   const [previewDoc, setPreviewDoc] = useState<DocumentRow | null>(null);
 
   const isWeb = Platform.OS === 'web';
 
-  const handleSearch = () => {
+  const hasFilter = query.trim().length > 0 || category !== 'All Categories' || status !== 'All Status';
+
+  // Live real-time search: filters automatically as user types even a single character
+  const results = React.useMemo(() => {
+    if (!hasFilter) return [];
+
     let filtered = [...documents];
 
     if (query.trim()) {
-      const q = query.toLowerCase();
-      filtered = filtered.filter(
-        (d) =>
-          d.name.toLowerCase().includes(q) ||
-          d.category.toLowerCase().includes(q)
-      );
+      const q = query.trim().toLowerCase();
+      filtered = filtered.filter((d) => {
+        const nameMatch = d.name ? d.name.toLowerCase().includes(q) : false;
+        const catMatch = d.category ? d.category.toLowerCase().includes(q) : false;
+        const numMatch = d.document_number ? d.document_number.toLowerCase().includes(q) : false;
+        const tagMatch = d.tags ? d.tags.some(t => t.toLowerCase().includes(q)) : false;
+        return nameMatch || catMatch || numMatch || tagMatch;
+      });
     }
 
     if (category !== 'All Categories') {
@@ -191,16 +196,13 @@ const Search = () => {
       if (mapped) filtered = filtered.filter((d) => d.status === mapped);
     }
 
-    setResults(filtered);
-    setSearched(true);
-  };
+    return filtered;
+  }, [documents, query, category, status, hasFilter]);
 
   const handleReset = () => {
     setQuery('');
     setCategory('All Categories');
     setStatus('All Status');
-    setSearched(false);
-    setResults([]);
   };
 
   return (
@@ -217,11 +219,17 @@ const Search = () => {
             <Feather name="search" size={14} color={colors.subtext} style={s.inputIcon} />
             <TextInput
               style={[s.input, { color: colors.text }]}
-              placeholder="Search documents by name..."
+              placeholder="Type to search by name, category, or ID number..."
               placeholderTextColor={colors.mutedText}
               value={query}
               onChangeText={setQuery}
+              autoFocus={true}
             />
+            {query.length > 0 && (
+              <TouchableOpacity onPress={() => setQuery('')} style={{ padding: 4 }}>
+                <Feather name="x" size={14} color={colors.subtext} />
+              </TouchableOpacity>
+            )}
           </View>
         </View>
 
@@ -245,22 +253,29 @@ const Search = () => {
           </View>
         </View>
 
-        {/* Buttons */}
-        <View style={s.buttonRow}>
-          <TouchableOpacity
-            style={[s.resetBtn, { backgroundColor: colors.surface, borderColor: colors.border }]}
-            onPress={handleReset}
-          >
-            <Text style={[s.resetBtnText, { color: colors.text }]}>Reset Filters</Text>
-          </TouchableOpacity>
-          <TouchableOpacity style={s.searchBtn} onPress={handleSearch}>
-            <Text style={s.searchBtnText}>Search Documents</Text>
-          </TouchableOpacity>
-        </View>
+        {/* Action Buttons */}
+        {hasFilter && (
+          <View style={s.buttonRow}>
+            <TouchableOpacity
+              style={[s.resetBtn, { backgroundColor: colors.surface, borderColor: colors.border }]}
+              onPress={handleReset}
+            >
+              <Text style={[s.resetBtnText, { color: colors.text }]}>Clear Search & Filters</Text>
+            </TouchableOpacity>
+          </View>
+        )}
       </View>
 
       {/* Results */}
-      {searched && (
+      {!hasFilter ? (
+        <View style={[s.resultsCard, { backgroundColor: colors.card, borderColor: colors.border, padding: 30, alignItems: 'center' }]}>
+          <Feather name="search" size={32} color={colors.subtext} style={{ marginBottom: 8 }} />
+          <Text style={{ fontSize: 14, fontWeight: '500', color: colors.text }}>Instant Vault Search</Text>
+          <Text style={{ fontSize: 13, color: colors.subtext, marginTop: 4, textAlign: 'center' }}>
+            Type any character above to start searching through your documents in real-time.
+          </Text>
+        </View>
+      ) : (
         <View style={[s.resultsCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
           <Text style={[s.resultsTitle, { color: colors.text }]}>
             {results.length} result{results.length !== 1 ? 's' : ''} found

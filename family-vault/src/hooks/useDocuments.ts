@@ -3,6 +3,7 @@ import { supabase, type DocumentRow, type DocStatus } from "../services/supabase
 import { useAuth } from "./useAuth";
 import { saveFileLocal, getFileLocal, deleteFileLocal } from "../lib/db";
 import * as FileSystem from 'expo-file-system';
+import * as Sharing from 'expo-sharing';
 import { Platform, Alert, Linking } from 'react-native';
 
 const isWeb = Platform.OS === 'web';
@@ -260,31 +261,33 @@ function base64ToArrayBuffer(base64: string): ArrayBuffer {
         }
       }
 
-      // 3. On Android: Try ContentProvider URI directly so Android PDF Readers / Viewers can open it
-      if (cachedUri && Platform.OS === 'android') {
+      // 3. On Mobile (Android / iOS): Use Expo Sharing to open via native system viewer / app chooser
+      if (cachedUri) {
         try {
-          const contentUri = await FileSystem.getContentUriAsync(cachedUri);
-          console.log("Opening content URI on Android:", contentUri);
-          await Linking.openURL(contentUri);
-          return true;
+          const canShare = await Sharing.isAvailableAsync();
+          if (canShare) {
+            const ext = path.split('.').pop()?.toLowerCase();
+            let mimeType = 'application/octet-stream';
+            if (ext === 'pdf') mimeType = 'application/pdf';
+            else if (['jpg', 'jpeg'].includes(ext || '')) mimeType = 'image/jpeg';
+            else if (ext === 'png') mimeType = 'image/png';
+
+            console.log("Opening document with native Sharing module:", cachedUri, mimeType);
+            await Sharing.shareAsync(cachedUri, {
+              mimeType,
+              dialogTitle: 'Open Document',
+              UTI: ext === 'pdf' ? 'com.adobe.pdf' : undefined,
+            });
+            return true;
+          }
         } catch (e) {
-          console.warn("Could not open content URI directly:", e);
+          console.warn("Sharing.shareAsync failed, attempting fallback:", e);
         }
       }
 
-      // 4. On iOS: Try opening cached file URI directly
-      if (cachedUri && Platform.OS === 'ios') {
-        try {
-          await Linking.openURL(cachedUri);
-          return true;
-        } catch (e) {
-          console.warn("Could not open iOS file URI directly:", e);
-        }
-      }
-
-      // 5. Fallback to opening remote HTTPS URL in native browser / viewer
+      // 4. Fallback to opening remote HTTPS URL in native browser / viewer
       if (remoteUrl) {
-        console.log("Opening remote URL fallback:", remoteUrl);
+        console.log("Opening remote URL fallback in browser:", remoteUrl);
         await Linking.openURL(remoteUrl);
         return true;
       }
