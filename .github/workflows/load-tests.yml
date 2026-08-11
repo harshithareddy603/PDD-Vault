@@ -1,0 +1,37 @@
+name: Load & Performance Test Suite
+
+on:
+  push:
+    branches: [ main, master ]
+  pull_request:
+    branches: [ main, master ]
+  workflow_dispatch:
+
+jobs:
+  load-test-suite:
+    name: ⚡ Run Load & Performance Tests
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Repository Code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install ExcelJS Dependency
+        run: npm install exceljs
+
+      - name: Execute Load Test Suite & Performance Benchmark
+        run: node ./load-tests/run-load-test.mjs
+
+      - name: Upload Load Test Reports Artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: Load-Test-Reports
+          path: |
+            load-tests/load-test-reports.xlsx
+            load-tests/load-test-reports.md
+          retention-days: 30
