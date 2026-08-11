@@ -1,8 +1,7 @@
-import { View, Text, StyleSheet, TouchableOpacity, TextInput, ScrollView, Image, Modal, ActivityIndicator, Linking, Alert, Platform } from 'react-native'
+import { View, Text, StyleSheet, TouchableOpacity, Image, Modal, ActivityIndicator, Alert, Platform } from 'react-native';
 import React, { useEffect, useState } from "react";
 import { useDocuments } from "../hooks/useDocuments";
 import { Feather, MaterialCommunityIcons } from '@expo/vector-icons';
-import { WebView } from 'react-native-webview';
 import type { DocumentRow } from "../services/supabase";
 
 interface DocumentPreviewSheetProps {
@@ -28,6 +27,12 @@ export const DocumentPreviewSheet = ({ document, isOpen, onClose }: DocumentPrev
           const rUrl = await getRemoteSignedUrl(document.file_url!);
           if (url) setSignedUrl(url);
           if (rUrl) setRemoteUrl(rUrl);
+
+          // On native mobile for PDF files: auto-launch native full-screen viewer for seamless viewing
+          const isPdfFile = document.file_url?.toLowerCase().endsWith('.pdf');
+          if (isPdfFile && Platform.OS !== 'web') {
+            openDocumentFile(document.file_url!);
+          }
         } catch (error) {
           console.error("Error loading preview URLs:", error);
           Alert.alert("Error", "Error loading document preview");
@@ -37,7 +42,7 @@ export const DocumentPreviewSheet = ({ document, isOpen, onClose }: DocumentPrev
       };
       fetchUrl();
     }
-  }, [isOpen, document, getSignedUrl, getRemoteSignedUrl]);
+  }, [isOpen, document]);
 
   if (!document) return null;
 
@@ -45,38 +50,38 @@ export const DocumentPreviewSheet = ({ document, isOpen, onClose }: DocumentPrev
   const isImage = ["jpg", "jpeg", "png", "gif", "webp", "svg"].includes(ext || "");
   const isPdf = ext === "pdf";
 
-  const googleViewerUrl = remoteUrl ? `https://docs.google.com/gview?embedded=true&url=${encodeURIComponent(remoteUrl)}` : null;
-
   return (
     <Modal
       visible={isOpen}
-      animationType="slide"
-      transparent={true}
+      animationType="fade"
+      transparent={false}
       onRequestClose={onClose}
     >
       <View style={styles.modalContainer}>
-        <View style={styles.content}>
-          <View style={styles.headerRow}>
-            <Text style={styles.title} numberOfLines={1}>{document.name}</Text>
-            
-            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
-              <TouchableOpacity 
-                style={styles.iconHeaderButton} 
-                onPress={() => downloadFileToDevice(document.file_url!, document.name)}
-              >
-                <Feather name="download" size={18} color="#3b82f6" />
-              </TouchableOpacity>
+        {/* Fullscreen Header Bar */}
+        <View style={styles.headerRow}>
+          <Text style={styles.title} numberOfLines={1}>{document.name}</Text>
+          
+          <View style={styles.headerActions}>
+            <TouchableOpacity 
+              style={styles.iconHeaderButton} 
+              onPress={() => downloadFileToDevice(document.file_url!, document.name)}
+            >
+              <Feather name="download" size={20} color="#FFFFFF" />
+            </TouchableOpacity>
 
-              <TouchableOpacity style={styles.closeButton} onPress={onClose}>
-                <Feather name="x" size={20} color="#0F172A" />
-              </TouchableOpacity>
-            </View>
+            <TouchableOpacity style={styles.closeButton} onPress={onClose}>
+              <Feather name="x" size={22} color="#FFFFFF" />
+            </TouchableOpacity>
           </View>
+        </View>
 
+        {/* Fullscreen Content Area */}
+        <View style={styles.contentArea}>
           {loading ? (
             <View style={styles.centerContent}>
               <ActivityIndicator size="large" color="#3b82f6" />
-              <Text style={styles.loadingText}>Loading document inside app...</Text>
+              <Text style={styles.loadingText}>Loading document in full screen...</Text>
             </View>
           ) : (signedUrl || remoteUrl) ? (
             <View style={styles.previewContainer}>
@@ -84,48 +89,41 @@ export const DocumentPreviewSheet = ({ document, isOpen, onClose }: DocumentPrev
                 Platform.OS === 'web' ? (
                   <iframe
                     src={signedUrl || remoteUrl || ''}
-                    style={{ width: '100%', height: '100%', border: 'none', borderRadius: 12 }}
+                    style={{ width: '100%', height: '100%', border: 'none', borderRadius: 8 }}
                     title="PDF Preview"
-                  />
-                ) : googleViewerUrl ? (
-                  <WebView
-                    source={{ uri: googleViewerUrl }}
-                    style={{ flex: 1, borderRadius: 12, overflow: 'hidden' }}
-                    startInLoadingState={true}
-                    scalesPageToFit={true}
-                    renderLoading={() => (
-                      <View style={styles.centerContent}>
-                        <ActivityIndicator size="large" color="#3b82f6" />
-                        <Text style={styles.loadingText}>Rendering PDF pages...</Text>
-                      </View>
-                    )}
-                    onError={() => (
-                      <View style={styles.centerContent}>
-                        <MaterialCommunityIcons name="file-pdf-box" size={64} color="#EF4444" />
-                        <Text style={styles.pdfText}>{document.name}</Text>
-                        <Text style={{ fontSize: 13, color: '#64748B', marginTop: 4, marginBottom: 16, textAlign: 'center' }}>
-                          Could not render in-app preview offline.
-                        </Text>
-                        <TouchableOpacity 
-                          style={styles.primaryButton}
-                          onPress={() => openDocumentFile(document.file_url!)}
-                        >
-                          <Feather name="external-link" size={16} color="#fff" style={styles.icon} />
-                          <Text style={styles.primaryButtonText}>Open in External Viewer</Text>
-                        </TouchableOpacity>
-                      </View>
-                    )}
                   />
                 ) : (
                   <View style={styles.centerContent}>
-                    <ActivityIndicator size="large" color="#3b82f6" />
-                    <Text style={styles.loadingText}>Preparing PDF viewer...</Text>
+                    <View style={styles.pdfIconBadge}>
+                      <MaterialCommunityIcons name="file-pdf-box" size={80} color="#EF4444" />
+                    </View>
+                    
+                    <Text style={styles.pdfTitle}>{document.name}</Text>
+                    <Text style={styles.pdfSubtitle}>
+                      PDF Document Ready ({ext?.toUpperCase()})
+                    </Text>
+
+                    <TouchableOpacity 
+                      style={styles.primaryButton}
+                      onPress={() => openDocumentFile(document.file_url!)}
+                    >
+                      <Feather name="maximize-2" size={18} color="#FFFFFF" style={styles.btnIcon} />
+                      <Text style={styles.primaryButtonText}>Open Full Screen PDF Reader</Text>
+                    </TouchableOpacity>
+
+                    <TouchableOpacity 
+                      style={[styles.primaryButton, styles.secondaryButton]}
+                      onPress={() => downloadFileToDevice(document.file_url!, document.name)}
+                    >
+                      <Feather name="download" size={18} color="#FFFFFF" style={styles.btnIcon} />
+                      <Text style={styles.primaryButtonText}>Save / Download to Device</Text>
+                    </TouchableOpacity>
                   </View>
                 )
               ) : isImage ? (
                 <Image 
-                  source={{ uri: signedUrl }} 
-                  style={styles.image} 
+                  source={{ uri: signedUrl || remoteUrl || undefined }} 
+                  style={styles.fullImage} 
                   resizeMode="contain" 
                 />
               ) : (
@@ -133,15 +131,15 @@ export const DocumentPreviewSheet = ({ document, isOpen, onClose }: DocumentPrev
                   <View style={styles.fallbackIconContainer}>
                     <Text style={styles.fallbackExt}>{ext?.toUpperCase() || "?"}</Text>
                   </View>
-                  <Text style={styles.notAvailableTitle}>Preview not available</Text>
+                  <Text style={styles.notAvailableTitle}>File Ready</Text>
                   <Text style={styles.notAvailableSubtitle}>
-                    This file type cannot be previewed directly. You can download it to view it.
+                    Tap below to download or view this file on your device.
                   </Text>
                   <TouchableOpacity 
                     style={styles.primaryButton}
-                    onPress={() => openDocumentFile(document.file_url!)}
+                    onPress={() => downloadFileToDevice(document.file_url!, document.name)}
                   >
-                    <Feather name="download" size={16} color="#fff" style={styles.icon} />
+                    <Feather name="download" size={18} color="#fff" style={styles.btnIcon} />
                     <Text style={styles.primaryButtonText}>Download File</Text>
                   </TouchableOpacity>
                 </View>
@@ -150,7 +148,7 @@ export const DocumentPreviewSheet = ({ document, isOpen, onClose }: DocumentPrev
           ) : (
             <View style={styles.centerContent}>
               <Text style={styles.errorText}>
-                {document?.file_url ? "Failed to load preview URL." : "No file attached to this document."}
+                {document?.file_url ? "Failed to load document preview." : "No file attached to this document."}
               </Text>
             </View>
           )}
@@ -163,41 +161,45 @@ export const DocumentPreviewSheet = ({ document, isOpen, onClose }: DocumentPrev
 const styles = StyleSheet.create({
   modalContainer: {
     flex: 1,
-    justifyContent: 'flex-end',
-    backgroundColor: 'rgba(0,0,0,0.5)',
-  },
-  content: {
-    height: '92%',
-    width: '100%',
-    backgroundColor: '#FFFFFF',
-    borderTopLeftRadius: 20,
-    borderTopRightRadius: 20,
-    padding: 16,
-    alignItems: 'stretch',
+    backgroundColor: '#0F172A',
+    paddingTop: Platform.OS === 'ios' ? 50 : 30,
+    paddingBottom: 20,
+    paddingHorizontal: 16,
   },
   headerRow: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
+    paddingVertical: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: '#1E293B',
     marginBottom: 12,
-    paddingHorizontal: 4,
+  },
+  headerActions: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
   },
   closeButton: {
-    padding: 6,
-    backgroundColor: 'rgba(241, 245, 249, 0.8)',
+    padding: 8,
+    backgroundColor: '#1E293B',
     borderRadius: 20,
   },
   iconHeaderButton: {
-    padding: 6,
-    backgroundColor: '#EFF6FF',
+    padding: 8,
+    backgroundColor: '#3b82f6',
     borderRadius: 20,
   },
   title: {
-    fontSize: 16,
+    fontSize: 18,
     fontWeight: 'bold',
-    color: '#0F172A',
+    color: '#FFFFFF',
     flex: 1,
-    marginRight: 10,
+    marginRight: 12,
+  },
+  contentArea: {
+    flex: 1,
+    width: '100%',
   },
   centerContent: {
     flex: 1,
@@ -208,7 +210,7 @@ const styles = StyleSheet.create({
   loadingText: {
     marginTop: 12,
     fontSize: 14,
-    color: '#64748B',
+    color: '#94A3B8',
   },
   previewContainer: {
     flex: 1,
@@ -216,61 +218,83 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
   },
-  image: {
+  fullImage: {
     width: '100%',
     height: '100%',
-    borderRadius: 8,
   },
-  pdfText: {
-    fontSize: 14,
-    color: '#64748B',
+  pdfIconBadge: {
+    width: 100,
+    height: 100,
+    borderRadius: 50,
+    backgroundColor: '#1E293B',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 16,
+  },
+  pdfTitle: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: '#FFFFFF',
     textAlign: 'center',
-    marginVertical: 16,
+    marginBottom: 6,
+  },
+  pdfSubtitle: {
+    fontSize: 13,
+    color: '#94A3B8',
+    textAlign: 'center',
+    marginBottom: 24,
   },
   primaryButton: {
     flexDirection: 'row',
     alignItems: 'center',
+    justifyContent: 'center',
     backgroundColor: '#3b82f6',
-    paddingHorizontal: 20,
-    paddingVertical: 12,
-    borderRadius: 10,
+    width: '100%',
+    maxWidth: 320,
+    paddingVertical: 14,
+    borderRadius: 12,
+    marginBottom: 12,
+  },
+  secondaryButton: {
+    backgroundColor: '#334155',
   },
   primaryButtonText: {
     color: '#FFFFFF',
     fontWeight: '600',
-    fontSize: 14,
+    fontSize: 15,
   },
-  icon: {
-    marginRight: 8,
+  btnIcon: {
+    marginRight: 10,
   },
   fallbackIconContainer: {
-    width: 64,
-    height: 64,
-    backgroundColor: '#F1F5F9',
-    borderRadius: 32,
+    width: 80,
+    height: 80,
+    backgroundColor: '#1E293B',
+    borderRadius: 40,
     justifyContent: 'center',
     alignItems: 'center',
     marginBottom: 16,
   },
   fallbackExt: {
-    fontSize: 18,
+    fontSize: 22,
     fontWeight: 'bold',
-    color: '#64748B',
+    color: '#94A3B8',
   },
   notAvailableTitle: {
-    fontSize: 18,
+    fontSize: 20,
     fontWeight: 'bold',
-    color: '#0F172A',
+    color: '#FFFFFF',
     marginBottom: 8,
   },
   notAvailableSubtitle: {
     fontSize: 14,
-    color: '#64748B',
+    color: '#94A3B8',
     textAlign: 'center',
-    marginBottom: 20,
+    marginBottom: 24,
   },
   errorText: {
-    color: '#64748B',
+    color: '#F87171',
+    fontSize: 15,
     textAlign: 'center',
   },
 });

@@ -314,7 +314,11 @@ function base64ToArrayBuffer(base64: string): ArrayBuffer {
         return false;
       }
 
-      const nameToSave = fileName || path.split('/').pop() || `document-${Date.now()}`;
+      const pathExt = path.split('.').pop()?.toLowerCase() || '';
+      let nameToSave = fileName || path.split('/').pop() || `document-${Date.now()}`;
+      if (pathExt && !nameToSave.toLowerCase().endsWith('.' + pathExt)) {
+        nameToSave = `${nameToSave}.${pathExt}`;
+      }
 
       if (isWeb) {
         const link = document.createElement('a');
