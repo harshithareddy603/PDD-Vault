@@ -301,6 +301,70 @@ function base64ToArrayBuffer(base64: string): ArrayBuffer {
     }
   }, [getRemoteSignedUrl]);
 
+  const downloadFileToDevice = useCallback(async (path: string, fileName?: string) => {
+    if (!path) {
+      Alert.alert("Error", "No file path specified for download.");
+      return false;
+    }
+
+    try {
+      const remoteUrl = await getRemoteSignedUrl(path, 3600);
+      if (!remoteUrl) {
+        Alert.alert("Error", "Could not generate download link.");
+        return false;
+      }
+
+      const nameToSave = fileName || path.split('/').pop() || `document-${Date.now()}`;
+
+      if (isWeb) {
+        const link = document.createElement('a');
+        link.href = remoteUrl;
+        link.download = nameToSave;
+        link.target = '_blank';
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        return true;
+      }
+
+      // On Mobile (Android / iOS):
+      const cleanName = nameToSave.replace(/[\/\\?%*:|"<>]/g, '_');
+      const targetUri = FileSystem.documentDirectory + cleanName;
+
+      console.log("Downloading file to device storage:", targetUri);
+      const downloadRes = await FileSystem.downloadAsync(remoteUrl, targetUri);
+
+      if (downloadRes.status === 200) {
+        await saveFileLocal(path, downloadRes.uri);
+
+        const canShare = await Sharing.isAvailableAsync();
+        if (canShare) {
+          const ext = nameToSave.split('.').pop()?.toLowerCase();
+          let mimeType = 'application/octet-stream';
+          if (ext === 'pdf') mimeType = 'application/pdf';
+          else if (['jpg', 'jpeg'].includes(ext || '')) mimeType = 'image/jpeg';
+          else if (ext === 'png') mimeType = 'image/png';
+
+          await Sharing.shareAsync(downloadRes.uri, {
+            mimeType,
+            dialogTitle: 'Save File to Storage',
+            UTI: ext === 'pdf' ? 'com.adobe.pdf' : undefined,
+          });
+        } else {
+          Alert.alert("Success", "File downloaded and saved to local app storage!");
+        }
+        return true;
+      } else {
+        Alert.alert("Error", "Failed to download file.");
+        return false;
+      }
+    } catch (err: any) {
+      console.error("Error downloading file:", err);
+      Alert.alert("Error", "Download failed: " + (err.message || "Unknown error"));
+      return false;
+    }
+  }, [getRemoteSignedUrl]);
+
   const checkDuplicateDocument = useCallback((docNumber?: string | null, name?: string | null) => {
     if (!docNumber && !name) return null;
     
@@ -450,6 +514,7 @@ function base64ToArrayBuffer(base64: string): ArrayBuffer {
     getSignedUrl,
     getRemoteSignedUrl,
     openDocumentFile,
+    downloadFileToDevice,
     uploadProgress,
     checkDuplicateDocument,
   };

@@ -2,6 +2,7 @@ import { View, Text, StyleSheet, TouchableOpacity, TextInput, ScrollView, Image,
 import React, { useEffect, useState } from "react";
 import { useDocuments } from "../hooks/useDocuments";
 import { Feather, MaterialCommunityIcons } from '@expo/vector-icons';
+import { WebView } from 'react-native-webview';
 import type { DocumentRow } from "../services/supabase";
 
 interface DocumentPreviewSheetProps {
@@ -11,8 +12,9 @@ interface DocumentPreviewSheetProps {
 }
 
 export const DocumentPreviewSheet = ({ document, isOpen, onClose }: DocumentPreviewSheetProps) => {
-  const { getSignedUrl, getRemoteSignedUrl, openDocumentFile } = useDocuments();
+  const { getSignedUrl, getRemoteSignedUrl, openDocumentFile, downloadFileToDevice } = useDocuments();
   const [signedUrl, setSignedUrl] = useState<string | null>(null);
+  const [remoteUrl, setRemoteUrl] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
@@ -20,29 +22,30 @@ export const DocumentPreviewSheet = ({ document, isOpen, onClose }: DocumentPrev
       const fetchUrl = async () => {
         setLoading(true);
         setSignedUrl(null);
+        setRemoteUrl(null);
         try {
-          // getSignedUrl uses 3600 seconds by default or similar.
           const url = await getSignedUrl(document.file_url!);
-          if (url) {
-            setSignedUrl(url);
-          } else {
-            Alert.alert("Error", "Failed to load preview");
-          }
+          const rUrl = await getRemoteSignedUrl(document.file_url!);
+          if (url) setSignedUrl(url);
+          if (rUrl) setRemoteUrl(rUrl);
         } catch (error) {
-          Alert.alert("Error", "Error loading preview");
+          console.error("Error loading preview URLs:", error);
+          Alert.alert("Error", "Error loading document preview");
         } finally {
           setLoading(false);
         }
       };
       fetchUrl();
     }
-  }, [isOpen, document, getSignedUrl]);
+  }, [isOpen, document, getSignedUrl, getRemoteSignedUrl]);
 
   if (!document) return null;
 
   const ext = document.file_url?.split(".").pop()?.toLowerCase();
   const isImage = ["jpg", "jpeg", "png", "gif", "webp", "svg"].includes(ext || "");
   const isPdf = ext === "pdf";
+
+  const googleViewerUrl = remoteUrl ? `https://docs.google.com/gview?embedded=true&url=${encodeURIComponent(remoteUrl)}` : null;
 
   return (
     <Modal
@@ -53,52 +56,70 @@ export const DocumentPreviewSheet = ({ document, isOpen, onClose }: DocumentPrev
     >
       <View style={styles.modalContainer}>
         <View style={styles.content}>
-          <TouchableOpacity style={styles.closeButton} onPress={onClose}>
-            <Feather name="x" size={24} color="#0F172A" />
-          </TouchableOpacity>
+          <View style={styles.headerRow}>
+            <Text style={styles.title} numberOfLines={1}>{document.name}</Text>
+            
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
+              <TouchableOpacity 
+                style={styles.iconHeaderButton} 
+                onPress={() => downloadFileToDevice(document.file_url!, document.name)}
+              >
+                <Feather name="download" size={18} color="#3b82f6" />
+              </TouchableOpacity>
 
-          <Text style={styles.title}>Document Preview</Text>
+              <TouchableOpacity style={styles.closeButton} onPress={onClose}>
+                <Feather name="x" size={20} color="#0F172A" />
+              </TouchableOpacity>
+            </View>
+          </View>
 
           {loading ? (
             <View style={styles.centerContent}>
               <ActivityIndicator size="large" color="#3b82f6" />
-              <Text style={styles.loadingText}>Loading preview...</Text>
+              <Text style={styles.loadingText}>Loading document inside app...</Text>
             </View>
-          ) : signedUrl ? (
+          ) : (signedUrl || remoteUrl) ? (
             <View style={styles.previewContainer}>
               {isPdf ? (
                 Platform.OS === 'web' ? (
                   <iframe
-                    src={signedUrl}
+                    src={signedUrl || remoteUrl || ''}
                     style={{ width: '100%', height: '100%', border: 'none', borderRadius: 12 }}
                     title="PDF Preview"
                   />
+                ) : googleViewerUrl ? (
+                  <WebView
+                    source={{ uri: googleViewerUrl }}
+                    style={{ flex: 1, borderRadius: 12, overflow: 'hidden' }}
+                    startInLoadingState={true}
+                    scalesPageToFit={true}
+                    renderLoading={() => (
+                      <View style={styles.centerContent}>
+                        <ActivityIndicator size="large" color="#3b82f6" />
+                        <Text style={styles.loadingText}>Rendering PDF pages...</Text>
+                      </View>
+                    )}
+                    onError={() => (
+                      <View style={styles.centerContent}>
+                        <MaterialCommunityIcons name="file-pdf-box" size={64} color="#EF4444" />
+                        <Text style={styles.pdfText}>{document.name}</Text>
+                        <Text style={{ fontSize: 13, color: '#64748B', marginTop: 4, marginBottom: 16, textAlign: 'center' }}>
+                          Could not render in-app preview offline.
+                        </Text>
+                        <TouchableOpacity 
+                          style={styles.primaryButton}
+                          onPress={() => openDocumentFile(document.file_url!)}
+                        >
+                          <Feather name="external-link" size={16} color="#fff" style={styles.icon} />
+                          <Text style={styles.primaryButtonText}>Open in External Viewer</Text>
+                        </TouchableOpacity>
+                      </View>
+                    )}
+                  />
                 ) : (
                   <View style={styles.centerContent}>
-                    <MaterialCommunityIcons name="file-pdf-box" size={72} color="#EF4444" />
-                    <Text style={styles.pdfText}>{document.name}</Text>
-                    <Text style={{ fontSize: 13, color: '#64748B', marginTop: 4, marginBottom: 20, textAlign: 'center' }}>
-                      PDF document ready. Choose how you would like to view the file:
-                    </Text>
-                    <TouchableOpacity 
-                      style={styles.primaryButton}
-                      onPress={() => openDocumentFile(document.file_url!)}
-                    >
-                      <Feather name="external-link" size={18} color="#fff" style={styles.icon} />
-                      <Text style={styles.primaryButtonText}>Open in App PDF Reader</Text>
-                    </TouchableOpacity>
-
-                    <TouchableOpacity 
-                      style={[styles.primaryButton, { backgroundColor: '#475569', marginTop: 10 }]}
-                      onPress={async () => {
-                        const remoteUrl = await getRemoteSignedUrl(document.file_url!);
-                        if (remoteUrl) Linking.openURL(remoteUrl);
-                        else Alert.alert("Error", "Could not generate file link");
-                      }}
-                    >
-                      <Feather name="globe" size={18} color="#fff" style={styles.icon} />
-                      <Text style={styles.primaryButtonText}>View in Web Browser</Text>
-                    </TouchableOpacity>
+                    <ActivityIndicator size="large" color="#3b82f6" />
+                    <Text style={styles.loadingText}>Preparing PDF viewer...</Text>
                   </View>
                 )
               ) : isImage ? (
@@ -146,27 +167,37 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(0,0,0,0.5)',
   },
   content: {
-    height: '90%',
+    height: '92%',
+    width: '100%',
     backgroundColor: '#FFFFFF',
     borderTopLeftRadius: 20,
     borderTopRightRadius: 20,
-    padding: 20,
+    padding: 16,
+    alignItems: 'stretch',
+  },
+  headerRow: {
+    flexDirection: 'row',
     alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: 12,
+    paddingHorizontal: 4,
   },
   closeButton: {
-    position: 'absolute',
-    right: 16,
-    top: 16,
-    zIndex: 50,
-    padding: 8,
+    padding: 6,
     backgroundColor: 'rgba(241, 245, 249, 0.8)',
     borderRadius: 20,
   },
+  iconHeaderButton: {
+    padding: 6,
+    backgroundColor: '#EFF6FF',
+    borderRadius: 20,
+  },
   title: {
-    fontSize: 18,
+    fontSize: 16,
     fontWeight: 'bold',
     color: '#0F172A',
-    marginBottom: 20,
+    flex: 1,
+    marginRight: 10,
   },
   centerContent: {
     flex: 1,

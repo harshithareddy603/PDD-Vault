@@ -23,7 +23,7 @@ const FILTER_CHIPS = ["All", ...CATEGORIES, "⚠ Expiring Soon", "❌ Expired"];
 
 const Documents = () => {
   const { members } = useFamily();
-  const { documents, loading, addDocument, deleteDocument, deleteDocuments, getSignedUrl, openDocumentFile, isOffline, uploadProgress, checkDuplicateDocument } = useDocumentsWithCache();
+  const { documents, loading, addDocument, deleteDocument, deleteDocuments, getSignedUrl, openDocumentFile, downloadFileToDevice, isOffline, uploadProgress, checkDuplicateDocument } = useDocumentsWithCache();
   const route = useRoute<any>();
   const navigation = useNavigation<any>();
   const { colors, isDark } = useTheme();
@@ -232,12 +232,12 @@ const Documents = () => {
     }
   };
 
-  const download = async (path: string) => {
+  const download = async (path: string, fileName?: string) => {
     if (!path) {
       Alert.alert("No File", "No file attachment found for this document.");
       return;
     }
-    await openDocumentFile(path);
+    await downloadFileToDevice(path, fileName);
   };
 
   const processedDocuments = useMemo(() => {
@@ -374,9 +374,9 @@ const Documents = () => {
                   </TouchableOpacity>
 
                   <View style={styles.cardActions}>
-                    <TouchableOpacity style={styles.actionBtn} onPress={() => download(d.file_url!)}>
+                    <TouchableOpacity style={styles.actionBtn} onPress={() => download(d.file_url!, d.name)}>
                       <Feather name="download" size={16} color="#64748B" />
-                      <Text style={styles.actionText}>Open</Text>
+                      <Text style={styles.actionText}>Save</Text>
                     </TouchableOpacity>
                     <TouchableOpacity style={styles.iconBtn} onPress={() => setShareDoc(d)}>
                       <Feather name="share-2" size={16} color="#64748B" />
