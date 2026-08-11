@@ -2,6 +2,7 @@ import { View, Text, StyleSheet, TouchableOpacity, Image, Modal, ActivityIndicat
 import React, { useEffect, useState } from "react";
 import { useDocuments } from "../hooks/useDocuments";
 import { Feather, MaterialCommunityIcons } from '@expo/vector-icons';
+import { WebView } from 'react-native-webview';
 import type { DocumentRow } from "../services/supabase";
 
 interface DocumentPreviewSheetProps {
@@ -11,7 +12,7 @@ interface DocumentPreviewSheetProps {
 }
 
 export const DocumentPreviewSheet = ({ document, isOpen, onClose }: DocumentPreviewSheetProps) => {
-  const { getSignedUrl, getRemoteSignedUrl, openDocumentFile, downloadFileToDevice } = useDocuments();
+  const { getSignedUrl, getRemoteSignedUrl, downloadFileToDevice } = useDocuments();
   const [signedUrl, setSignedUrl] = useState<string | null>(null);
   const [remoteUrl, setRemoteUrl] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
@@ -27,12 +28,6 @@ export const DocumentPreviewSheet = ({ document, isOpen, onClose }: DocumentPrev
           const rUrl = await getRemoteSignedUrl(document.file_url!);
           if (url) setSignedUrl(url);
           if (rUrl) setRemoteUrl(rUrl);
-
-          // On native mobile for PDF files: auto-launch native full-screen viewer for seamless viewing
-          const isPdfFile = document.file_url?.toLowerCase().endsWith('.pdf');
-          if (isPdfFile && Platform.OS !== 'web') {
-            openDocumentFile(document.file_url!);
-          }
         } catch (error) {
           console.error("Error loading preview URLs:", error);
           Alert.alert("Error", "Error loading document preview");
@@ -49,6 +44,9 @@ export const DocumentPreviewSheet = ({ document, isOpen, onClose }: DocumentPrev
   const ext = document.file_url?.split(".").pop()?.toLowerCase();
   const isImage = ["jpg", "jpeg", "png", "gif", "webp", "svg"].includes(ext || "");
   const isPdf = ext === "pdf";
+
+  const targetPdfUrl = remoteUrl || signedUrl;
+  const pdfJsViewerUrl = targetPdfUrl ? `https://mozilla.github.io/pdf.js/web/viewer.html?file=${encodeURIComponent(targetPdfUrl)}` : null;
 
   return (
     <Modal
@@ -76,12 +74,12 @@ export const DocumentPreviewSheet = ({ document, isOpen, onClose }: DocumentPrev
           </View>
         </View>
 
-        {/* Fullscreen Content Area */}
+        {/* Fullscreen In-App Content Area */}
         <View style={styles.contentArea}>
           {loading ? (
             <View style={styles.centerContent}>
               <ActivityIndicator size="large" color="#3b82f6" />
-              <Text style={styles.loadingText}>Loading document in full screen...</Text>
+              <Text style={styles.loadingText}>Loading document inside app...</Text>
             </View>
           ) : (signedUrl || remoteUrl) ? (
             <View style={styles.previewContainer}>
@@ -92,32 +90,25 @@ export const DocumentPreviewSheet = ({ document, isOpen, onClose }: DocumentPrev
                     style={{ width: '100%', height: '100%', border: 'none', borderRadius: 8 }}
                     title="PDF Preview"
                   />
+                ) : pdfJsViewerUrl ? (
+                  <WebView
+                    source={{ uri: pdfJsViewerUrl }}
+                    style={{ flex: 1, width: '100%', height: '100%', borderRadius: 8 }}
+                    startInLoadingState={true}
+                    javaScriptEnabled={true}
+                    domStorageEnabled={true}
+                    scalesPageToFit={true}
+                    renderLoading={() => (
+                      <View style={styles.centerContent}>
+                        <ActivityIndicator size="large" color="#3b82f6" />
+                        <Text style={styles.loadingText}>Rendering PDF pages in-app...</Text>
+                      </View>
+                    )}
+                  />
                 ) : (
                   <View style={styles.centerContent}>
-                    <View style={styles.pdfIconBadge}>
-                      <MaterialCommunityIcons name="file-pdf-box" size={80} color="#EF4444" />
-                    </View>
-                    
-                    <Text style={styles.pdfTitle}>{document.name}</Text>
-                    <Text style={styles.pdfSubtitle}>
-                      PDF Document Ready ({ext?.toUpperCase()})
-                    </Text>
-
-                    <TouchableOpacity 
-                      style={styles.primaryButton}
-                      onPress={() => openDocumentFile(document.file_url!)}
-                    >
-                      <Feather name="maximize-2" size={18} color="#FFFFFF" style={styles.btnIcon} />
-                      <Text style={styles.primaryButtonText}>Open Full Screen PDF Reader</Text>
-                    </TouchableOpacity>
-
-                    <TouchableOpacity 
-                      style={[styles.primaryButton, styles.secondaryButton]}
-                      onPress={() => downloadFileToDevice(document.file_url!, document.name)}
-                    >
-                      <Feather name="download" size={18} color="#FFFFFF" style={styles.btnIcon} />
-                      <Text style={styles.primaryButtonText}>Save / Download to Device</Text>
-                    </TouchableOpacity>
+                    <ActivityIndicator size="large" color="#3b82f6" />
+                    <Text style={styles.loadingText}>Preparing in-app viewer...</Text>
                   </View>
                 )
               ) : isImage ? (
@@ -133,7 +124,7 @@ export const DocumentPreviewSheet = ({ document, isOpen, onClose }: DocumentPrev
                   </View>
                   <Text style={styles.notAvailableTitle}>File Ready</Text>
                   <Text style={styles.notAvailableSubtitle}>
-                    Tap below to download or view this file on your device.
+                    Tap below to download this file onto your device.
                   </Text>
                   <TouchableOpacity 
                     style={styles.primaryButton}
@@ -164,7 +155,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#0F172A',
     paddingTop: Platform.OS === 'ios' ? 50 : 30,
     paddingBottom: 20,
-    paddingHorizontal: 16,
+    paddingHorizontal: 12,
   },
   headerRow: {
     flexDirection: 'row',
@@ -173,7 +164,7 @@ const styles = StyleSheet.create({
     paddingVertical: 12,
     borderBottomWidth: 1,
     borderBottomColor: '#1E293B',
-    marginBottom: 12,
+    marginBottom: 8,
   },
   headerActions: {
     flexDirection: 'row',
@@ -215,34 +206,10 @@ const styles = StyleSheet.create({
   previewContainer: {
     flex: 1,
     width: '100%',
-    justifyContent: 'center',
-    alignItems: 'center',
   },
   fullImage: {
     width: '100%',
     height: '100%',
-  },
-  pdfIconBadge: {
-    width: 100,
-    height: 100,
-    borderRadius: 50,
-    backgroundColor: '#1E293B',
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginBottom: 16,
-  },
-  pdfTitle: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    color: '#FFFFFF',
-    textAlign: 'center',
-    marginBottom: 6,
-  },
-  pdfSubtitle: {
-    fontSize: 13,
-    color: '#94A3B8',
-    textAlign: 'center',
-    marginBottom: 24,
   },
   primaryButton: {
     flexDirection: 'row',
@@ -254,9 +221,6 @@ const styles = StyleSheet.create({
     paddingVertical: 14,
     borderRadius: 12,
     marginBottom: 12,
-  },
-  secondaryButton: {
-    backgroundColor: '#334155',
   },
   primaryButtonText: {
     color: '#FFFFFF',
