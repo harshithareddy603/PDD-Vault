@@ -1,0 +1,35 @@
+name: Appium Test Suite & Report Generator
+
+on:
+  push:
+    branches: [ main, master ]
+  pull_request:
+    branches: [ main, master ]
+  workflow_dispatch:
+
+jobs:
+  appium-test-suite:
+    name: 📱 Run Appium Tests & Excel Report
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Repository Code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install ExcelJS Dependency
+        run: npm install exceljs
+
+      - name: Execute Appium Test Suite & Generate Excel Sheet
+        run: node ./appium-tests/generate-appium-reports.mjs
+
+      - name: Upload Appium Test Excel Report Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: Appium-Test-Report-Excel
+          path: appium-tests/appium-test-report.xlsx
+          retention-days: 30

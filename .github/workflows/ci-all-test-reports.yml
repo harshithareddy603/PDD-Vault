@@ -27,6 +27,9 @@ jobs:
       - name: 🧪 Run Selenium Test Suite (320 Cases)
         run: node ./selenium-tests/generate-selenium-reports.mjs
 
+      - name: 📱 Run Appium Test Suite (320 Cases)
+        run: node ./appium-tests/generate-appium-reports.mjs
+
       - name: 🛡️ Run Vulnerability Scan Suite (305 Audit Controls)
         run: node ./vulnerability-tests/generate-vulnerability-reports.mjs
 
@@ -39,6 +42,7 @@ jobs:
           name: PDD-Family-Vault-All-Test-Reports-Bundle
           path: |
             selenium-tests/selenium-test-report.xlsx
+            appium-tests/appium-test-report.xlsx
             vulnerability-tests/vulnerability-test-report.xlsx
             load-tests/load-test-reports.xlsx
             load-tests/load-test-reports.md
