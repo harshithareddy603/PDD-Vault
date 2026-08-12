@@ -604,6 +604,7 @@ const Documents = () => {
                 disabled={busy}
               >
                 <Text style={[styles.cancelButtonText, { color: colors.subtext }]}>Cancel</Text>
+              </TouchableOpacity>
             </ScrollView>
           </View>
         </View>
