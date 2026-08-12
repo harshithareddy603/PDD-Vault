@@ -29,14 +29,6 @@
     "web": {
       "favicon": "./public/favicon.png"
     },
-    "extra": {
-      "eas": {
-        "projectId": "3305ffd8-b02b-45e3-bc58-960176ce1bff"
-      }
-    },
-    "owner": "harshitha-reddy-919",
-    "updates": {
-      "url": "https://u.expo.dev/3305ffd8-b02b-45e3-bc58-960176ce1bff"
-    }
+    "owner": "harshitha-reddy-919"
   }
 }
