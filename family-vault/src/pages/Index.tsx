@@ -12,7 +12,7 @@ const Index = () => {
   useEffect(() => {
     const timer = setTimeout(() => {
       setShowSplash(false);
-    }, 1500);
+    }, 5000);
     return () => clearTimeout(timer);
   }, []);
 
