@@ -340,23 +340,11 @@ function base64ToArrayBuffer(base64: string): ArrayBuffer {
 
       if (downloadRes.status === 200) {
         await saveFileLocal(path, downloadRes.uri);
-
-        const canShare = await Sharing.isAvailableAsync();
-        if (canShare) {
-          const ext = nameToSave.split('.').pop()?.toLowerCase();
-          let mimeType = 'application/octet-stream';
-          if (ext === 'pdf') mimeType = 'application/pdf';
-          else if (['jpg', 'jpeg'].includes(ext || '')) mimeType = 'image/jpeg';
-          else if (ext === 'png') mimeType = 'image/png';
-
-          await Sharing.shareAsync(downloadRes.uri, {
-            mimeType,
-            dialogTitle: 'Save File to Storage',
-            UTI: ext === 'pdf' ? 'com.adobe.pdf' : undefined,
-          });
-        } else {
-          Alert.alert("Success", "File downloaded and saved to local app storage!");
-        }
+        Alert.alert(
+          "Download Complete",
+          `"${cleanName}" has been saved to your device's local vault storage.`,
+          [{ text: "OK" }]
+        );
         return true;
       } else {
         Alert.alert("Error", "Failed to download file.");
