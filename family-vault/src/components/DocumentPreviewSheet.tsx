@@ -145,18 +145,6 @@ export const DocumentPreviewSheet = ({ document, isOpen, onClose }: DocumentPrev
               </View>
             )}
 
-            {/* Drive PDF Viewer button for PDFs */}
-            {isPdf && targetPdfUrl && (
-              <TouchableOpacity 
-                style={styles.driveHeaderButton} 
-                onPress={() => openInExternalDriveViewer(targetPdfUrl)}
-                activeOpacity={0.8}
-              >
-                <Feather name="external-link" size={16} color="#FFFFFF" style={{ marginRight: 6 }} />
-                <Text style={styles.driveBtnText}>Drive PDF Viewer</Text>
-              </TouchableOpacity>
-            )}
-
             <TouchableOpacity 
               style={styles.iconHeaderButton} 
               onPress={() => downloadFileToDevice(document.file_url!, document.name)}
@@ -180,45 +168,33 @@ export const DocumentPreviewSheet = ({ document, isOpen, onClose }: DocumentPrev
           ) : (signedUrl || remoteUrl) ? (
             <View style={styles.previewContainer}>
               {isPdf ? (
-                <View style={{ flex: 1, width: '100%' }}>
-                  <TouchableOpacity
-                    style={styles.driveBanner}
-                    onPress={() => openInExternalDriveViewer(targetPdfUrl || '')}
-                    activeOpacity={0.85}
-                  >
-                    <MaterialCommunityIcons name="google-drive" size={20} color="#FFFFFF" style={{ marginRight: 8 }} />
-                    <Text style={styles.driveBannerText}>Open in Google Drive / PDF Reader App</Text>
-                    <Feather name="chevron-right" size={18} color="#FFFFFF" style={{ marginLeft: 'auto' }} />
-                  </TouchableOpacity>
-
-                  {Platform.OS === 'web' ? (
-                    <iframe
-                      src={signedUrl || remoteUrl || ''}
-                      style={{ flex: 1, width: '100%', height: '100%', border: 'none', borderRadius: 8 }}
-                      title="PDF Preview"
-                    />
-                  ) : pdfJsViewerUrl ? (
-                    <WebView
-                      source={{ uri: pdfJsViewerUrl }}
-                      style={{ flex: 1, width: '100%', height: '100%', borderRadius: 8 }}
-                      startInLoadingState={true}
-                      javaScriptEnabled={true}
-                      domStorageEnabled={true}
-                      scalesPageToFit={true}
-                      renderLoading={() => (
-                        <View style={styles.centerContent}>
-                          <ActivityIndicator size="large" color="#3b82f6" />
-                          <Text style={styles.loadingText}>Rendering PDF pages in-app...</Text>
-                        </View>
-                      )}
-                    />
-                  ) : (
-                    <View style={styles.centerContent}>
-                      <ActivityIndicator size="large" color="#3b82f6" />
-                      <Text style={styles.loadingText}>Preparing in-app viewer...</Text>
-                    </View>
-                  )}
-                </View>
+                Platform.OS === 'web' ? (
+                  <iframe
+                    src={signedUrl || remoteUrl || ''}
+                    style={{ flex: 1, width: '100%', height: '100%', border: 'none', borderRadius: 8 }}
+                    title="PDF Preview"
+                  />
+                ) : pdfJsViewerUrl ? (
+                  <WebView
+                    source={{ uri: pdfJsViewerUrl }}
+                    style={{ flex: 1, width: '100%', height: '100%', borderRadius: 8 }}
+                    startInLoadingState={true}
+                    javaScriptEnabled={true}
+                    domStorageEnabled={true}
+                    scalesPageToFit={true}
+                    renderLoading={() => (
+                      <View style={styles.centerContent}>
+                        <ActivityIndicator size="large" color="#3b82f6" />
+                        <Text style={styles.loadingText}>Rendering PDF pages in-app...</Text>
+                      </View>
+                    )}
+                  />
+                ) : (
+                  <View style={styles.centerContent}>
+                    <ActivityIndicator size="large" color="#3b82f6" />
+                    <Text style={styles.loadingText}>Preparing in-app viewer...</Text>
+                  </View>
+                )
               ) : isImage ? (
                 <ScrollView
                   style={{ flex: 1, width: '100%' }}
