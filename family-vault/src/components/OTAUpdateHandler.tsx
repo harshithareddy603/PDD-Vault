@@ -8,16 +8,19 @@ import {
   ActivityIndicator,
   StyleSheet,
   Animated,
+  AppState,
 } from 'react-native';
 import * as Updates from 'expo-updates';
-
-import { AppState } from 'react-native';
+import { useAuth } from '../hooks/useAuth';
 
 export const OTAUpdateHandler: React.FC = () => {
   const [visible, setVisible] = useState(false);
   const [applying, setApplying] = useState(false);
   const scaleAnim = React.useRef(new Animated.Value(0.85)).current;
   const opacityAnim = React.useRef(new Animated.Value(0)).current;
+
+  // Access user session from AuthProvider
+  const { session } = useAuth();
 
   // Animate the card in when modal becomes visible
   useEffect(() => {
@@ -48,6 +51,10 @@ export const OTAUpdateHandler: React.FC = () => {
         console.log('[OTAUpdateHandler] Dev mode — OTA check deferred.');
         return;
       }
+      if (!Updates.isEnabled) {
+        console.log('[OTAUpdateHandler] Updates not enabled for this build.');
+        return;
+      }
 
       console.log('[OTAUpdateHandler] Checking for OTA updates on EAS...');
       const update = await Updates.checkForUpdateAsync();
@@ -59,17 +66,22 @@ export const OTAUpdateHandler: React.FC = () => {
         console.log('[OTAUpdateHandler] No new updates available on channel.');
       }
     } catch (error) {
-      console.warn('[OTAUpdateHandler] OTA check error:', error);
+      console.warn('[OTAUpdateHandler] OTA check error handled safely:', error);
     }
   };
 
   useEffect(() => {
-    // 1. Initial 3-second check after launch
+    // Only check for OTA updates when user is authenticated (after login)
+    if (!session?.user) {
+      return;
+    }
+
+    // 1. Initial 3-second check AFTER login
     const timer = setTimeout(() => {
       checkForUpdateNow();
     }, 3000);
 
-    // 2. Re-check whenever user returns to the app from background
+    // 2. Re-check whenever user returns to the app from background while logged in
     const subscription = AppState.addEventListener('change', (nextAppState) => {
       if (nextAppState === 'active') {
         setTimeout(() => {
@@ -78,7 +90,14 @@ export const OTAUpdateHandler: React.FC = () => {
       }
     });
 
-    // 3. Demo / manual trigger handler
+    return () => {
+      clearTimeout(timer);
+      subscription.remove();
+    };
+  }, [session?.user]);
+
+  // Demo / manual trigger handler always available
+  useEffect(() => {
     const handleDemoTrigger = () => {
       setVisible(true);
     };
@@ -88,8 +107,6 @@ export const OTAUpdateHandler: React.FC = () => {
     }
 
     return () => {
-      clearTimeout(timer);
-      subscription.remove();
       if (typeof window !== 'undefined') {
         window.removeEventListener('trigger-ota-demo', handleDemoTrigger);
       }
@@ -98,7 +115,18 @@ export const OTAUpdateHandler: React.FC = () => {
 
   const handleRestart = async () => {
     setApplying(true);
-    await Updates.reloadAsync();
+    try {
+      if (Platform.OS !== 'web' && Updates.isEnabled) {
+        await Updates.reloadAsync();
+      } else {
+        setVisible(false);
+      }
+    } catch (e) {
+      console.warn('[OTAUpdateHandler] Reload error:', e);
+      setVisible(false);
+    } finally {
+      setApplying(false);
+    }
   };
 
   const handleLater = () => {

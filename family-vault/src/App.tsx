@@ -29,7 +29,6 @@ const queryClient = new QueryClient();
 const App = () => {
   return (
     <QueryClientProvider client={queryClient}>
-      <OTAUpdateHandler />
       <ThemeProvider>
         <PaperProvider>
         <NavigationContainer
@@ -38,6 +37,7 @@ const App = () => {
           }}
         >
           <AuthProvider>
+            <OTAUpdateHandler />
             <Stack.Navigator 
               initialRouteName="Index"
               screenOptions={{ 
