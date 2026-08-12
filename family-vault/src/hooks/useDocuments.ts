@@ -340,11 +340,37 @@ function base64ToArrayBuffer(base64: string): ArrayBuffer {
 
       if (downloadRes.status === 200) {
         await saveFileLocal(path, downloadRes.uri);
-        Alert.alert(
-          "Download Complete",
-          `"${cleanName}" has been saved to your device's local vault storage.`,
-          [{ text: "OK" }]
-        );
+
+        const canShare = await Sharing.isAvailableAsync();
+        const locationMessage = `📁 Saved to Local Vault:\nInternal Storage > Android > data > com.pdd.familyvault > files > ${cleanName}`;
+
+        if (canShare) {
+          Alert.alert(
+            "Download Successful",
+            `${locationMessage}\n\nWould you also like to save/export a copy into your phone's Downloads folder?`,
+            [
+              { text: "Keep in Vault Only", style: "cancel" },
+              {
+                text: "Export to Downloads",
+                onPress: async () => {
+                  const ext = nameToSave.split('.').pop()?.toLowerCase();
+                  let mimeType = 'application/octet-stream';
+                  if (ext === 'pdf') mimeType = 'application/pdf';
+                  else if (['jpg', 'jpeg'].includes(ext || '')) mimeType = 'image/jpeg';
+                  else if (ext === 'png') mimeType = 'image/png';
+
+                  await Sharing.shareAsync(downloadRes.uri, {
+                    mimeType,
+                    dialogTitle: 'Save Copy to Device Downloads',
+                    UTI: ext === 'pdf' ? 'com.adobe.pdf' : undefined,
+                  });
+                }
+              }
+            ]
+          );
+        } else {
+          Alert.alert("Download Complete", locationMessage, [{ text: "OK" }]);
+        }
         return true;
       } else {
         Alert.alert("Error", "Failed to download file.");

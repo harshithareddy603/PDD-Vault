@@ -1,4 +1,4 @@
-import { View, Text, StyleSheet, TouchableOpacity, Image, Modal, ActivityIndicator, Alert, Platform, Animated, ScrollView } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, Image, Modal, ActivityIndicator, Alert, Platform, Animated, ScrollView, Linking } from 'react-native';
 import React, { useEffect, useRef, useState } from "react";
 import { useDocuments } from "../hooks/useDocuments";
 import { Feather, MaterialCommunityIcons } from '@expo/vector-icons';
@@ -18,6 +18,25 @@ export const DocumentPreviewSheet = ({ document, isOpen, onClose }: DocumentPrev
   const [loading, setLoading] = useState(false);
   const [zoomScale, setZoomScale] = useState(1);
   const [rotation, setRotation] = useState(0);
+
+  const openInExternalDriveViewer = async (url: string) => {
+    try {
+      if (Platform.OS === 'android' || Platform.OS === 'ios') {
+        const canOpen = await Linking.canOpenURL(url).catch(() => false);
+        if (canOpen) {
+          await Linking.openURL(url);
+        } else {
+          Alert.alert("Opening PDF", "Opening PDF with device default viewer...");
+          await Linking.openURL(url);
+        }
+      } else {
+        window.open(url, '_blank');
+      }
+    } catch (err) {
+      console.warn("Linking openURL error:", err);
+      if (signedUrl) window.open(signedUrl, '_blank');
+    }
+  };
 
   const slideAnim = useRef(new Animated.Value(16)).current;
   const fadeAnim = useRef(new Animated.Value(0)).current;
@@ -126,6 +145,18 @@ export const DocumentPreviewSheet = ({ document, isOpen, onClose }: DocumentPrev
               </View>
             )}
 
+            {/* Drive PDF Viewer button for PDFs */}
+            {isPdf && targetPdfUrl && (
+              <TouchableOpacity 
+                style={styles.driveHeaderButton} 
+                onPress={() => openInExternalDriveViewer(targetPdfUrl)}
+                activeOpacity={0.8}
+              >
+                <Feather name="external-link" size={16} color="#FFFFFF" style={{ marginRight: 6 }} />
+                <Text style={styles.driveBtnText}>Drive PDF Viewer</Text>
+              </TouchableOpacity>
+            )}
+
             <TouchableOpacity 
               style={styles.iconHeaderButton} 
               onPress={() => downloadFileToDevice(document.file_url!, document.name)}
@@ -149,33 +180,45 @@ export const DocumentPreviewSheet = ({ document, isOpen, onClose }: DocumentPrev
           ) : (signedUrl || remoteUrl) ? (
             <View style={styles.previewContainer}>
               {isPdf ? (
-                Platform.OS === 'web' ? (
-                  <iframe
-                    src={signedUrl || remoteUrl || ''}
-                    style={{ width: '100%', height: '100%', border: 'none', borderRadius: 8 }}
-                    title="PDF Preview"
-                  />
-                ) : pdfJsViewerUrl ? (
-                  <WebView
-                    source={{ uri: pdfJsViewerUrl }}
-                    style={{ flex: 1, width: '100%', height: '100%', borderRadius: 8 }}
-                    startInLoadingState={true}
-                    javaScriptEnabled={true}
-                    domStorageEnabled={true}
-                    scalesPageToFit={true}
-                    renderLoading={() => (
-                      <View style={styles.centerContent}>
-                        <ActivityIndicator size="large" color="#3b82f6" />
-                        <Text style={styles.loadingText}>Rendering PDF pages in-app...</Text>
-                      </View>
-                    )}
-                  />
-                ) : (
-                  <View style={styles.centerContent}>
-                    <ActivityIndicator size="large" color="#3b82f6" />
-                    <Text style={styles.loadingText}>Preparing in-app viewer...</Text>
-                  </View>
-                )
+                <View style={{ flex: 1, width: '100%' }}>
+                  <TouchableOpacity
+                    style={styles.driveBanner}
+                    onPress={() => openInExternalDriveViewer(targetPdfUrl || '')}
+                    activeOpacity={0.85}
+                  >
+                    <MaterialCommunityIcons name="google-drive" size={20} color="#FFFFFF" style={{ marginRight: 8 }} />
+                    <Text style={styles.driveBannerText}>Open in Google Drive / PDF Reader App</Text>
+                    <Feather name="chevron-right" size={18} color="#FFFFFF" style={{ marginLeft: 'auto' }} />
+                  </TouchableOpacity>
+
+                  {Platform.OS === 'web' ? (
+                    <iframe
+                      src={signedUrl || remoteUrl || ''}
+                      style={{ flex: 1, width: '100%', height: '100%', border: 'none', borderRadius: 8 }}
+                      title="PDF Preview"
+                    />
+                  ) : pdfJsViewerUrl ? (
+                    <WebView
+                      source={{ uri: pdfJsViewerUrl }}
+                      style={{ flex: 1, width: '100%', height: '100%', borderRadius: 8 }}
+                      startInLoadingState={true}
+                      javaScriptEnabled={true}
+                      domStorageEnabled={true}
+                      scalesPageToFit={true}
+                      renderLoading={() => (
+                        <View style={styles.centerContent}>
+                          <ActivityIndicator size="large" color="#3b82f6" />
+                          <Text style={styles.loadingText}>Rendering PDF pages in-app...</Text>
+                        </View>
+                      )}
+                    />
+                  ) : (
+                    <View style={styles.centerContent}>
+                      <ActivityIndicator size="large" color="#3b82f6" />
+                      <Text style={styles.loadingText}>Preparing in-app viewer...</Text>
+                    </View>
+                  )}
+                </View>
               ) : isImage ? (
                 <ScrollView
                   style={{ flex: 1, width: '100%' }}
@@ -267,6 +310,38 @@ const styles = StyleSheet.create({
     padding: 8,
     backgroundColor: '#3b82f6',
     borderRadius: 20,
+  },
+  driveHeaderButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#059669',
+    paddingHorizontal: 12,
+    paddingVertical: 7,
+    borderRadius: 20,
+  },
+  driveBtnText: {
+    color: '#FFFFFF',
+    fontSize: 12,
+    fontWeight: '600',
+  },
+  driveBanner: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#059669',
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+    borderRadius: 12,
+    marginBottom: 8,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.15,
+    shadowRadius: 4,
+    elevation: 3,
+  },
+  driveBannerText: {
+    color: '#FFFFFF',
+    fontSize: 13.5,
+    fontWeight: '600',
   },
   title: {
     fontSize: 17,
