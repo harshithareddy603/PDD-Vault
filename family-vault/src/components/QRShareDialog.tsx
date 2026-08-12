@@ -116,7 +116,8 @@ export const QRShareDialog = ({ document, isOpen, onClose }: QRShareDialogProps)
 const styles = StyleSheet.create({
   modalContainer: {
     flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.5)',
+    backgroundColor: 'rgba(15, 23, 42, 0.85)',
+    ...(Platform.OS === 'web' ? { backdropFilter: 'blur(10px)' as any } : {}),
     justifyContent: 'center',
     alignItems: 'center',
     padding: 24,

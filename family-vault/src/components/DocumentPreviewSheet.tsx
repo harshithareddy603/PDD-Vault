@@ -1,4 +1,4 @@
-import { View, Text, StyleSheet, TouchableOpacity, Image, Modal, ActivityIndicator, Alert, Platform, Animated } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, Image, Modal, ActivityIndicator, Alert, Platform, Animated, ScrollView } from 'react-native';
 import React, { useEffect, useRef, useState } from "react";
 import { useDocuments } from "../hooks/useDocuments";
 import { Feather, MaterialCommunityIcons } from '@expo/vector-icons';
@@ -16,11 +16,16 @@ export const DocumentPreviewSheet = ({ document, isOpen, onClose }: DocumentPrev
   const [signedUrl, setSignedUrl] = useState<string | null>(null);
   const [remoteUrl, setRemoteUrl] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+  const [zoomScale, setZoomScale] = useState(1);
+  const [rotation, setRotation] = useState(0);
+
   const slideAnim = useRef(new Animated.Value(16)).current;
   const fadeAnim = useRef(new Animated.Value(0)).current;
 
   useEffect(() => {
     if (isOpen) {
+      setZoomScale(1);
+      setRotation(0);
       Animated.parallel([
         Animated.spring(slideAnim, {
           toValue: 0,
@@ -71,6 +76,11 @@ export const DocumentPreviewSheet = ({ document, isOpen, onClose }: DocumentPrev
   const targetPdfUrl = remoteUrl || signedUrl;
   const pdfJsViewerUrl = targetPdfUrl ? `https://mozilla.github.io/pdf.js/web/viewer.html?file=${encodeURIComponent(targetPdfUrl)}` : null;
 
+  const handleZoomIn = () => setZoomScale((prev) => Math.min(prev + 0.25, 4.0));
+  const handleZoomOut = () => setZoomScale((prev) => Math.max(prev - 0.25, 0.5));
+  const handleResetZoom = () => { setZoomScale(1); setRotation(0); };
+  const handleRotate = () => setRotation((prev) => (prev + 90) % 360);
+
   return (
     <Modal
       visible={isOpen}
@@ -89,18 +99,42 @@ export const DocumentPreviewSheet = ({ document, isOpen, onClose }: DocumentPrev
       >
         {/* Fullscreen Header Bar */}
         <View style={styles.headerRow}>
-          <Text style={styles.title} numberOfLines={1}>{document.name}</Text>
+          <View style={{ flex: 1, marginRight: 12 }}>
+            <Text style={styles.title} numberOfLines={1}>{document.name}</Text>
+            <Text style={styles.subtitle}>{document.category} · {Math.round(zoomScale * 100)}% Zoom</Text>
+          </View>
           
           <View style={styles.headerActions}>
+            {/* Interactive Zoom Controls */}
+            {isImage && (
+              <View style={styles.zoomBar}>
+                <TouchableOpacity style={styles.zoomBtn} onPress={handleZoomOut} activeOpacity={0.7}>
+                  <Feather name="zoom-out" size={16} color="#FFFFFF" />
+                </TouchableOpacity>
+
+                <TouchableOpacity style={styles.zoomBtn} onPress={handleResetZoom} activeOpacity={0.7}>
+                  <Text style={styles.zoomText}>{Math.round(zoomScale * 100)}%</Text>
+                </TouchableOpacity>
+
+                <TouchableOpacity style={styles.zoomBtn} onPress={handleZoomIn} activeOpacity={0.7}>
+                  <Feather name="zoom-in" size={16} color="#FFFFFF" />
+                </TouchableOpacity>
+
+                <TouchableOpacity style={styles.zoomBtn} onPress={handleRotate} activeOpacity={0.7}>
+                  <Feather name="rotate-cw" size={16} color="#FFFFFF" />
+                </TouchableOpacity>
+              </View>
+            )}
+
             <TouchableOpacity 
               style={styles.iconHeaderButton} 
               onPress={() => downloadFileToDevice(document.file_url!, document.name)}
             >
-              <Feather name="download" size={20} color="#FFFFFF" />
+              <Feather name="download" size={18} color="#FFFFFF" />
             </TouchableOpacity>
 
             <TouchableOpacity style={styles.closeButton} onPress={onClose}>
-              <Feather name="x" size={22} color="#FFFFFF" />
+              <Feather name="x" size={20} color="#FFFFFF" />
             </TouchableOpacity>
           </View>
         </View>
@@ -143,11 +177,33 @@ export const DocumentPreviewSheet = ({ document, isOpen, onClose }: DocumentPrev
                   </View>
                 )
               ) : isImage ? (
-                <Image 
-                  source={{ uri: signedUrl || remoteUrl || undefined }} 
-                  style={styles.fullImage} 
-                  resizeMode="contain" 
-                />
+                <ScrollView
+                  style={{ flex: 1, width: '100%' }}
+                  contentContainerStyle={{ flexGrow: 1, justifyContent: 'center', alignItems: 'center' }}
+                  maximumZoomScale={5}
+                  minimumZoomScale={0.5}
+                  showsHorizontalScrollIndicator={false}
+                  showsVerticalScrollIndicator={false}
+                >
+                  <View
+                    style={{
+                      transform: [
+                        { scale: zoomScale },
+                        { rotate: `${rotation}deg` }
+                      ],
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      width: '100%',
+                      height: '100%',
+                    }}
+                  >
+                    <Image 
+                      source={{ uri: signedUrl || remoteUrl || undefined }} 
+                      style={styles.fullImage} 
+                      resizeMode="contain" 
+                    />
+                  </View>
+                </ScrollView>
               ) : (
                 <View style={styles.centerContent}>
                   <View style={styles.fallbackIconContainer}>
@@ -213,11 +269,37 @@ const styles = StyleSheet.create({
     borderRadius: 20,
   },
   title: {
-    fontSize: 18,
+    fontSize: 17,
     fontWeight: 'bold',
     color: '#FFFFFF',
-    flex: 1,
-    marginRight: 12,
+  },
+  subtitle: {
+    fontSize: 11,
+    color: '#94A3B8',
+    marginTop: 2,
+  },
+  zoomBar: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#1E293B',
+    borderRadius: 20,
+    paddingHorizontal: 6,
+    paddingVertical: 4,
+    gap: 4,
+    borderWidth: 1,
+    borderColor: '#334155',
+  },
+  zoomBtn: {
+    paddingHorizontal: 8,
+    paddingVertical: 6,
+    borderRadius: 14,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  zoomText: {
+    color: '#FFFFFF',
+    fontSize: 11,
+    fontWeight: '600',
   },
   contentArea: {
     flex: 1,
