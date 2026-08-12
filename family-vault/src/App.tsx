@@ -3,11 +3,8 @@ import React from 'react';
 import { NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { Provider as PaperProvider } from 'react-native-paper';
 import { AuthProvider } from "./hooks/useAuth";
 import { ProtectedRoute } from "./components/ProtectedRoute";
-import OTAUpdateHandler from "./components/OTAUpdateHandler";
-
 import { ThemeProvider } from "./context/ThemeContext";
 
 // Page Imports
@@ -37,7 +34,6 @@ const App = () => {
           }}
         >
           <AuthProvider>
-            <OTAUpdateHandler />
             <Stack.Navigator 
               initialRouteName="Index"
               screenOptions={{ 
