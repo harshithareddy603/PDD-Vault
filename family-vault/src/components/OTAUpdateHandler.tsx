@@ -78,9 +78,21 @@ export const OTAUpdateHandler: React.FC = () => {
       }
     });
 
+    // 3. Demo / manual trigger handler
+    const handleDemoTrigger = () => {
+      setVisible(true);
+    };
+
+    if (typeof window !== 'undefined') {
+      window.addEventListener('trigger-ota-demo', handleDemoTrigger);
+    }
+
     return () => {
       clearTimeout(timer);
       subscription.remove();
+      if (typeof window !== 'undefined') {
+        window.removeEventListener('trigger-ota-demo', handleDemoTrigger);
+      }
     };
   }, []);
 

@@ -360,7 +360,28 @@ const Settings = () => {
         <View style={[s.separator, { backgroundColor: colors.border }]} />
 
         {/* Account Options */}
-        <Text style={[s.sectionTitle, { color: colors.text }]}>Account Actions</Text>
+        <Text style={[s.sectionTitle, { color: colors.text }]}>App & System Updates</Text>
+        
+        <TouchableOpacity
+          style={[
+            s.logoutBtn,
+            {
+              backgroundColor: isDark ? '#1e1b4b' : '#EEF2FF',
+              borderColor: isDark ? '#3730a3' : '#C7D2FE',
+              marginBottom: 12,
+            },
+          ]}
+          onPress={() => {
+            if (typeof window !== 'undefined') {
+              window.dispatchEvent(new Event('trigger-ota-demo'));
+            }
+          }}
+          activeOpacity={0.8}
+        >
+          <MaterialCommunityIcons name="lightning-bolt-outline" size={18} color="#6366F1" />
+          <Text style={[s.logoutBtnText, { color: '#6366F1' }]}>Check for App Updates (OTA)</Text>
+        </TouchableOpacity>
+
         <TouchableOpacity
           style={[
             s.logoutBtn,
