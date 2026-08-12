@@ -10,19 +10,19 @@ export const DocumentStats = () => {
   const { documents } = useDocuments();
   const { members } = useFamily();
   const fadeAnim = useRef(new Animated.Value(0)).current;
-  const translateY = useRef(new Animated.Value(20)).current;
+  const translateY = useRef(new Animated.Value(12)).current;
 
   useEffect(() => {
     Animated.parallel([
       Animated.timing(fadeAnim, {
         toValue: 1,
-        duration: 500,
+        duration: 400,
         useNativeDriver: Platform.OS !== 'web',
       }),
       Animated.spring(translateY, {
         toValue: 0,
-        friction: 6,
-        tension: 40,
+        friction: 10,
+        tension: 30,
         useNativeDriver: Platform.OS !== 'web',
       }),
     ]).start();

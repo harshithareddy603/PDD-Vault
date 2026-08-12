@@ -16,7 +16,7 @@ export const DocumentPreviewSheet = ({ document, isOpen, onClose }: DocumentPrev
   const [signedUrl, setSignedUrl] = useState<string | null>(null);
   const [remoteUrl, setRemoteUrl] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
-  const slideAnim = useRef(new Animated.Value(40)).current;
+  const slideAnim = useRef(new Animated.Value(16)).current;
   const fadeAnim = useRef(new Animated.Value(0)).current;
 
   useEffect(() => {
@@ -24,18 +24,18 @@ export const DocumentPreviewSheet = ({ document, isOpen, onClose }: DocumentPrev
       Animated.parallel([
         Animated.spring(slideAnim, {
           toValue: 0,
-          friction: 6,
-          tension: 50,
+          friction: 10,
+          tension: 35,
           useNativeDriver: Platform.OS !== 'web',
         }),
         Animated.timing(fadeAnim, {
           toValue: 1,
-          duration: 250,
+          duration: 300,
           useNativeDriver: Platform.OS !== 'web',
         })
       ]).start();
     } else {
-      slideAnim.setValue(40);
+      slideAnim.setValue(16);
       fadeAnim.setValue(0);
     }
   }, [isOpen]);

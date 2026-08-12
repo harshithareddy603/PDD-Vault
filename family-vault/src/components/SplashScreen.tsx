@@ -5,37 +5,38 @@ import { MaterialCommunityIcons, Feather } from '@expo/vector-icons';
 
 export const SplashScreen = () => {
   const [progress, setProgress] = useState(0);
-  const scaleAnim = useRef(new Animated.Value(0.7)).current;
+  const scaleAnim = useRef(new Animated.Value(0.92)).current;
   const fadeAnim = useRef(new Animated.Value(0)).current;
   const pulseAnim = useRef(new Animated.Value(1)).current;
 
   useEffect(() => {
-    // Intro scale and fade sequence
+    // Ultra-smooth intro sequence
     Animated.parallel([
       Animated.spring(scaleAnim, {
         toValue: 1,
-        friction: 4,
-        tension: 40,
+        friction: 9,
+        tension: 30,
         useNativeDriver: Platform.OS !== 'web',
       }),
       Animated.timing(fadeAnim, {
         toValue: 1,
-        duration: 600,
+        duration: 500,
+        easing: Easing.out(Easing.cubic),
         useNativeDriver: Platform.OS !== 'web',
       }),
     ]).start(() => {
-      // Continuous gentle pulse animation
+      // Subtle premium breathing pulse
       Animated.loop(
         Animated.sequence([
           Animated.timing(pulseAnim, {
-            toValue: 1.08,
-            duration: 1200,
+            toValue: 1.025,
+            duration: 2000,
             easing: Easing.inOut(Easing.ease),
             useNativeDriver: Platform.OS !== 'web',
           }),
           Animated.timing(pulseAnim, {
             toValue: 1,
-            duration: 1200,
+            duration: 2000,
             easing: Easing.inOut(Easing.ease),
             useNativeDriver: Platform.OS !== 'web',
           }),
