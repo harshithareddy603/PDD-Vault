@@ -1,12 +1,48 @@
-import { View, Text, StyleSheet, TouchableOpacity, TextInput, ScrollView, Image, Platform } from 'react-native'
-import React, { useEffect, useState } from "react";
+import { View, Text, StyleSheet, Animated, Easing, Platform } from 'react-native'
+import React, { useEffect, useRef, useState } from "react";
 import { ProgressBar } from 'react-native-paper';
 import { MaterialCommunityIcons, Feather } from '@expo/vector-icons';
 
 export const SplashScreen = () => {
   const [progress, setProgress] = useState(0);
+  const scaleAnim = useRef(new Animated.Value(0.7)).current;
+  const fadeAnim = useRef(new Animated.Value(0)).current;
+  const pulseAnim = useRef(new Animated.Value(1)).current;
 
   useEffect(() => {
+    // Intro scale and fade sequence
+    Animated.parallel([
+      Animated.spring(scaleAnim, {
+        toValue: 1,
+        friction: 4,
+        tension: 40,
+        useNativeDriver: Platform.OS !== 'web',
+      }),
+      Animated.timing(fadeAnim, {
+        toValue: 1,
+        duration: 600,
+        useNativeDriver: Platform.OS !== 'web',
+      }),
+    ]).start(() => {
+      // Continuous gentle pulse animation
+      Animated.loop(
+        Animated.sequence([
+          Animated.timing(pulseAnim, {
+            toValue: 1.08,
+            duration: 1200,
+            easing: Easing.inOut(Easing.ease),
+            useNativeDriver: Platform.OS !== 'web',
+          }),
+          Animated.timing(pulseAnim, {
+            toValue: 1,
+            duration: 1200,
+            easing: Easing.inOut(Easing.ease),
+            useNativeDriver: Platform.OS !== 'web',
+          }),
+        ])
+      ).start();
+    });
+
     // Simulate a loading bar animation
     const timer = setInterval(() => {
       setProgress((oldProgress) => {
@@ -27,28 +63,35 @@ export const SplashScreen = () => {
 
   return (
     <View style={styles.container}>
-      <View style={styles.main}>
-        <View style={styles.logoContainer}>
+      <Animated.View style={[styles.main, { opacity: fadeAnim }]}>
+        <Animated.View 
+          style={[
+            styles.logoContainer, 
+            { transform: [{ scale: Animated.multiply(scaleAnim, pulseAnim) }] }
+          ]}
+        >
           <Feather name="file-text" size={80} color="#fff" />
           <View style={styles.cloudIcon}>
             <MaterialCommunityIcons name="cloud" size={40} color="#fff" />
           </View>
-        </View>
+        </Animated.View>
         
-        <Text style={styles.title}>Smart Docs</Text>
+        <Animated.Text style={[styles.title, { transform: [{ scale: scaleAnim }] }]}>
+          Smart Docs
+        </Animated.Text>
         
         <View style={styles.progressContainer}>
-          <Text style={styles.loadingText}>Preparing your vault...</Text>
+          <Text style={styles.loadingText}>Preparing your family vault...</Text>
           <ProgressBar 
             progress={progress} 
             color="#FFFFFF" 
             style={styles.progressBar}
           />
         </View>
-      </View>
+      </Animated.View>
 
       <View style={styles.footer}>
-        <Text style={styles.footerText}>Doc Base</Text>
+        <Text style={styles.footerText}>Doc Base • PDD Family Vault</Text>
       </View>
     </View>
   );

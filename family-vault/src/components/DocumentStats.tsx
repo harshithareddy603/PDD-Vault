@@ -1,5 +1,5 @@
-import { View, Text, StyleSheet, Dimensions, ScrollView, TouchableOpacity, TextInput, Image } from 'react-native'
-import React, { useMemo } from "react";
+import { View, Text, StyleSheet, Dimensions, ScrollView, TouchableOpacity, TextInput, Image, Animated, Platform } from 'react-native'
+import React, { useEffect, useMemo, useRef } from "react";
 import { useDocuments } from "../hooks/useDocuments";
 import { useFamily } from "../hooks/useFamily";
 import { BarChart, LineChart } from "react-native-chart-kit";
@@ -9,6 +9,24 @@ const screenWidth = Dimensions.get("window").width;
 export const DocumentStats = () => {
   const { documents } = useDocuments();
   const { members } = useFamily();
+  const fadeAnim = useRef(new Animated.Value(0)).current;
+  const translateY = useRef(new Animated.Value(20)).current;
+
+  useEffect(() => {
+    Animated.parallel([
+      Animated.timing(fadeAnim, {
+        toValue: 1,
+        duration: 500,
+        useNativeDriver: Platform.OS !== 'web',
+      }),
+      Animated.spring(translateY, {
+        toValue: 0,
+        friction: 6,
+        tension: 40,
+        useNativeDriver: Platform.OS !== 'web',
+      }),
+    ]).start();
+  }, []);
 
   const categoryData = useMemo(() => {
     const counts: Record<string, number> = {};
@@ -84,7 +102,7 @@ export const DocumentStats = () => {
   };
 
   return (
-    <View style={styles.container}>
+    <Animated.View style={[styles.container, { opacity: fadeAnim, transform: [{ translateY }] }]}>
       <View style={styles.card}>
         <Text style={styles.cardTitle}>Documents by Category</Text>
         <BarChart
@@ -132,7 +150,7 @@ export const DocumentStats = () => {
           style={styles.chart}
         />
       </View>
-    </View>
+    </Animated.View>
   );
 };
 

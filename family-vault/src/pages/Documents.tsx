@@ -64,7 +64,8 @@ const Documents = () => {
     setOcrConfidence(null);
 
     try {
-      const ocr = await performLocalOCR(selectedFile.uri, selectedFile.name);
+      const sourceToPass = selectedFile.file || selectedFile.uri;
+      const ocr = await performLocalOCR(sourceToPass, selectedFile.name);
       setScanning(false);
       if (ocr) {
         setOcrConfidence(ocr.confidence);

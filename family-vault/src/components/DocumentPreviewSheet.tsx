@@ -1,5 +1,5 @@
-import { View, Text, StyleSheet, TouchableOpacity, Image, Modal, ActivityIndicator, Alert, Platform } from 'react-native';
-import React, { useEffect, useState } from "react";
+import { View, Text, StyleSheet, TouchableOpacity, Image, Modal, ActivityIndicator, Alert, Platform, Animated } from 'react-native';
+import React, { useEffect, useRef, useState } from "react";
 import { useDocuments } from "../hooks/useDocuments";
 import { Feather, MaterialCommunityIcons } from '@expo/vector-icons';
 import { WebView } from 'react-native-webview';
@@ -16,6 +16,29 @@ export const DocumentPreviewSheet = ({ document, isOpen, onClose }: DocumentPrev
   const [signedUrl, setSignedUrl] = useState<string | null>(null);
   const [remoteUrl, setRemoteUrl] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+  const slideAnim = useRef(new Animated.Value(40)).current;
+  const fadeAnim = useRef(new Animated.Value(0)).current;
+
+  useEffect(() => {
+    if (isOpen) {
+      Animated.parallel([
+        Animated.spring(slideAnim, {
+          toValue: 0,
+          friction: 6,
+          tension: 50,
+          useNativeDriver: Platform.OS !== 'web',
+        }),
+        Animated.timing(fadeAnim, {
+          toValue: 1,
+          duration: 250,
+          useNativeDriver: Platform.OS !== 'web',
+        })
+      ]).start();
+    } else {
+      slideAnim.setValue(40);
+      fadeAnim.setValue(0);
+    }
+  }, [isOpen]);
 
   useEffect(() => {
     if (isOpen && document?.file_url) {
@@ -55,7 +78,15 @@ export const DocumentPreviewSheet = ({ document, isOpen, onClose }: DocumentPrev
       transparent={false}
       onRequestClose={onClose}
     >
-      <View style={styles.modalContainer}>
+      <Animated.View 
+        style={[
+          styles.modalContainer,
+          {
+            opacity: fadeAnim,
+            transform: [{ translateY: slideAnim }]
+          }
+        ]}
+      >
         {/* Fullscreen Header Bar */}
         <View style={styles.headerRow}>
           <Text style={styles.title} numberOfLines={1}>{document.name}</Text>
@@ -144,7 +175,7 @@ export const DocumentPreviewSheet = ({ document, isOpen, onClose }: DocumentPrev
             </View>
           )}
         </View>
-      </View>
+      </Animated.View>
     </Modal>
   );
 };

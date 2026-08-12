@@ -501,6 +501,69 @@ export function parseExtractedText(rawText: string, filename: string = ''): Extr
 }
 
 /**
+ * Pre-processes image (Canvas binarization & contrast boost) for higher OCR accuracy
+ */
+async function preprocessImageForOCR(imageSource: string | File | Blob): Promise<string | File | Blob> {
+  if (typeof document === 'undefined') return imageSource;
+  try {
+    let srcUrl = '';
+    let shouldRevoke = false;
+
+    if (imageSource instanceof File || imageSource instanceof Blob) {
+      srcUrl = URL.createObjectURL(imageSource);
+      shouldRevoke = true;
+    } else if (typeof imageSource === 'string') {
+      srcUrl = imageSource;
+    } else {
+      return imageSource;
+    }
+
+    const img = new Image();
+    img.crossOrigin = 'anonymous';
+
+    await new Promise<void>((resolve, reject) => {
+      img.onload = () => resolve();
+      img.onerror = (e) => reject(e);
+      img.src = srcUrl;
+    });
+
+    if (shouldRevoke) URL.revokeObjectURL(srcUrl);
+
+    // Create contrast canvas
+    const canvas = document.createElement('canvas');
+    canvas.width = img.width;
+    canvas.height = img.height;
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return imageSource;
+
+    ctx.drawImage(img, 0, 0);
+    const imgData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+    const data = imgData.data;
+
+    // Grayscale + Contrast Adjustment algorithm for optimal document OCR
+    const contrast = 1.25; // Boost contrast for photo scans
+    const factor = (259 * (contrast + 255)) / (255 * (259 - contrast));
+
+    for (let i = 0; i < data.length; i += 4) {
+      const avg = 0.299 * data[i] + 0.587 * data[i + 1] + 0.114 * data[i + 2];
+      let newValue = factor * (avg - 128) + 128;
+      if (newValue < 0) newValue = 0;
+      if (newValue > 255) newValue = 255;
+
+      data[i] = newValue;     // R
+      data[i + 1] = newValue; // G
+      data[i + 2] = newValue; // B
+    }
+
+    ctx.putImageData(imgData, 0, 0);
+    return canvas.toDataURL('image/png');
+  } catch (err) {
+    console.warn("Image preprocessing skipped:", err);
+    return imageSource;
+  }
+}
+
+/**
  * Perform 100% Universal Parsing on ANY file type accepted by upload logic:
  * - Images (.jpg, .jpeg, .png, .webp, .bmp, .gif, .tiff, .heic)
  * - PDFs (.pdf - digital & scanned)
@@ -584,9 +647,14 @@ export async function performLocalOCR(
 
   // 4. Image Files (.jpg, .jpeg, .png, .webp, .bmp, .gif, .tiff, camera images)
   try {
-    const worker = await createWorker('eng');
+    if (onProgress) onProgress(0.3);
+    const processedSource = await preprocessImageForOCR(imageSource);
+
     if (onProgress) onProgress(0.5);
-    const ret = await worker.recognize(imageSource);
+    const worker = await createWorker('eng');
+    
+    if (onProgress) onProgress(0.8);
+    const ret = await worker.recognize(processedSource);
     await worker.terminate();
     if (onProgress) onProgress(1.0);
 
