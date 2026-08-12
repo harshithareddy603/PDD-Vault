@@ -71,12 +71,12 @@ export const DocumentPreviewSheet = ({ document, isOpen, onClose }: DocumentPrev
 
   const targetFileUrl = remoteUrl || signedUrl;
   
-  // Google Docs Embedded Viewer URL for PDF (100% in-app with pinch-to-zoom)
-  const googleDocsViewerUrl = targetFileUrl 
-    ? `https://docs.google.com/gview?embedded=true&url=${encodeURIComponent(targetFileUrl)}`
+  // PDF.js viewer with #zoom=page-width for edge-to-edge full height rendering
+  const pdfJsViewerUrl = targetFileUrl 
+    ? `https://mozilla.github.io/pdf.js/web/viewer.html?file=${encodeURIComponent(targetFileUrl)}#zoom=page-width`
     : null;
 
-  // HTML content for Image pinch-to-zoom inside WebView
+  // Responsive HTML wrapper for images
   const imageHtmlContent = targetFileUrl ? `
     <!DOCTYPE html>
     <html>
@@ -95,8 +95,8 @@ export const DocumentPreviewSheet = ({ document, isOpen, onClose }: DocumentPrev
             overflow: auto;
           }
           img {
-            max-width: 100%;
-            max-height: 100%;
+            width: 100%;
+            height: 100%;
             object-fit: contain;
             user-select: none;
             -webkit-user-select: none;
@@ -112,7 +112,7 @@ export const DocumentPreviewSheet = ({ document, isOpen, onClose }: DocumentPrev
   return (
     <Modal
       visible={isOpen}
-      animationType="fade"
+      animationType="slide"
       transparent={false}
       onRequestClose={onClose}
     >
@@ -127,9 +127,13 @@ export const DocumentPreviewSheet = ({ document, isOpen, onClose }: DocumentPrev
       >
         {/* Fullscreen Header Bar */}
         <View style={styles.headerRow}>
-          <View style={{ flex: 1, marginRight: 12 }}>
+          <TouchableOpacity style={styles.backButton} onPress={onClose} activeOpacity={0.7}>
+            <Feather name="arrow-left" size={22} color="#FFFFFF" />
+          </TouchableOpacity>
+
+          <View style={{ flex: 1, marginLeft: 12, marginRight: 12 }}>
             <Text style={styles.title} numberOfLines={1}>{document.name}</Text>
-            <Text style={styles.subtitle}>{document.category} · In-App Preview & Pinch-Zoom</Text>
+            <Text style={styles.subtitle}>{document.category} · Fullscreen Viewer</Text>
           </View>
           
           <View style={styles.headerActions}>
@@ -158,14 +162,14 @@ export const DocumentPreviewSheet = ({ document, isOpen, onClose }: DocumentPrev
               {isPdf ? (
                 Platform.OS === 'web' ? (
                   <iframe
-                    src={googleDocsViewerUrl || targetFileUrl}
-                    style={{ width: '100%', height: '100%', border: 'none', borderRadius: 8 }}
+                    src={pdfJsViewerUrl || targetFileUrl}
+                    style={{ width: '100%', height: '100%', border: 'none' }}
                     title="PDF In-App Viewer"
                   />
                 ) : (
                   <WebView
-                    source={{ uri: googleDocsViewerUrl || targetFileUrl }}
-                    style={{ flex: 1, width: '100%', height: '100%', borderRadius: 8, backgroundColor: '#0F172A' }}
+                    source={{ uri: pdfJsViewerUrl || targetFileUrl }}
+                    style={{ flex: 1, width: '100%', height: '100%', backgroundColor: '#0F172A' }}
                     startInLoadingState={true}
                     javaScriptEnabled={true}
                     domStorageEnabled={true}
@@ -176,14 +180,14 @@ export const DocumentPreviewSheet = ({ document, isOpen, onClose }: DocumentPrev
                     renderLoading={() => (
                       <View style={styles.centerContent}>
                         <ActivityIndicator size="large" color="#3b82f6" />
-                        <Text style={styles.loadingText}>Opening PDF in-app with pinch-to-zoom...</Text>
+                        <Text style={styles.loadingText}>Loading full-page PDF...</Text>
                       </View>
                     )}
                   />
                 )
               ) : isImage ? (
                 Platform.OS === 'web' ? (
-                  <div style={{ width: '100%', height: '100%', display: 'flex', justifyContent: 'center', alignItems: 'center', overflow: 'auto' }}>
+                  <div style={{ width: '100%', height: '100%', display: 'flex', justifyContent: 'center', alignItems: 'center', backgroundColor: '#0F172A' }}>
                     <img src={targetFileUrl} alt="Preview" style={{ maxWidth: '100%', maxHeight: '100%', objectFit: 'contain' }} />
                   </div>
                 ) : (
@@ -235,18 +239,22 @@ const styles = StyleSheet.create({
   modalContainer: {
     flex: 1,
     backgroundColor: '#0F172A',
-    paddingTop: Platform.OS === 'ios' ? 50 : 30,
-    paddingBottom: 20,
-    paddingHorizontal: 12,
+    paddingTop: Platform.OS === 'ios' ? 50 : 20,
+    paddingBottom: 0,
+    paddingHorizontal: 0,
   },
   headerRow: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
     paddingVertical: 12,
+    paddingHorizontal: 16,
+    backgroundColor: '#0F172A',
     borderBottomWidth: 1,
     borderBottomColor: '#1E293B',
-    marginBottom: 8,
+  },
+  backButton: {
+    padding: 6,
   },
   headerActions: {
     flexDirection: 'row',
@@ -276,6 +284,8 @@ const styles = StyleSheet.create({
   contentArea: {
     flex: 1,
     width: '100%',
+    height: '100%',
+    backgroundColor: '#0F172A',
   },
   centerContent: {
     flex: 1,
@@ -291,6 +301,7 @@ const styles = StyleSheet.create({
   previewContainer: {
     flex: 1,
     width: '100%',
+    height: '100%',
   },
   primaryButton: {
     flexDirection: 'row',

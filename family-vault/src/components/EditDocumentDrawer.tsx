@@ -1,6 +1,7 @@
-import { View, Text, StyleSheet, TouchableOpacity, TextInput, ScrollView, Image, Modal, ActivityIndicator, Alert, Platform } from 'react-native'
+import { View, Text, StyleSheet, TouchableOpacity, TextInput, ScrollView, Modal, ActivityIndicator, Alert, Platform } from 'react-native';
 import React, { useEffect, useState } from "react";
 import { Checkbox } from 'react-native-paper';
+import { Feather } from '@expo/vector-icons';
 import { useFamily } from "../hooks/useFamily";
 import { useDocuments } from "../hooks/useDocuments";
 import type { DocumentRow } from "../services/supabase";
@@ -57,176 +58,198 @@ export const EditDocumentDrawer = ({ document, isOpen, onClose }: EditDocumentDr
     <Modal
       visible={isOpen}
       animationType="slide"
-      transparent={true}
+      transparent={false}
       onRequestClose={onClose}
     >
-      <View style={styles.modalContainer}>
-        <View style={styles.content}>
-          <Text style={styles.title}>Edit Document</Text>
-          
-          <ScrollView style={styles.form}>
-            <View style={styles.inputGroup}>
-              <Text style={styles.label}>Document name</Text>
-              <TextInput 
-                style={styles.input} 
-                value={name} 
-                onChangeText={setName} 
-                placeholder="Enter name"
-              />
-            </View>
+      <View style={styles.fullScreenContainer}>
+        {/* Top Full-Page Header */}
+        <View style={styles.headerBar}>
+          <TouchableOpacity onPress={onClose} style={styles.backBtn} activeOpacity={0.7}>
+            <Feather name="arrow-left" size={22} color="#0F172A" />
+          </TouchableOpacity>
+          <Text style={styles.headerTitle}>Edit Document</Text>
+          <TouchableOpacity onPress={onClose} style={styles.closeBtn} activeOpacity={0.7}>
+            <Feather name="x" size={20} color="#64748B" />
+          </TouchableOpacity>
+        </View>
 
-            <View style={styles.row}>
-              <View style={[styles.inputGroup, { flex: 1, marginRight: 8 }]}>
-                <Text style={styles.label}>Category</Text>
-                {Platform.OS === 'web' ? (
-                  <select
-                    value={category}
-                    onChange={(e: any) => setCategory(e.target.value)}
-                    style={{
-                      borderWidth: 1,
-                      borderColor: '#E2E8F0',
-                      borderRadius: 12,
-                      paddingLeft: 16,
-                      paddingRight: 16,
-                      paddingTop: 12,
-                      paddingBottom: 12,
-                      fontSize: 16,
-                      backgroundColor: '#F8FAFC',
-                      outline: 'none',
-                      width: '100%',
-                      height: 50,
-                      cursor: 'pointer',
-                      color: '#0F172A',
-                    }}
-                  >
-                    {CATEGORIES.map((cat) => (
-                      <option key={cat} value={cat}>
-                        {cat}
-                      </option>
-                    ))}
-                  </select>
-                ) : (
-                  <TextInput 
-                    style={styles.input} 
-                    value={category} 
-                    onChangeText={setCategory}
-                    placeholder="Category"
-                  />
-                )}
-              </View>
-              <View style={[styles.inputGroup, { flex: 1, marginLeft: 8 }]}>
-                <Text style={styles.label}>Expiry</Text>
+        <ScrollView style={styles.formContent} contentContainerStyle={{ paddingBottom: 40 }}>
+          <View style={styles.inputGroup}>
+            <Text style={styles.label}>Document Name</Text>
+            <TextInput 
+              style={styles.input} 
+              value={name} 
+              onChangeText={setName} 
+              placeholder="Enter name"
+            />
+          </View>
+
+          <View style={styles.row}>
+            <View style={[styles.inputGroup, { flex: 1, marginRight: 8 }]}>
+              <Text style={styles.label}>Category</Text>
+              {Platform.OS === 'web' ? (
+                <select
+                  value={category}
+                  onChange={(e: any) => setCategory(e.target.value)}
+                  style={{
+                    borderWidth: 1,
+                    borderColor: '#E2E8F0',
+                    borderRadius: 12,
+                    paddingLeft: 16,
+                    paddingRight: 16,
+                    paddingTop: 12,
+                    paddingBottom: 12,
+                    fontSize: 16,
+                    backgroundColor: '#FFFFFF',
+                    outline: 'none',
+                    width: '100%',
+                    height: 50,
+                    cursor: 'pointer',
+                    color: '#0F172A',
+                  }}
+                >
+                  {CATEGORIES.map((cat) => (
+                    <option key={cat} value={cat}>
+                      {cat}
+                    </option>
+                  ))}
+                </select>
+              ) : (
                 <TextInput 
                   style={styles.input} 
-                  value={expiry} 
-                  onChangeText={setExpiry}
-                  placeholder="YYYY-MM-DD"
+                  value={category} 
+                  onChangeText={setCategory}
+                  placeholder="Category"
                 />
-              </View>
+              )}
             </View>
-
-            <View style={styles.inputGroup}>
-              <Text style={styles.label}>Belongs to</Text>
+            <View style={[styles.inputGroup, { flex: 1, marginLeft: 8 }]}>
+              <Text style={styles.label}>Expiry Date</Text>
               <TextInput 
                 style={styles.input} 
-                value={owner === "self" ? "Myself" : (members.find(m => m.id === owner)?.name || "Myself")} 
-                editable={false}
+                value={expiry} 
+                onChangeText={setExpiry}
+                placeholder="YYYY-MM-DD"
               />
             </View>
+          </View>
 
-            <View style={styles.checkboxContainer}>
-              <Checkbox.Android
-                status={priority ? 'checked' : 'unchecked'}
-                onPress={() => setPriority(!priority)}
-                color="#3b82f6"
-              />
-              <Text style={styles.checkboxLabel}>Mark as priority</Text>
-            </View>
+          <View style={styles.inputGroup}>
+            <Text style={styles.label}>Belongs to</Text>
+            <TextInput 
+              style={[styles.input, { backgroundColor: '#E2E8F0' }]} 
+              value={owner === "self" ? "Myself" : (members.find(m => m.id === owner)?.name || "Myself")} 
+              editable={false}
+            />
+          </View>
 
-            <TouchableOpacity 
-              style={[styles.saveButton, busy && styles.disabledButton]} 
-              onPress={submit}
-              disabled={busy}
-            >
-              {busy ? (
-                <ActivityIndicator color="#fff" />
-              ) : (
-                <Text style={styles.saveButtonText}>Save changes</Text>
-              )}
-            </TouchableOpacity>
+          <View style={styles.checkboxContainer}>
+            <Checkbox.Android
+              status={priority ? 'checked' : 'unchecked'}
+              onPress={() => setPriority(!priority)}
+              color="#3b82f6"
+            />
+            <Text style={styles.checkboxLabel}>Mark as priority document</Text>
+          </View>
 
-            <TouchableOpacity style={styles.cancelButton} onPress={onClose}>
-              <Text style={styles.cancelButtonText}>Cancel</Text>
-            </TouchableOpacity>
-          </ScrollView>
-        </View>
+          <TouchableOpacity 
+            style={[styles.saveButton, busy && styles.disabledButton]} 
+            onPress={submit}
+            disabled={busy}
+          >
+            {busy ? (
+              <ActivityIndicator color="#fff" />
+            ) : (
+              <Text style={styles.saveButtonText}>Save changes</Text>
+            )}
+          </TouchableOpacity>
+
+          <TouchableOpacity style={styles.cancelButton} onPress={onClose}>
+            <Text style={styles.cancelButtonText}>Cancel</Text>
+          </TouchableOpacity>
+        </ScrollView>
       </View>
     </Modal>
   );
 };
 
 const styles = StyleSheet.create({
-  modalContainer: {
+  fullScreenContainer: {
     flex: 1,
-    justifyContent: 'flex-end',
-    backgroundColor: 'rgba(15, 23, 42, 0.85)',
-    ...(Platform.OS === 'web' ? { backdropFilter: 'blur(10px)' as any } : {}),
+    backgroundColor: '#F8FAFC',
+    paddingTop: Platform.OS === 'ios' ? 50 : 20,
   },
-  content: {
+  headerBar: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: 20,
+    paddingVertical: 16,
     backgroundColor: '#FFFFFF',
-    borderTopLeftRadius: 24,
-    borderTopRightRadius: 24,
-    padding: 24,
-    maxHeight: '85%',
+    borderBottomWidth: 1,
+    borderBottomColor: '#E2E8F0',
   },
-  title: {
-    fontSize: 20,
+  backBtn: {
+    padding: 6,
+  },
+  headerTitle: {
+    fontSize: 18,
     fontWeight: 'bold',
     color: '#0F172A',
-    marginBottom: 24,
   },
-  form: {
-    marginBottom: 20,
+  closeBtn: {
+    padding: 6,
+  },
+  formContent: {
+    flex: 1,
+    padding: 20,
   },
   inputGroup: {
-    marginBottom: 16,
+    marginBottom: 18,
   },
   label: {
     fontSize: 14,
-    fontWeight: '500',
-    color: '#64748B',
+    fontWeight: '600',
+    color: '#475569',
     marginBottom: 8,
   },
   input: {
     borderWidth: 1,
-    borderColor: '#E2E8F0',
+    borderColor: '#CBD5E1',
     borderRadius: 12,
     paddingHorizontal: 16,
-    paddingVertical: 12,
+    paddingVertical: 14,
     fontSize: 16,
     color: '#0F172A',
-    backgroundColor: '#F8FAFC',
+    backgroundColor: '#FFFFFF',
   },
   row: {
     flexDirection: 'row',
-    marginBottom: 16,
+    marginBottom: 4,
   },
   checkboxContainer: {
     flexDirection: 'row',
     alignItems: 'center',
     marginBottom: 24,
+    marginTop: 8,
   },
   checkboxLabel: {
-    fontSize: 14,
+    fontSize: 15,
     color: '#0F172A',
     marginLeft: 8,
+    fontWeight: '500',
   },
   saveButton: {
     backgroundColor: '#3b82f6',
-    borderRadius: 12,
+    borderRadius: 14,
     paddingVertical: 16,
     alignItems: 'center',
     justifyContent: 'center',
+    shadowColor: '#3b82f6',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.2,
+    shadowRadius: 8,
+    elevation: 3,
   },
   disabledButton: {
     opacity: 0.7,
@@ -239,9 +262,13 @@ const styles = StyleSheet.create({
   cancelButton: {
     paddingVertical: 16,
     alignItems: 'center',
+    marginTop: 8,
   },
   cancelButtonText: {
     color: '#64748B',
-    fontSize: 14,
+    fontSize: 15,
+    fontWeight: '500',
   },
 });
+
+export default EditDocumentDrawer;

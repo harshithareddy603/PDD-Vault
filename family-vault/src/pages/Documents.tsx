@@ -438,12 +438,20 @@ const Documents = () => {
         </TouchableOpacity>
       )}
 
-      {/* Add Document Modal */}
-      <Modal visible={open} animationType="slide" transparent={true}>
-        <View style={styles.modalOverlay}>
-          <View style={[styles.modalContent, { backgroundColor: colors.modalBg || colors.card }]}>
-            <Text style={[styles.modalTitle, { color: colors.text }]}>Add Document</Text>
-            <ScrollView style={styles.modalForm}>
+      {/* Add Document Full Page Screen */}
+      <Modal visible={open} animationType="slide" transparent={false}>
+        <View style={{ flex: 1, backgroundColor: colors.background, paddingTop: Platform.OS === 'ios' ? 50 : 20 }}>
+          <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 20, paddingVertical: 16, backgroundColor: colors.card, borderBottomWidth: 1, borderBottomColor: colors.border }}>
+            <TouchableOpacity onPress={() => setOpen(false)} style={{ padding: 6 }}>
+              <Feather name="arrow-left" size={22} color={colors.text} />
+            </TouchableOpacity>
+            <Text style={{ fontSize: 18, fontWeight: 'bold', color: colors.text }}>Add Document</Text>
+            <TouchableOpacity onPress={() => setOpen(false)} style={{ padding: 6 }}>
+              <Feather name="x" size={20} color={colors.subtext} />
+            </TouchableOpacity>
+          </View>
+          <View style={{ flex: 1, padding: 20 }}>
+            <ScrollView style={styles.modalForm} contentContainerStyle={{ paddingBottom: 40 }}>
               <View style={styles.inputGroup}>
                 <Text style={[styles.label, { color: colors.text }]}>Select Source</Text>
                 
@@ -596,7 +604,6 @@ const Documents = () => {
                 disabled={busy}
               >
                 <Text style={[styles.cancelButtonText, { color: colors.subtext }]}>Cancel</Text>
-              </TouchableOpacity>
             </ScrollView>
           </View>
         </View>
