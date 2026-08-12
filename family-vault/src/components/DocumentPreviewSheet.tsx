@@ -1,7 +1,7 @@
-import { View, Text, StyleSheet, TouchableOpacity, Image, Modal, ActivityIndicator, Alert, Platform, Animated, ScrollView, Linking } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, Modal, ActivityIndicator, Alert, Platform, Animated } from 'react-native';
 import React, { useEffect, useRef, useState } from "react";
 import { useDocuments } from "../hooks/useDocuments";
-import { Feather, MaterialCommunityIcons } from '@expo/vector-icons';
+import { Feather } from '@expo/vector-icons';
 import { WebView } from 'react-native-webview';
 import type { DocumentRow } from "../services/supabase";
 
@@ -16,35 +16,12 @@ export const DocumentPreviewSheet = ({ document, isOpen, onClose }: DocumentPrev
   const [signedUrl, setSignedUrl] = useState<string | null>(null);
   const [remoteUrl, setRemoteUrl] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
-  const [zoomScale, setZoomScale] = useState(1);
-  const [rotation, setRotation] = useState(0);
-
-  const openInExternalDriveViewer = async (url: string) => {
-    try {
-      if (Platform.OS === 'android' || Platform.OS === 'ios') {
-        const canOpen = await Linking.canOpenURL(url).catch(() => false);
-        if (canOpen) {
-          await Linking.openURL(url);
-        } else {
-          Alert.alert("Opening PDF", "Opening PDF with device default viewer...");
-          await Linking.openURL(url);
-        }
-      } else {
-        window.open(url, '_blank');
-      }
-    } catch (err) {
-      console.warn("Linking openURL error:", err);
-      if (signedUrl) window.open(signedUrl, '_blank');
-    }
-  };
 
   const slideAnim = useRef(new Animated.Value(16)).current;
   const fadeAnim = useRef(new Animated.Value(0)).current;
 
   useEffect(() => {
     if (isOpen) {
-      setZoomScale(1);
-      setRotation(0);
       Animated.parallel([
         Animated.spring(slideAnim, {
           toValue: 0,
@@ -92,13 +69,45 @@ export const DocumentPreviewSheet = ({ document, isOpen, onClose }: DocumentPrev
   const isImage = ["jpg", "jpeg", "png", "gif", "webp", "svg"].includes(ext || "");
   const isPdf = ext === "pdf";
 
-  const targetPdfUrl = remoteUrl || signedUrl;
-  const pdfJsViewerUrl = targetPdfUrl ? `https://mozilla.github.io/pdf.js/web/viewer.html?file=${encodeURIComponent(targetPdfUrl)}` : null;
+  const targetFileUrl = remoteUrl || signedUrl;
+  
+  // Google Docs Embedded Viewer URL for PDF (100% in-app with pinch-to-zoom)
+  const googleDocsViewerUrl = targetFileUrl 
+    ? `https://docs.google.com/gview?embedded=true&url=${encodeURIComponent(targetFileUrl)}`
+    : null;
 
-  const handleZoomIn = () => setZoomScale((prev) => Math.min(prev + 0.25, 4.0));
-  const handleZoomOut = () => setZoomScale((prev) => Math.max(prev - 0.25, 0.5));
-  const handleResetZoom = () => { setZoomScale(1); setRotation(0); };
-  const handleRotate = () => setRotation((prev) => (prev + 90) % 360);
+  // HTML content for Image pinch-to-zoom inside WebView
+  const imageHtmlContent = targetFileUrl ? `
+    <!DOCTYPE html>
+    <html>
+      <head>
+        <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, user-scalable=yes">
+        <style>
+          html, body {
+            margin: 0;
+            padding: 0;
+            width: 100%;
+            height: 100%;
+            background-color: #0F172A;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            overflow: auto;
+          }
+          img {
+            max-width: 100%;
+            max-height: 100%;
+            object-fit: contain;
+            user-select: none;
+            -webkit-user-select: none;
+          }
+        </style>
+      </head>
+      <body>
+        <img src="${targetFileUrl}" alt="Document Preview" />
+      </body>
+    </html>
+  ` : '';
 
   return (
     <Modal
@@ -120,43 +129,10 @@ export const DocumentPreviewSheet = ({ document, isOpen, onClose }: DocumentPrev
         <View style={styles.headerRow}>
           <View style={{ flex: 1, marginRight: 12 }}>
             <Text style={styles.title} numberOfLines={1}>{document.name}</Text>
-            <Text style={styles.subtitle}>{document.category} · {Math.round(zoomScale * 100)}% Zoom</Text>
+            <Text style={styles.subtitle}>{document.category} · In-App Preview & Pinch-Zoom</Text>
           </View>
           
           <View style={styles.headerActions}>
-            {/* Interactive Zoom Controls */}
-            {isImage && (
-              <View style={styles.zoomBar}>
-                <TouchableOpacity style={styles.zoomBtn} onPress={handleZoomOut} activeOpacity={0.7}>
-                  <Feather name="zoom-out" size={16} color="#FFFFFF" />
-                </TouchableOpacity>
-
-                <TouchableOpacity style={styles.zoomBtn} onPress={handleResetZoom} activeOpacity={0.7}>
-                  <Text style={styles.zoomText}>{Math.round(zoomScale * 100)}%</Text>
-                </TouchableOpacity>
-
-                <TouchableOpacity style={styles.zoomBtn} onPress={handleZoomIn} activeOpacity={0.7}>
-                  <Feather name="zoom-in" size={16} color="#FFFFFF" />
-                </TouchableOpacity>
-
-                <TouchableOpacity style={styles.zoomBtn} onPress={handleRotate} activeOpacity={0.7}>
-                  <Feather name="rotate-cw" size={16} color="#FFFFFF" />
-                </TouchableOpacity>
-              </View>
-            )}
-
-            {/* Drive PDF Viewer button for PDFs */}
-            {isPdf && targetPdfUrl && (
-              <TouchableOpacity 
-                style={styles.driveHeaderButton} 
-                onPress={() => openInExternalDriveViewer(targetPdfUrl)}
-                activeOpacity={0.8}
-              >
-                <Feather name="external-link" size={16} color="#FFFFFF" style={{ marginRight: 6 }} />
-                <Text style={styles.driveBtnText}>Drive PDF Viewer</Text>
-              </TouchableOpacity>
-            )}
-
             <TouchableOpacity 
               style={styles.iconHeaderButton} 
               onPress={() => downloadFileToDevice(document.file_url!, document.name)}
@@ -177,76 +153,52 @@ export const DocumentPreviewSheet = ({ document, isOpen, onClose }: DocumentPrev
               <ActivityIndicator size="large" color="#3b82f6" />
               <Text style={styles.loadingText}>Loading document inside app...</Text>
             </View>
-          ) : (signedUrl || remoteUrl) ? (
+          ) : targetFileUrl ? (
             <View style={styles.previewContainer}>
               {isPdf ? (
-                <View style={{ flex: 1, width: '100%' }}>
-                  <TouchableOpacity
-                    style={styles.driveBanner}
-                    onPress={() => openInExternalDriveViewer(targetPdfUrl || '')}
-                    activeOpacity={0.85}
-                  >
-                    <MaterialCommunityIcons name="google-drive" size={20} color="#FFFFFF" style={{ marginRight: 8 }} />
-                    <Text style={styles.driveBannerText}>Open in Google Drive / PDF Reader App</Text>
-                    <Feather name="chevron-right" size={18} color="#FFFFFF" style={{ marginLeft: 'auto' }} />
-                  </TouchableOpacity>
-
-                  {Platform.OS === 'web' ? (
-                    <iframe
-                      src={signedUrl || remoteUrl || ''}
-                      style={{ flex: 1, width: '100%', height: '100%', border: 'none', borderRadius: 8 }}
-                      title="PDF Preview"
-                    />
-                  ) : pdfJsViewerUrl ? (
-                    <WebView
-                      source={{ uri: pdfJsViewerUrl }}
-                      style={{ flex: 1, width: '100%', height: '100%', borderRadius: 8 }}
-                      startInLoadingState={true}
-                      javaScriptEnabled={true}
-                      domStorageEnabled={true}
-                      scalesPageToFit={true}
-                      renderLoading={() => (
-                        <View style={styles.centerContent}>
-                          <ActivityIndicator size="large" color="#3b82f6" />
-                          <Text style={styles.loadingText}>Rendering PDF pages in-app...</Text>
-                        </View>
-                      )}
-                    />
-                  ) : (
-                    <View style={styles.centerContent}>
-                      <ActivityIndicator size="large" color="#3b82f6" />
-                      <Text style={styles.loadingText}>Preparing in-app viewer...</Text>
-                    </View>
-                  )}
-                </View>
+                Platform.OS === 'web' ? (
+                  <iframe
+                    src={googleDocsViewerUrl || targetFileUrl}
+                    style={{ width: '100%', height: '100%', border: 'none', borderRadius: 8 }}
+                    title="PDF In-App Viewer"
+                  />
+                ) : (
+                  <WebView
+                    source={{ uri: googleDocsViewerUrl || targetFileUrl }}
+                    style={{ flex: 1, width: '100%', height: '100%', borderRadius: 8, backgroundColor: '#0F172A' }}
+                    startInLoadingState={true}
+                    javaScriptEnabled={true}
+                    domStorageEnabled={true}
+                    scalesPageToFit={true}
+                    setBuiltInZoomControls={true}
+                    setDisplayZoomControls={false}
+                    allowsInlineMediaPlayback={true}
+                    renderLoading={() => (
+                      <View style={styles.centerContent}>
+                        <ActivityIndicator size="large" color="#3b82f6" />
+                        <Text style={styles.loadingText}>Opening PDF in-app with pinch-to-zoom...</Text>
+                      </View>
+                    )}
+                  />
+                )
               ) : isImage ? (
-                <ScrollView
-                  style={{ flex: 1, width: '100%' }}
-                  contentContainerStyle={{ flexGrow: 1, justifyContent: 'center', alignItems: 'center' }}
-                  maximumZoomScale={5}
-                  minimumZoomScale={0.5}
-                  showsHorizontalScrollIndicator={false}
-                  showsVerticalScrollIndicator={false}
-                >
-                  <View
-                    style={{
-                      transform: [
-                        { scale: zoomScale },
-                        { rotate: `${rotation}deg` }
-                      ],
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      width: '100%',
-                      height: '100%',
-                    }}
-                  >
-                    <Image 
-                      source={{ uri: signedUrl || remoteUrl || undefined }} 
-                      style={styles.fullImage} 
-                      resizeMode="contain" 
-                    />
-                  </View>
-                </ScrollView>
+                Platform.OS === 'web' ? (
+                  <div style={{ width: '100%', height: '100%', display: 'flex', justifyContent: 'center', alignItems: 'center', overflow: 'auto' }}>
+                    <img src={targetFileUrl} alt="Preview" style={{ maxWidth: '100%', maxHeight: '100%', objectFit: 'contain' }} />
+                  </div>
+                ) : (
+                  <WebView
+                    originWhitelist={['*']}
+                    source={{ html: imageHtmlContent }}
+                    style={{ flex: 1, width: '100%', height: '100%', backgroundColor: '#0F172A' }}
+                    startInLoadingState={true}
+                    javaScriptEnabled={true}
+                    domStorageEnabled={true}
+                    scalesPageToFit={true}
+                    setBuiltInZoomControls={true}
+                    setDisplayZoomControls={false}
+                  />
+                )
               ) : (
                 <View style={styles.centerContent}>
                   <View style={styles.fallbackIconContainer}>
@@ -311,38 +263,6 @@ const styles = StyleSheet.create({
     backgroundColor: '#3b82f6',
     borderRadius: 20,
   },
-  driveHeaderButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#059669',
-    paddingHorizontal: 12,
-    paddingVertical: 7,
-    borderRadius: 20,
-  },
-  driveBtnText: {
-    color: '#FFFFFF',
-    fontSize: 12,
-    fontWeight: '600',
-  },
-  driveBanner: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#059669',
-    paddingHorizontal: 16,
-    paddingVertical: 10,
-    borderRadius: 12,
-    marginBottom: 8,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.15,
-    shadowRadius: 4,
-    elevation: 3,
-  },
-  driveBannerText: {
-    color: '#FFFFFF',
-    fontSize: 13.5,
-    fontWeight: '600',
-  },
   title: {
     fontSize: 17,
     fontWeight: 'bold',
@@ -352,29 +272,6 @@ const styles = StyleSheet.create({
     fontSize: 11,
     color: '#94A3B8',
     marginTop: 2,
-  },
-  zoomBar: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#1E293B',
-    borderRadius: 20,
-    paddingHorizontal: 6,
-    paddingVertical: 4,
-    gap: 4,
-    borderWidth: 1,
-    borderColor: '#334155',
-  },
-  zoomBtn: {
-    paddingHorizontal: 8,
-    paddingVertical: 6,
-    borderRadius: 14,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  zoomText: {
-    color: '#FFFFFF',
-    fontSize: 11,
-    fontWeight: '600',
   },
   contentArea: {
     flex: 1,
@@ -394,10 +291,6 @@ const styles = StyleSheet.create({
   previewContainer: {
     flex: 1,
     width: '100%',
-  },
-  fullImage: {
-    width: '100%',
-    height: '100%',
   },
   primaryButton: {
     flexDirection: 'row',
@@ -450,3 +343,5 @@ const styles = StyleSheet.create({
     textAlign: 'center',
   },
 });
+
+export default DocumentPreviewSheet;
