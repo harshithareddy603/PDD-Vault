@@ -5,9 +5,10 @@
   "type": "module",
   "scripts": {
     "test:selenium": "node ./selenium-tests/generate-selenium-reports.mjs",
+    "test:appium": "node ./appium-tests/generate-appium-reports.mjs",
     "test:load": "node ./load-tests/run-load-test.mjs",
     "test:vulnerability": "node ./vulnerability-tests/generate-vulnerability-reports.mjs",
-    "test:all": "node ./selenium-tests/generate-selenium-reports.mjs && node ./vulnerability-tests/generate-vulnerability-reports.mjs && node ./load-tests/run-load-test.mjs"
+    "test:all": "node ./selenium-tests/generate-selenium-reports.mjs && node ./appium-tests/generate-appium-reports.mjs && node ./vulnerability-tests/generate-vulnerability-reports.mjs && node ./load-tests/run-load-test.mjs"
   },
   "dependencies": {
     "exceljs": "^4.4.0"
