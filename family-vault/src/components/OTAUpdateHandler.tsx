@@ -11,6 +11,8 @@ import {
 } from 'react-native';
 import * as Updates from 'expo-updates';
 
+import { AppState } from 'react-native';
+
 export const OTAUpdateHandler: React.FC = () => {
   const [visible, setVisible] = useState(false);
   const [applying, setApplying] = useState(false);
@@ -39,30 +41,47 @@ export const OTAUpdateHandler: React.FC = () => {
     }
   }, [visible]);
 
-  useEffect(() => {
+  const checkForUpdateNow = async () => {
     if (Platform.OS === 'web') return;
-
-    async function checkAndApplyUpdates() {
-      try {
-        if (__DEV__) {
-          console.log('[OTAUpdateHandler] Dev mode — skipping OTA check.');
-          return;
-        }
-
-        const update = await Updates.checkForUpdateAsync();
-        if (update.isAvailable) {
-          console.log('[OTAUpdateHandler] New update found. Fetching…');
-          const fetchResult = await Updates.fetchUpdateAsync();
-          if (fetchResult.isNew) {
-            setVisible(true);
-          }
-        }
-      } catch (error) {
-        console.error('[OTAUpdateHandler] OTA check error:', error);
+    try {
+      if (__DEV__) {
+        console.log('[OTAUpdateHandler] Dev mode — OTA check deferred.');
+        return;
       }
-    }
 
-    checkAndApplyUpdates();
+      console.log('[OTAUpdateHandler] Checking for OTA updates on EAS...');
+      const update = await Updates.checkForUpdateAsync();
+      if (update.isAvailable) {
+        console.log('[OTAUpdateHandler] New update found. Fetching...');
+        await Updates.fetchUpdateAsync();
+        setVisible(true);
+      } else {
+        console.log('[OTAUpdateHandler] No new updates available on channel.');
+      }
+    } catch (error) {
+      console.warn('[OTAUpdateHandler] OTA check error:', error);
+    }
+  };
+
+  useEffect(() => {
+    // 1. Initial 3-second check after launch
+    const timer = setTimeout(() => {
+      checkForUpdateNow();
+    }, 3000);
+
+    // 2. Re-check whenever user returns to the app from background
+    const subscription = AppState.addEventListener('change', (nextAppState) => {
+      if (nextAppState === 'active') {
+        setTimeout(() => {
+          checkForUpdateNow();
+        }, 2000);
+      }
+    });
+
+    return () => {
+      clearTimeout(timer);
+      subscription.remove();
+    };
   }, []);
 
   const handleRestart = async () => {
