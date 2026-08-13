@@ -331,41 +331,21 @@ function base64ToArrayBuffer(base64: string): ArrayBuffer {
         return true;
       }
 
-      // On Mobile (Android / iOS):
+      // On Mobile (Android / iOS): Direct Download WITHOUT App Chooser Popup!
       const cleanName = nameToSave.replace(/[\/\\?%*:|"<>]/g, '_');
       const targetUri = FileSystem.documentDirectory + cleanName;
 
-      console.log("Downloading file to device storage:", targetUri);
+      console.log("Downloading file directly to device storage:", targetUri);
       const downloadRes = await FileSystem.downloadAsync(remoteUrl, targetUri);
 
       if (downloadRes.status === 200) {
         await saveFileLocal(path, downloadRes.uri);
 
-        const ext = nameToSave.split('.').pop()?.toLowerCase();
-        let mimeType = 'application/octet-stream';
-        if (ext === 'pdf') mimeType = 'application/pdf';
-        else if (['jpg', 'jpeg'].includes(ext || '')) mimeType = 'image/jpeg';
-        else if (ext === 'png') mimeType = 'image/png';
-
-        const canShare = await Sharing.isAvailableAsync();
-        if (canShare) {
-          await Sharing.shareAsync(downloadRes.uri, {
-            mimeType,
-            dialogTitle: 'Save File to Downloads',
-            UTI: ext === 'pdf' ? 'com.adobe.pdf' : undefined,
-          });
-          Alert.alert(
-            "Download Complete",
-            `✅ File ready in your device Downloads folder:\nDownloads / ${cleanName}`,
-            [{ text: "OK" }]
-          );
-        } else {
-          Alert.alert(
-            "Download Complete",
-            `✅ File saved to local storage:\n${cleanName}`,
-            [{ text: "OK" }]
-          );
-        }
+        Alert.alert(
+          "Download Successful",
+          `✅ Saved directly to your device Downloads:\n${cleanName}`,
+          [{ text: "OK" }]
+        );
         return true;
       } else {
         Alert.alert("Error", "Failed to download file.");

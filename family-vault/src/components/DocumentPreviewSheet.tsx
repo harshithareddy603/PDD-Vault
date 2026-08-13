@@ -71,10 +71,36 @@ export const DocumentPreviewSheet = ({ document, isOpen, onClose }: DocumentPrev
 
   const targetFileUrl = remoteUrl || signedUrl;
 
-  // Google GView Viewer URL for 100% reliable PDF rendering on Android WebView
-  const googleGViewUrl = targetFileUrl
-    ? `https://docs.google.com/gview?embedded=true&url=${encodeURIComponent(targetFileUrl)}`
+  // Mozilla PDF.js Viewer URL with page-width zoom parameter
+  const pdfJsUrl = targetFileUrl
+    ? `https://mozilla.github.io/pdf.js/web/viewer.html?file=${encodeURIComponent(targetFileUrl)}#zoom=page-width`
     : null;
+
+  // JS Script to hide Mozilla PDF.js toolbars, coloring, drawing, and sidebar controls completely
+  const hideToolbarJS = `
+    (function() {
+      function hideElements() {
+        var toolbar = document.getElementById('toolbarContainer');
+        if (toolbar) toolbar.style.setProperty('display', 'none', 'important');
+        var secondaryToolbar = document.getElementById('secondaryToolbar');
+        if (secondaryToolbar) secondaryToolbar.style.setProperty('display', 'none', 'important');
+        var sidebar = document.getElementById('sidebarContainer');
+        if (sidebar) sidebar.style.setProperty('display', 'none', 'important');
+        var findbar = document.getElementsByClassName('findbar')[0];
+        if (findbar) findbar.style.setProperty('display', 'none', 'important');
+        var outerContainer = document.getElementById('outerContainer');
+        if (outerContainer) outerContainer.style.setProperty('top', '0px', 'important');
+        var mainContainer = document.getElementById('mainContainer');
+        if (mainContainer) mainContainer.style.setProperty('top', '0px', 'important');
+        var viewerContainer = document.getElementById('viewerContainer');
+        if (viewerContainer) viewerContainer.style.setProperty('top', '0px', 'important');
+      }
+      hideElements();
+      setTimeout(hideElements, 300);
+      setTimeout(hideElements, 1000);
+    })();
+    true;
+  `;
 
   return (
     <Modal
@@ -133,9 +159,9 @@ export const DocumentPreviewSheet = ({ document, isOpen, onClose }: DocumentPrev
                     style={{ width: '100%', height: '100%', border: 'none' }}
                     title="PDF Preview"
                   />
-                ) : googleGViewUrl ? (
+                ) : pdfJsUrl ? (
                   <WebView
-                    source={{ uri: googleGViewUrl }}
+                    source={{ uri: pdfJsUrl }}
                     style={{ flex: 1, width: '100%', height: '100%', backgroundColor: '#0F172A' }}
                     startInLoadingState={true}
                     javaScriptEnabled={true}
@@ -143,6 +169,8 @@ export const DocumentPreviewSheet = ({ document, isOpen, onClose }: DocumentPrev
                     scalesPageToFit={true}
                     setBuiltInZoomControls={true}
                     setDisplayZoomControls={false}
+                    injectedJavaScript={hideToolbarJS}
+                    onMessage={() => {}}
                     renderLoading={() => (
                       <View style={styles.centerContent}>
                         <ActivityIndicator size="large" color="#3b82f6" />
