@@ -169,7 +169,7 @@ export const SplashScreen = () => {
           <FloatingFileIcon iconName="school-outline" isMaterial startX={110} startY={60} delay={2200} color="#bae6fd" size={26} />
           
           <FloatingFileIcon iconName="cash-multiple" isMaterial startX={-60} startY={110} delay={2400} color="#86efac" size={26} />
-          <FloatingFileIcon iconName="folder-lock-outline" isMaterial startX={60} startY={110} delay={2600} color="#fed7aa" size={26} />
+          <FloatingFileIcon iconName="folder-lock" isMaterial startX={60} startY={110} delay={2600} color="#fed7aa" size={26} />
           <FloatingFileIcon iconName="star-circle-outline" isMaterial startX={-70} startY={-110} delay={2800} color="#fef08a" size={26} />
           <FloatingFileIcon iconName="file-search-outline" isMaterial startX={70} startY={-110} delay={3000} color="#93c5fd" size={26} />
 
