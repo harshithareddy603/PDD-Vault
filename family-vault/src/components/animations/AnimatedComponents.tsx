@@ -172,6 +172,21 @@ export const AnimatedFAB = ({ onScan, onUpload, onAddManual }: AnimatedFABProps)
   const translateY2 = menuAnim.interpolate({ inputRange: [0, 1], outputRange: [20, -125] });
   const translateY3 = menuAnim.interpolate({ inputRange: [0, 1], outputRange: [20, -180] });
 
+  const handleScanPress = () => {
+    toggleFAB();
+    onScan();
+  };
+
+  const handleUploadPress = () => {
+    toggleFAB();
+    onUpload();
+  };
+
+  const handleAddManualPress = () => {
+    toggleFAB();
+    onAddManual();
+  };
+
   return (
     <View style={styles.fabContainer} pointerEvents="box-none">
       {/* Secondary Actions */}
@@ -185,7 +200,7 @@ export const AnimatedFAB = ({ onScan, onUpload, onAddManual }: AnimatedFABProps)
         ]}
         pointerEvents={open ? 'auto' : 'none'}
       >
-        <TouchableOpacity style={[styles.secondaryBtn, { backgroundColor: '#8B5CF6' })} onPress={() => { toggleFAB(); onScan(); }}>
+        <TouchableOpacity style={[styles.secondaryBtn, { backgroundColor: '#8B5CF6' })} onPress={handleScanPress}>
           <MaterialCommunityIcons name="camera-document" size={18} color="#FFF" />
           <Text style={styles.secondaryLabel}>Scan Document</Text>
         </TouchableOpacity>
@@ -201,7 +216,7 @@ export const AnimatedFAB = ({ onScan, onUpload, onAddManual }: AnimatedFABProps)
         ]}
         pointerEvents={open ? 'auto' : 'none'}
       >
-        <TouchableOpacity style={[styles.secondaryBtn, { backgroundColor: '#06B6D4' })} onPress={() => { toggleFAB(); onUpload(); }}>
+        <TouchableOpacity style={[styles.secondaryBtn, { backgroundColor: '#06B6D4' })} onPress={handleUploadPress}>
           <Feather name="upload-cloud" size={18} color="#FFF" />
           <Text style={styles.secondaryLabel}>Upload File</Text>
         </TouchableOpacity>
@@ -217,7 +232,7 @@ export const AnimatedFAB = ({ onScan, onUpload, onAddManual }: AnimatedFABProps)
         ]}
         pointerEvents={open ? 'auto' : 'none'}
       >
-        <TouchableOpacity style={[styles.secondaryBtn, { backgroundColor: '#10B981' })} onPress={() => { toggleFAB(); onAddManual(); }}>
+        <TouchableOpacity style={[styles.secondaryBtn, { backgroundColor: '#10B981' })} onPress={handleAddManualPress}>
           <Feather name="file-plus" size={18} color="#FFF" />
           <Text style={styles.secondaryLabel}>Add Details</Text>
         </TouchableOpacity>
