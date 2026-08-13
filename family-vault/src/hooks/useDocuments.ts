@@ -4,6 +4,7 @@ import { useAuth } from "./useAuth";
 import { saveFileLocal, getFileLocal, deleteFileLocal } from "../lib/db";
 import * as FileSystem from 'expo-file-system';
 import * as Sharing from 'expo-sharing';
+import * as MediaLibrary from 'expo-media-library';
 import { Platform, Alert, Linking } from 'react-native';
 
 const isWeb = Platform.OS === 'web';
@@ -331,7 +332,7 @@ function base64ToArrayBuffer(base64: string): ArrayBuffer {
         return true;
       }
 
-      // On Mobile (Android / iOS): Direct Download WITHOUT App Chooser Popup!
+      // On Mobile (Android / iOS): Direct Download into Public Files by Google Downloads!
       const cleanName = nameToSave.replace(/[\/\\?%*:|"<>]/g, '_');
       const targetUri = FileSystem.documentDirectory + cleanName;
 
@@ -341,11 +342,67 @@ function base64ToArrayBuffer(base64: string): ArrayBuffer {
       if (downloadRes.status === 200) {
         await saveFileLocal(path, downloadRes.uri);
 
-        Alert.alert(
-          "Download Successful",
-          `✅ Saved directly to your device Downloads:\n${cleanName}`,
-          [{ text: "OK" }]
-        );
+        let savedInPublicStorage = false;
+
+        // 1. StorageAccessFramework: Writes directly into Android's public Downloads directory
+        if (Platform.OS === 'android' && FileSystem.StorageAccessFramework) {
+          try {
+            const permissions = await FileSystem.StorageAccessFramework.requestDirectoryPermissionsAsync();
+            if (permissions.granted) {
+              const base64 = await FileSystem.readAsStringAsync(downloadRes.uri, { encoding: FileSystem.EncodingType.Base64 });
+              
+              let mimeType = 'application/octet-stream';
+              if (pathExt === 'pdf') mimeType = 'application/pdf';
+              else if (['jpg', 'jpeg'].includes(pathExt)) mimeType = 'image/jpeg';
+              else if (pathExt === 'png') mimeType = 'image/png';
+
+              const createdUri = await FileSystem.StorageAccessFramework.createFileAsync(
+                permissions.directoryUri,
+                cleanName,
+                mimeType
+              );
+
+              await FileSystem.writeAsStringAsync(createdUri, base64, { encoding: FileSystem.EncodingType.Base64 });
+              savedInPublicStorage = true;
+              
+              Alert.alert(
+                "Download Successful",
+                `✅ File saved to Files by Google > Downloads:\n${cleanName}`,
+                [{ text: "OK" }]
+              );
+              return true;
+            }
+          } catch (safErr) {
+            console.warn("StorageAccessFramework save error:", safErr);
+          }
+        }
+
+        // 2. MediaLibrary fallback for saving assets into Android Media Store / Downloads
+        if (!savedInPublicStorage) {
+          try {
+            const mediaPerm = await MediaLibrary.requestPermissionsAsync();
+            if (mediaPerm.granted) {
+              await MediaLibrary.createAssetAsync(downloadRes.uri);
+              savedInPublicStorage = true;
+              Alert.alert(
+                "Download Successful",
+                `✅ File saved to Files by Google > Downloads & Gallery:\n${cleanName}`,
+                [{ text: "OK" }]
+              );
+              return true;
+            }
+          } catch (mediaErr) {
+            console.warn("MediaLibrary save error:", mediaErr);
+          }
+        }
+
+        if (!savedInPublicStorage) {
+          Alert.alert(
+            "Download Successful",
+            `✅ File downloaded to local storage:\n${cleanName}`,
+            [{ text: "OK" }]
+          );
+        }
         return true;
       } else {
         Alert.alert("Error", "Failed to download file.");
