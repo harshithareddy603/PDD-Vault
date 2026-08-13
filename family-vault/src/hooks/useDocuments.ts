@@ -341,35 +341,30 @@ function base64ToArrayBuffer(base64: string): ArrayBuffer {
       if (downloadRes.status === 200) {
         await saveFileLocal(path, downloadRes.uri);
 
+        const ext = nameToSave.split('.').pop()?.toLowerCase();
+        let mimeType = 'application/octet-stream';
+        if (ext === 'pdf') mimeType = 'application/pdf';
+        else if (['jpg', 'jpeg'].includes(ext || '')) mimeType = 'image/jpeg';
+        else if (ext === 'png') mimeType = 'image/png';
+
         const canShare = await Sharing.isAvailableAsync();
-        const locationMessage = `📁 Saved to Local Vault:\nInternal Storage > Android > data > com.pdd.familyvault > files > ${cleanName}`;
-
         if (canShare) {
+          await Sharing.shareAsync(downloadRes.uri, {
+            mimeType,
+            dialogTitle: 'Save File to Downloads',
+            UTI: ext === 'pdf' ? 'com.adobe.pdf' : undefined,
+          });
           Alert.alert(
-            "Download Successful",
-            `${locationMessage}\n\nWould you also like to save/export a copy into your phone's Downloads folder?`,
-            [
-              { text: "Keep in Vault Only", style: "cancel" },
-              {
-                text: "Export to Downloads",
-                onPress: async () => {
-                  const ext = nameToSave.split('.').pop()?.toLowerCase();
-                  let mimeType = 'application/octet-stream';
-                  if (ext === 'pdf') mimeType = 'application/pdf';
-                  else if (['jpg', 'jpeg'].includes(ext || '')) mimeType = 'image/jpeg';
-                  else if (ext === 'png') mimeType = 'image/png';
-
-                  await Sharing.shareAsync(downloadRes.uri, {
-                    mimeType,
-                    dialogTitle: 'Save Copy to Device Downloads',
-                    UTI: ext === 'pdf' ? 'com.adobe.pdf' : undefined,
-                  });
-                }
-              }
-            ]
+            "Download Complete",
+            `✅ File ready in your device Downloads folder:\nDownloads / ${cleanName}`,
+            [{ text: "OK" }]
           );
         } else {
-          Alert.alert("Download Complete", locationMessage, [{ text: "OK" }]);
+          Alert.alert(
+            "Download Complete",
+            `✅ File saved to local storage:\n${cleanName}`,
+            [{ text: "OK" }]
+          );
         }
         return true;
       } else {

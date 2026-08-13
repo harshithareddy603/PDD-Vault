@@ -1,4 +1,4 @@
-import { View, Text, StyleSheet, TouchableOpacity, Modal, ActivityIndicator, Alert, Platform, Animated } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, Modal, ActivityIndicator, Alert, Platform, Animated, Image, ScrollView } from 'react-native';
 import React, { useEffect, useRef, useState } from "react";
 import { useDocuments } from "../hooks/useDocuments";
 import { Feather } from '@expo/vector-icons';
@@ -71,44 +71,10 @@ export const DocumentPreviewSheet = ({ document, isOpen, onClose }: DocumentPrev
 
   const targetFileUrl = remoteUrl || signedUrl;
 
-  // Clean HTML view with 2-finger pinch-to-zoom and NO extra toolbars/coloring UI
-  const cleanDocHtml = targetFileUrl ? `
-    <!DOCTYPE html>
-    <html>
-      <head>
-        <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, user-scalable=yes">
-        <style>
-          * { box-sizing: border-box; }
-          html, body {
-            margin: 0;
-            padding: 0;
-            width: 100%;
-            height: 100%;
-            background-color: #0F172A;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            overflow: auto;
-          }
-          iframe, embed, object {
-            width: 100%;
-            height: 100%;
-            border: none;
-          }
-          img {
-            width: 100%;
-            height: 100%;
-            object-fit: contain;
-            user-select: none;
-            -webkit-user-select: none;
-          }
-        </style>
-      </head>
-      <body>
-        ${isPdf ? `<embed src="${targetFileUrl}#toolbar=0&navpanes=0&scrollbar=1" type="application/pdf" />` : `<img src="${targetFileUrl}" alt="Document Preview" />`}
-      </body>
-    </html>
-  ` : '';
+  // Google GView Viewer URL for 100% reliable PDF rendering on Android WebView
+  const googleGViewUrl = targetFileUrl
+    ? `https://docs.google.com/gview?embedded=true&url=${encodeURIComponent(targetFileUrl)}`
+    : null;
 
   return (
     <Modal
@@ -160,37 +126,68 @@ export const DocumentPreviewSheet = ({ document, isOpen, onClose }: DocumentPrev
             </View>
           ) : targetFileUrl ? (
             <View style={styles.previewContainer}>
-              {Platform.OS === 'web' ? (
-                isPdf ? (
+              {isPdf ? (
+                Platform.OS === 'web' ? (
                   <iframe
-                    src={`${targetFileUrl}#toolbar=0&navpanes=0`}
+                    src={targetFileUrl}
                     style={{ width: '100%', height: '100%', border: 'none' }}
-                    title="Clean Document View"
+                    title="PDF Preview"
+                  />
+                ) : googleGViewUrl ? (
+                  <WebView
+                    source={{ uri: googleGViewUrl }}
+                    style={{ flex: 1, width: '100%', height: '100%', backgroundColor: '#0F172A' }}
+                    startInLoadingState={true}
+                    javaScriptEnabled={true}
+                    domStorageEnabled={true}
+                    scalesPageToFit={true}
+                    setBuiltInZoomControls={true}
+                    setDisplayZoomControls={false}
+                    renderLoading={() => (
+                      <View style={styles.centerContent}>
+                        <ActivityIndicator size="large" color="#3b82f6" />
+                        <Text style={styles.loadingText}>Rendering PDF document...</Text>
+                      </View>
+                    )}
                   />
                 ) : (
-                  <div style={{ width: '100%', height: '100%', display: 'flex', justifyContent: 'center', alignItems: 'center', backgroundColor: '#0F172A' }}>
-                    <img src={targetFileUrl} alt="Preview" style={{ maxWidth: '100%', maxHeight: '100%', objectFit: 'contain' }} />
-                  </div>
+                  <View style={styles.centerContent}>
+                    <ActivityIndicator size="large" color="#3b82f6" />
+                    <Text style={styles.loadingText}>Preparing document viewer...</Text>
+                  </View>
                 )
+              ) : isImage ? (
+                <ScrollView
+                  style={{ flex: 1, width: '100%', height: '100%' }}
+                  contentContainerStyle={{ flexGrow: 1, justifyContent: 'center', alignItems: 'center' }}
+                  maximumZoomScale={5}
+                  minimumZoomScale={1}
+                  showsHorizontalScrollIndicator={false}
+                  showsVerticalScrollIndicator={false}
+                >
+                  <Image 
+                    source={{ uri: targetFileUrl }} 
+                    style={styles.fullImage} 
+                    resizeMode="contain" 
+                  />
+                </ScrollView>
               ) : (
-                <WebView
-                  originWhitelist={['*']}
-                  source={{ html: cleanDocHtml }}
-                  style={{ flex: 1, width: '100%', height: '100%', backgroundColor: '#0F172A' }}
-                  startInLoadingState={true}
-                  javaScriptEnabled={true}
-                  domStorageEnabled={true}
-                  scalesPageToFit={true}
-                  setBuiltInZoomControls={true}
-                  setDisplayZoomControls={false}
-                  allowsInlineMediaPlayback={true}
-                  renderLoading={() => (
-                    <View style={styles.centerContent}>
-                      <ActivityIndicator size="large" color="#3b82f6" />
-                      <Text style={styles.loadingText}>Rendering document...</Text>
-                    </View>
-                  )}
-                />
+                <View style={styles.centerContent}>
+                  <View style={styles.fallbackIconContainer}>
+                    <Text style={styles.fallbackExt}>{ext?.toUpperCase() || "?"}</Text>
+                  </View>
+                  <Text style={styles.notAvailableTitle}>File Ready</Text>
+                  <Text style={styles.notAvailableSubtitle}>
+                    Tap below to download this file onto your device Downloads folder.
+                  </Text>
+                  <TouchableOpacity 
+                    style={styles.primaryButton}
+                    onPress={() => downloadFileToDevice(document.file_url!, document.name)}
+                  >
+                    <Feather name="download" size={18} color="#fff" style={styles.btnIcon} />
+                    <Text style={styles.primaryButtonText}>Download to Downloads Folder</Text>
+                  </TouchableOpacity>
+                </View>
               )}
             </View>
           ) : (
@@ -274,6 +271,55 @@ const styles = StyleSheet.create({
     flex: 1,
     width: '100%',
     height: '100%',
+  },
+  fullImage: {
+    width: '100%',
+    height: '100%',
+  },
+  primaryButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#3b82f6',
+    width: '100%',
+    maxWidth: 320,
+    paddingVertical: 14,
+    borderRadius: 12,
+    marginBottom: 12,
+  },
+  primaryButtonText: {
+    color: '#FFFFFF',
+    fontWeight: '600',
+    fontSize: 15,
+  },
+  btnIcon: {
+    marginRight: 10,
+  },
+  fallbackIconContainer: {
+    width: 80,
+    height: 80,
+    backgroundColor: '#1E293B',
+    borderRadius: 40,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 16,
+  },
+  fallbackExt: {
+    fontSize: 22,
+    fontWeight: 'bold',
+    color: '#94A3B8',
+  },
+  notAvailableTitle: {
+    fontSize: 20,
+    fontWeight: 'bold',
+    color: '#FFFFFF',
+    marginBottom: 8,
+  },
+  notAvailableSubtitle: {
+    fontSize: 14,
+    color: '#94A3B8',
+    textAlign: 'center',
+    marginBottom: 24,
   },
   errorText: {
     color: '#F87171',
