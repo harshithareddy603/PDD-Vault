@@ -149,7 +149,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       verifyPasswordResetOtp,
       updatePassword
     }}>
-      {loading ? <SplashScreen /> : children}
+      {children}
     </Ctx.Provider>
   );
 };

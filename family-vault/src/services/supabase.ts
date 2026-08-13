@@ -30,10 +30,9 @@ export const supabase: SupabaseClient = createClient(
   anonKey || "placeholder-anon-key",
   {
     auth: {
-      persistSession: true,
-      autoRefreshToken: true,
+      persistSession: false,
+      autoRefreshToken: false,
       detectSessionInUrl: false,
-      storage: AsyncStorage,
     },
     global: {
       // Increase default timeout for slow networks
