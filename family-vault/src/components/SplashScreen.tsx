@@ -1,4 +1,4 @@
-import { View, Text, StyleSheet, Animated, Easing, Platform } from 'react-native'
+import { View, Text, StyleSheet, Animated, Easing, Platform } from 'react-native';
 import React, { useEffect, useRef, useState } from "react";
 import { ProgressBar } from 'react-native-paper';
 import { MaterialCommunityIcons, Feather } from '@expo/vector-icons';
@@ -9,9 +9,11 @@ interface FloatingIconProps {
   startX: number;
   startY: number;
   delay: number;
+  color?: string;
+  size?: number;
 }
 
-const FloatingFileIcon = ({ iconName, isMaterial, startX, startY, delay }: FloatingIconProps) => {
+const FloatingFileIcon = ({ iconName, isMaterial, startX, startY, delay, color = "#93c5fd", size = 26 }: FloatingIconProps) => {
   const anim = useRef(new Animated.Value(0)).current;
 
   useEffect(() => {
@@ -21,35 +23,35 @@ const FloatingFileIcon = ({ iconName, isMaterial, startX, startY, delay }: Float
         Animated.delay(delay),
         Animated.timing(anim, {
           toValue: 1,
-          duration: 1600,
+          duration: 1500,
           easing: Easing.bezier(0.25, 0.1, 0.25, 1),
           useNativeDriver: Platform.OS !== 'web',
         })
       ]).start(() => {
-        startAnim(); // Loop floating animation
+        startAnim(); // Loop floating animation continuously
       });
     };
     startAnim();
-  }, []);
+  }, [delay]);
 
   const translateX = anim.interpolate({
     inputRange: [0, 0.8, 1],
-    outputRange: [startX, startX * 0.15, 0],
+    outputRange: [startX, startX * 0.12, 0],
   });
 
   const translateY = anim.interpolate({
     inputRange: [0, 0.8, 1],
-    outputRange: [startY, 10, -10],
+    outputRange: [startY, 8, -8],
   });
 
   const scale = anim.interpolate({
     inputRange: [0, 0.2, 0.75, 1],
-    outputRange: [0.3, 1, 0.7, 0],
+    outputRange: [0.25, 1, 0.75, 0],
   });
 
   const opacity = anim.interpolate({
     inputRange: [0, 0.15, 0.75, 1],
-    outputRange: [0, 0.9, 0.8, 0],
+    outputRange: [0, 0.95, 0.85, 0],
   });
 
   return (
@@ -62,9 +64,9 @@ const FloatingFileIcon = ({ iconName, isMaterial, startX, startY, delay }: Float
       }}
     >
       {isMaterial ? (
-        <MaterialCommunityIcons name={iconName as any} size={28} color="#93c5fd" />
+        <MaterialCommunityIcons name={iconName as any} size={size} color={color} />
       ) : (
-        <Feather name={iconName as any} size={28} color="#bfdbfe" />
+        <Feather name={iconName as any} size={size} color={color} />
       )}
     </Animated.View>
   );
@@ -96,14 +98,14 @@ export const SplashScreen = () => {
       Animated.loop(
         Animated.sequence([
           Animated.timing(cloudPulse, {
-            toValue: 1.12,
-            duration: 900,
+            toValue: 1.14,
+            duration: 850,
             easing: Easing.inOut(Easing.ease),
             useNativeDriver: Platform.OS !== 'web',
           }),
           Animated.timing(cloudPulse, {
             toValue: 1,
-            duration: 900,
+            duration: 850,
             easing: Easing.inOut(Easing.ease),
             useNativeDriver: Platform.OS !== 'web',
           }),
@@ -148,13 +150,28 @@ export const SplashScreen = () => {
     <View style={styles.container}>
       <Animated.View style={[styles.main, { opacity: fadeAnim }]}>
         
-        {/* Animated Cloud Vault with Floating Files */}
+        {/* Animated Cloud Vault with 16 Floating File Type Particles */}
         <View style={styles.animationStage}>
-          {/* Floating Files moving INTO Cloud Icon */}
-          <FloatingFileIcon iconName="file-text" startX={-90} startY={90} delay={0} />
-          <FloatingFileIcon iconName="shield-check" isMaterial startX={90} startY={90} delay={400} />
-          <FloatingFileIcon iconName="card-account-details-outline" isMaterial startX={-100} startY={30} delay={800} />
-          <FloatingFileIcon iconName="image" startX={100} startY={30} delay={1200} />
+          {/* Floating File Particles moving INTO Cloud Symbol */}
+          <FloatingFileIcon iconName="file-text" startX={-130} startY={90} delay={0} color="#bfdbfe" size={28} />
+          <FloatingFileIcon iconName="shield-check" isMaterial startX={130} startY={90} delay={200} color="#93c5fd" size={28} />
+          <FloatingFileIcon iconName="card-account-details-outline" isMaterial startX={-140} startY={10} delay={400} color="#60a5fa" size={26} />
+          <FloatingFileIcon iconName="image" startX={140} startY={10} delay={600} color="#93c5fd" size={26} />
+          
+          <FloatingFileIcon iconName="file-pdf-box" isMaterial startX={-90} startY={-90} delay={800} color="#fca5a5" size={28} />
+          <FloatingFileIcon iconName="certificate" isMaterial startX={90} startY={-90} delay={1000} color="#fef08a" size={28} />
+          <FloatingFileIcon iconName="hospital-box-outline" isMaterial startX={-150} startY={-40} delay={1200} color="#86efac" size={26} />
+          <FloatingFileIcon iconName="car-info" isMaterial startX={150} startY={-40} delay={1400} color="#cbd5e1" size={26} />
+          
+          <FloatingFileIcon iconName="key-outline" isMaterial startX={0} startY={130} delay={1600} color="#fde047" size={28} />
+          <FloatingFileIcon iconName="passport" isMaterial startX={0} startY={-130} delay={1800} color="#a7f3d0" size={28} />
+          <FloatingFileIcon iconName="home-variant-outline" isMaterial startX={-110} startY={60} delay={2000} color="#ddd6fe" size={26} />
+          <FloatingFileIcon iconName="school-outline" isMaterial startX={110} startY={60} delay={2200} color="#bae6fd" size={26} />
+          
+          <FloatingFileIcon iconName="cash-multiple" isMaterial startX={-60} startY={110} delay={2400} color="#86efac" size={26} />
+          <FloatingFileIcon iconName="folder-lock-outline" isMaterial startX={60} startY={110} delay={2600} color="#fed7aa" size={26} />
+          <FloatingFileIcon iconName="star-circle-outline" isMaterial startX={-70} startY={-110} delay={2800} color="#fef08a" size={26} />
+          <FloatingFileIcon iconName="file-search-outline" isMaterial startX={70} startY={-110} delay={3000} color="#93c5fd" size={26} />
 
           {/* Central Cloud Symbol */}
           <Animated.View
@@ -163,7 +180,7 @@ export const SplashScreen = () => {
               { transform: [{ scale: cloudPulse }] }
             ]}
           >
-            <MaterialCommunityIcons name="cloud-upload" size={100} color="#FFFFFF" />
+            <MaterialCommunityIcons name="cloud-upload" size={104} color="#FFFFFF" />
           </Animated.View>
         </View>
 
@@ -208,8 +225,8 @@ const styles = StyleSheet.create({
   },
   animationStage: {
     position: 'relative',
-    width: 220,
-    height: 160,
+    width: 260,
+    height: 180,
     alignItems: 'center',
     justifyContent: 'center',
     marginBottom: 20,
@@ -259,3 +276,5 @@ const styles = StyleSheet.create({
     letterSpacing: 1,
   },
 });
+
+export default SplashScreen;
