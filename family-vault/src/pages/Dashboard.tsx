@@ -15,6 +15,7 @@ import { useAuth } from '../hooks/useAuth';
 import { useFamily } from '../hooks/useFamily';
 import { DocumentLogo } from '../components/DocumentLogo';
 import { useNavigation } from '@react-navigation/native';
+import { MaterialCommunityIcons, Feather } from '@expo/vector-icons';
 import { useTheme } from '../context/ThemeContext';
 import { SkeletonStatCard, SkeletonCard } from '../components/animations/SkeletonLoader';
 import { AnimatedCard, AnimatedBadge } from '../components/animations/AnimatedComponents';

@@ -64,9 +64,7 @@ export const AnimatedCard = ({ children, index = 0, delay, style, onPress }: Ani
     }
   };
 
-  const Component = onPress ? TouchableOpacity : View;
-
-  return (
+  const innerContent = (
     <Animated.View
       style={[
         {
@@ -84,11 +82,19 @@ export const AnimatedCard = ({ children, index = 0, delay, style, onPress }: Ani
       // @ts-ignore
       onMouseLeave={handleHoverOut}
     >
-      <Component onPress={onPress} activeOpacity={0.85} style={{ flex: 1 }}>
-        {children}
-      </Component>
+      {children}
     </Animated.View>
   );
+
+  if (onPress) {
+    return (
+      <TouchableOpacity onPress={onPress} activeOpacity={0.85} style={{ flex: 1 }}>
+        {innerContent}
+      </TouchableOpacity>
+    );
+  }
+
+  return innerContent;
 };
 
 // ─── 2. AnimatedBadge (Soon Expiry Pulse) ──────────────────────────────────
