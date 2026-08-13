@@ -12,7 +12,7 @@ interface AnimatedCardProps {
   onPress?: () => void;
 }
 
-export const AnimatedCard = ({ children, index = 0, delay, style, onPress }: AnimatedCardProps) => {
+export const AnimatedCard: React.FC<AnimatedCardProps> = ({ children, index = 0, delay, style, onPress }) => {
   const fadeAnim = useRef(new Animated.Value(0)).current;
   const slideAnim = useRef(new Animated.Value(15)).current;
   const scaleAnim = useRef(new Animated.Value(0.98)).current;
@@ -64,7 +64,7 @@ export const AnimatedCard = ({ children, index = 0, delay, style, onPress }: Ani
     }
   };
 
-  const innerContent = (
+  const content = (
     <Animated.View
       style={[
         {
@@ -89,16 +89,22 @@ export const AnimatedCard = ({ children, index = 0, delay, style, onPress }: Ani
   if (onPress) {
     return (
       <TouchableOpacity onPress={onPress} activeOpacity={0.85} style={{ flex: 1 }}>
-        {innerContent}
+        {content}
       </TouchableOpacity>
     );
   }
 
-  return innerContent;
+  return content;
 };
 
 // ─── 2. AnimatedBadge (Soon Expiry Pulse) ──────────────────────────────────
-export const AnimatedBadge = ({ status, children, style }: { status: 'safe' | 'soon' | 'expired'; children: React.ReactNode; style?: any }) => {
+interface AnimatedBadgeProps {
+  status: 'safe' | 'soon' | 'expired';
+  children: React.ReactNode;
+  style?: StyleProp<ViewStyle>;
+}
+
+export const AnimatedBadge: React.FC<AnimatedBadgeProps> = ({ status, children, style }) => {
   const pulseAnim = useRef(new Animated.Value(1)).current;
 
   useEffect(() => {
@@ -138,7 +144,7 @@ interface AnimatedFABProps {
   onAddManual: () => void;
 }
 
-export const AnimatedFAB = ({ onScan, onUpload, onAddManual }: AnimatedFABProps) => {
+export const AnimatedFAB: React.FC<AnimatedFABProps> = ({ onScan, onUpload, onAddManual }) => {
   const [open, setOpen] = useState(false);
   const rotateAnim = useRef(new Animated.Value(0)).current;
   const menuAnim = useRef(new Animated.Value(0)).current;
@@ -172,17 +178,17 @@ export const AnimatedFAB = ({ onScan, onUpload, onAddManual }: AnimatedFABProps)
   const translateY2 = menuAnim.interpolate({ inputRange: [0, 1], outputRange: [20, -125] });
   const translateY3 = menuAnim.interpolate({ inputRange: [0, 1], outputRange: [20, -180] });
 
-  const handleScanPress = () => {
+  const handleScanClick = () => {
     toggleFAB();
     onScan();
   };
 
-  const handleUploadPress = () => {
+  const handleUploadClick = () => {
     toggleFAB();
     onUpload();
   };
 
-  const handleAddManualPress = () => {
+  const handleAddClick = () => {
     toggleFAB();
     onAddManual();
   };
@@ -200,7 +206,7 @@ export const AnimatedFAB = ({ onScan, onUpload, onAddManual }: AnimatedFABProps)
         ]}
         pointerEvents={open ? 'auto' : 'none'}
       >
-        <TouchableOpacity style={[styles.secondaryBtn, { backgroundColor: '#8B5CF6' })} onPress={handleScanPress}>
+        <TouchableOpacity style={[styles.secondaryBtn, { backgroundColor: '#8B5CF6' })} onPress={handleScanClick}>
           <MaterialCommunityIcons name="camera-document" size={18} color="#FFF" />
           <Text style={styles.secondaryLabel}>Scan Document</Text>
         </TouchableOpacity>
@@ -216,7 +222,7 @@ export const AnimatedFAB = ({ onScan, onUpload, onAddManual }: AnimatedFABProps)
         ]}
         pointerEvents={open ? 'auto' : 'none'}
       >
-        <TouchableOpacity style={[styles.secondaryBtn, { backgroundColor: '#06B6D4' })} onPress={handleUploadPress}>
+        <TouchableOpacity style={[styles.secondaryBtn, { backgroundColor: '#06B6D4' })} onPress={handleUploadClick}>
           <Feather name="upload-cloud" size={18} color="#FFF" />
           <Text style={styles.secondaryLabel}>Upload File</Text>
         </TouchableOpacity>
@@ -232,7 +238,7 @@ export const AnimatedFAB = ({ onScan, onUpload, onAddManual }: AnimatedFABProps)
         ]}
         pointerEvents={open ? 'auto' : 'none'}
       >
-        <TouchableOpacity style={[styles.secondaryBtn, { backgroundColor: '#10B981' })} onPress={handleAddManualPress}>
+        <TouchableOpacity style={[styles.secondaryBtn, { backgroundColor: '#10B981' })} onPress={handleAddClick}>
           <Feather name="file-plus" size={18} color="#FFF" />
           <Text style={styles.secondaryLabel}>Add Details</Text>
         </TouchableOpacity>
@@ -248,8 +254,8 @@ export const AnimatedFAB = ({ onScan, onUpload, onAddManual }: AnimatedFABProps)
   );
 };
 
-// ─── 4. AnimatedScanner (Scanning Guides + Moving Laser Line) ───────────────
-export const AnimatedScannerLine = () => {
+// ─── 4. AnimatedScannerLine ───────────────────────────────────────────────────
+export const AnimatedScannerLine: React.FC = () => {
   const scanLineAnim = useRef(new Animated.Value(0)).current;
 
   useEffect(() => {
@@ -283,8 +289,13 @@ export const AnimatedScannerLine = () => {
   );
 };
 
-// ─── 5. AnimatedNotificationBell (Wiggle Rotation + Badge Scale) ───────────
-export const AnimatedNotificationBell = ({ hasNotif, onPress }: { hasNotif: boolean; onPress: () => void }) => {
+// ─── 5. AnimatedNotificationBell ──────────────────────────────────────────────
+interface AnimatedNotificationBellProps {
+  hasNotif: boolean;
+  onPress: () => void;
+}
+
+export const AnimatedNotificationBell: React.FC<AnimatedNotificationBellProps> = ({ hasNotif, onPress }) => {
   const { colors } = useTheme();
   const wiggleAnim = useRef(new Animated.Value(0)).current;
   const badgeScale = useRef(new Animated.Value(hasNotif ? 1 : 0)).current;
