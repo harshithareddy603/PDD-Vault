@@ -8,6 +8,7 @@ import {
   Platform,
   Image,
   useWindowDimensions,
+  Modal,
 } from 'react-native';
 import React, { ReactNode, useState } from 'react';
 import { useAuth } from '../hooks/useAuth';
@@ -390,19 +391,43 @@ export const AppLayout = ({ children, scrollable = true }: { children: ReactNode
           })}
         </View>
 
-        {/* Slide-up Menu Drawer */}
-        {menuOpen && (
-          <>
-            {/* Backdrop */}
-            <TouchableOpacity 
-              style={ms.drawerBackdrop} 
-              activeOpacity={1} 
-              onPress={() => setMenuOpen(false)}
-            />
-            {/* Drawer Content */}
-            <View style={[ms.drawerContent, { backgroundColor: colors.card, borderColor: colors.border }]}>
-              <View style={[ms.drawerHeader, { borderBottomColor: colors.border }]}>
-                <View style={ms.drawerUserRow}>
+        {/* Full-Page Menu Screen */}
+        <Modal
+          visible={menuOpen}
+          animationType="slide"
+          transparent={false}
+          onRequestClose={() => setMenuOpen(false)}
+        >
+          <SafeAreaView style={[ms.safe, { backgroundColor: colors.background }]}>
+            <View style={[ms.fullPageHeader, { backgroundColor: colors.card, borderBottomColor: colors.border }]}>
+              <TouchableOpacity 
+                style={ms.fullPageBackBtn} 
+                onPress={() => setMenuOpen(false)}
+                activeOpacity={0.7}
+              >
+                <Feather name="arrow-left" size={22} color={colors.text} />
+              </TouchableOpacity>
+              <Text style={[ms.fullPageTitle, { color: colors.text }]}>More Options</Text>
+              <TouchableOpacity 
+                style={ms.fullPageBackBtn} 
+                onPress={() => setMenuOpen(false)}
+                activeOpacity={0.7}
+              >
+                <Feather name="x" size={22} color={colors.text} />
+              </TouchableOpacity>
+            </View>
+
+            <ScrollView contentContainerStyle={ms.fullPageContent} showsVerticalScrollIndicator={false}>
+              {/* User Profile Summary Header Card */}
+              <View style={[ms.drawerHeader, { borderBottomColor: colors.border, backgroundColor: colors.card, padding: 16, borderRadius: 16, marginBottom: 20 }]}>
+                <TouchableOpacity 
+                  style={ms.drawerUserRow} 
+                  onPress={() => {
+                    setMenuOpen(false);
+                    navigation.navigate('Profile');
+                  }}
+                  activeOpacity={0.8}
+                >
                   <View style={ms.drawerAvatar}>
                     {user?.user_metadata?.avatar_url ? (
                       <Image source={{ uri: user.user_metadata.avatar_url }} style={ms.drawerAvatarImg} />
@@ -414,19 +439,26 @@ export const AppLayout = ({ children, scrollable = true }: { children: ReactNode
                     <Text style={[ms.drawerUserName, { color: colors.text }]}>{fullName}</Text>
                     <Text style={[ms.drawerUserEmail, { color: colors.subtext }]}>{user?.email}</Text>
                   </View>
-                </View>
+                  <Feather name="chevron-right" size={20} color={colors.subtext} />
+                </TouchableOpacity>
               </View>
 
+              {/* Grid of Actions */}
+              <Text style={{ fontSize: 13, fontWeight: '700', color: colors.subtext, textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 12 }}>
+                Quick Navigation
+              </Text>
               <View style={ms.drawerGrid}>
                 {[
-                  { to: 'Notifications', label: 'Alerts', icon: 'bell-outline', color: '#F97316', bg: isDark ? '#332010' : '#FFEDD5' },
-                  { to: 'Analytics', label: 'Analytics', icon: 'chart-bar', color: '#10B981', bg: isDark ? '#063022' : '#D1FAE5' },
-                  { to: 'Settings', label: 'Settings', icon: 'cog-outline', color: '#64748B', bg: isDark ? '#334155' : '#F1F5F9' },
-                  { to: 'Profile', label: 'Profile', icon: 'account-outline', color: '#3B82F6', bg: isDark ? '#1e3a8a' : '#DBEAFE' },
+                  { to: 'Notifications', label: 'Alerts & Expiries', icon: 'bell-outline', color: '#F97316', bg: isDark ? '#332010' : '#FFEDD5' },
+                  { to: 'Analytics', label: 'Vault Analytics', icon: 'chart-bar', color: '#10B981', bg: isDark ? '#063022' : '#D1FAE5' },
+                  { to: 'Settings', label: 'App Settings', icon: 'cog-outline', color: '#64748B', bg: isDark ? '#334155' : '#F1F5F9' },
+                  { to: 'Profile', label: 'Account Profile', icon: 'account-outline', color: '#3B82F6', bg: isDark ? '#1e3a8a' : '#DBEAFE' },
+                  { to: 'Documents', label: 'All Documents', icon: 'file-document-outline', color: '#8B5CF6', bg: isDark ? '#2e1065' : '#F3E8FF' },
+                  { to: 'Search', label: 'Search Vault', icon: 'magnify', color: '#06B6D4', bg: isDark ? '#083344' : '#CFFAFE' },
                 ].map((item) => (
                   <TouchableOpacity
                     key={item.to}
-                    style={[ms.drawerGridItem, { backgroundColor: colors.surface, borderColor: colors.border }]}
+                    style={[ms.drawerGridItem, { backgroundColor: colors.card, borderColor: colors.border }]}
                     onPress={() => {
                       setMenuOpen(false);
                       navigation.navigate(item.to);
@@ -440,12 +472,15 @@ export const AppLayout = ({ children, scrollable = true }: { children: ReactNode
                 ))}
               </View>
 
-              {/* Theme Toggle Button in Drawer */}
+              {/* Theme Toggle Button */}
+              <Text style={{ fontSize: 13, fontWeight: '700', color: colors.subtext, textTransform: 'uppercase', letterSpacing: 0.5, marginTop: 12, marginBottom: 12 }}>
+                Preferences & Account
+              </Text>
               <TouchableOpacity
                 style={[
                   ms.drawerLogoutBtn,
                   {
-                    backgroundColor: colors.surface,
+                    backgroundColor: colors.card,
                     borderColor: colors.border,
                     marginBottom: 12,
                   },
@@ -454,14 +489,16 @@ export const AppLayout = ({ children, scrollable = true }: { children: ReactNode
                   toggleTheme();
                 }}
               >
-                <Feather name={isDark ? 'sun' : 'moon'} size={18} color={isDark ? '#F59E0B' : '#3B82F6'} style={{ marginRight: 8 }} />
-                <Text style={{ color: colors.text, fontSize: 13.5, fontWeight: '600' }}>
-                  {isDark ? 'Switch to Light Theme' : 'Switch to Dark Theme'}
+                <Feather name={isDark ? 'sun' : 'moon'} size={18} color={isDark ? '#F59E0B' : '#3B82F6'} style={{ marginRight: 10 }} />
+                <Text style={{ color: colors.text, fontSize: 14, fontWeight: '600', flex: 1 }}>
+                  {isDark ? 'Switch to Light Mode' : 'Switch to Dark Mode'}
                 </Text>
+                <Feather name="chevron-right" size={18} color={colors.subtext} />
               </TouchableOpacity>
 
+              {/* Log Out Button */}
               <TouchableOpacity
-                style={ms.drawerLogoutBtn}
+                style={[ms.drawerLogoutBtn, { backgroundColor: '#FEF2F2', borderColor: '#FEE2E2' }]}
                 onPress={async () => {
                   setMenuOpen(false);
                   await signOut();
@@ -469,11 +506,11 @@ export const AppLayout = ({ children, scrollable = true }: { children: ReactNode
                 }}
               >
                 <Feather name="log-out" size={18} color="#EF4444" style={{ marginRight: 8 }} />
-                <Text style={ms.drawerLogoutText}>Log Out</Text>
+                <Text style={ms.drawerLogoutText}>Log Out from Account</Text>
               </TouchableOpacity>
-            </View>
-          </>
-        )}
+            </ScrollView>
+          </SafeAreaView>
+        </Modal>
       </View>
     </SafeAreaView>
   );
@@ -791,13 +828,33 @@ const ms = StyleSheet.create({
     backgroundColor: '#FEF2F2',
     borderWidth: 1,
     borderColor: '#FEE2E2',
-    paddingVertical: 12,
+    paddingVertical: 14,
+    paddingHorizontal: 16,
     borderRadius: 12,
     width: '100%',
   },
   drawerLogoutText: {
     color: '#EF4444',
-    fontSize: 13.5,
+    fontSize: 14,
     fontWeight: '600',
+  },
+  fullPageHeader: {
+    height: 56,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: 16,
+    borderBottomWidth: 1,
+  },
+  fullPageBackBtn: {
+    padding: 8,
+  },
+  fullPageTitle: {
+    fontSize: 17,
+    fontWeight: '700',
+  },
+  fullPageContent: {
+    padding: 20,
+    paddingBottom: 40,
   },
 });
