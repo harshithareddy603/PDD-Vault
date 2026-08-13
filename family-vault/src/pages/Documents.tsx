@@ -17,6 +17,8 @@ import { useRoute, useNavigation } from '@react-navigation/native';
 import * as ImagePicker from 'expo-image-picker';
 import { useTheme } from '../context/ThemeContext';
 import { performLocalOCR } from '../services/ocrService';
+import { SkeletonCard } from '../components/animations/SkeletonLoader';
+import { AnimatedCard, AnimatedFAB, AnimatedBadge } from '../components/animations/AnimatedComponents';
 
 const CATEGORIES = ["ID", "Certificate", "Insurance", "Medical", "License", "Resume", "Passport", "Education", "Property", "Other"];
 const FILTER_CHIPS = ["All", ...CATEGORIES, "⚠ Expiring Soon", "❌ Expired"];
@@ -430,12 +432,11 @@ const Documents = () => {
       </View>
 
       {!selectionMode && (
-        <TouchableOpacity 
-          style={styles.fab}
-          onPress={() => setOpen(true)}
-        >
-          <Feather name="plus" size={24} color="#FFF" />
-        </TouchableOpacity>
+        <AnimatedFAB 
+          onScan={() => { scanDocument(); setOpen(true); }}
+          onUpload={() => { pickDocument(); setOpen(true); }}
+          onAddManual={() => setOpen(true)}
+        />
       )}
 
       {/* Add Document Full Page Screen */}

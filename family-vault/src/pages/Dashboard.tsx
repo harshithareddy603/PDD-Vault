@@ -15,9 +15,9 @@ import { useAuth } from '../hooks/useAuth';
 import { useFamily } from '../hooks/useFamily';
 import { DocumentLogo } from '../components/DocumentLogo';
 import { useNavigation } from '@react-navigation/native';
-import { MaterialCommunityIcons, Feather } from '@expo/vector-icons';
-
 import { useTheme } from '../context/ThemeContext';
+import { SkeletonStatCard, SkeletonCard } from '../components/animations/SkeletonLoader';
+import { AnimatedCard, AnimatedBadge } from '../components/animations/AnimatedComponents';
 
 // ─── helpers ─────────────────────────────────────────────────────────────────
 
@@ -146,144 +146,175 @@ const Dashboard = () => {
   return (
     <AppLayout>
       {/* Welcome header */}
-      <View style={s.welcome}>
-        <Text style={[s.welcomeTitle, { color: colors.text }]}>Welcome back, {name}!</Text>
-        <Text style={[s.welcomeSub, { color: colors.subtext }]}>
-          Smart Doc's happening with your documents
-        </Text>
-      </View>
+      <AnimatedCard index={0}>
+        <View style={s.welcome}>
+          <Text style={[s.welcomeTitle, { color: colors.text }]}>Welcome back, {name}!</Text>
+          <Text style={[s.welcomeSub, { color: colors.subtext }]}>
+            Smart Doc's happening with your documents
+          </Text>
+        </View>
+      </AnimatedCard>
 
       {/* Stat cards row */}
       <View style={s.statsRow}>
-        <StatCard
-          label="Total Documents"
-          value={totalDocs}
-          iconName="file-document-outline"
-          iconBg={isDark ? '#1e3a8a' : '#DBEAFE'}
-          iconColor="#3B82F6"
-        />
-        <StatCard
-          label="Expiring Soon"
-          value={expiringSoon}
-          iconName="clock-alert-outline"
-          iconBg={isDark ? '#332010' : '#FFEDD5'}
-          iconColor="#F97316"
-        />
-        <StatCard
-          label="Expired"
-          value={expired}
-          iconName="alert-circle-outline"
-          iconBg={isDark ? '#3b1212' : '#FEE2E2'}
-          iconColor="#EF4444"
-        />
-        <StatCard
-          label="Family Members"
-          value={familyCount}
-          iconName="account-group-outline"
-          iconBg={isDark ? '#063022' : '#D1FAE5'}
-          iconColor="#10B981"
-        />
+        {loading ? (
+          <>
+            <SkeletonStatCard />
+            <SkeletonStatCard />
+            <SkeletonStatCard />
+            <SkeletonStatCard />
+          </>
+        ) : (
+          <>
+            <AnimatedCard index={1} style={{ flex: 1 }}>
+              <StatCard
+                label="Total Documents"
+                value={totalDocs}
+                iconName="file-document-outline"
+                iconBg={isDark ? '#1e3a8a' : '#DBEAFE'}
+                iconColor="#3B82F6"
+              />
+            </AnimatedCard>
+            <AnimatedCard index={2} style={{ flex: 1 }}>
+              <StatCard
+                label="Expiring Soon"
+                value={expiringSoon}
+                iconName="clock-alert-outline"
+                iconBg={isDark ? '#332010' : '#FFEDD5'}
+                iconColor="#F97316"
+              />
+            </AnimatedCard>
+            <AnimatedCard index={3} style={{ flex: 1 }}>
+              <StatCard
+                label="Expired"
+                value={expired}
+                iconName="alert-circle-outline"
+                iconBg={isDark ? '#3b1212' : '#FEE2E2'}
+                iconColor="#EF4444"
+              />
+            </AnimatedCard>
+            <AnimatedCard index={4} style={{ flex: 1 }}>
+              <StatCard
+                label="Family Members"
+                value={familyCount}
+                iconName="account-group-outline"
+                iconBg={isDark ? '#063022' : '#D1FAE5'}
+                iconColor="#10B981"
+              />
+            </AnimatedCard>
+          </>
+        )}
       </View>
 
       {/* Middle section: Quick Actions + Recent Alerts */}
       <View style={[s.midRow, isWeb && s.midRowWide]}>
         {/* Quick Actions */}
-        <View style={[s.midCard, { flex: isWeb ? 1 : undefined, backgroundColor: colors.card, borderColor: colors.border }]}>
-          <Text style={[s.cardTitle, { color: colors.text }]}>Quick Actions</Text>
-          {[
-            {
-              label: 'Upload Document',
-              icon: 'upload-outline',
-              color: '#10B981',
-              bg: isDark ? '#063022' : '#D1FAE5',
-              screen: 'Documents',
-            },
-            {
-              label: 'Scan Document',
-              icon: 'scan-helper',
-              color: '#3B82F6',
-              bg: isDark ? '#1e3a8a' : '#DBEAFE',
-              screen: 'Documents',
-              params: { triggerScan: true },
-            },
-            {
-              label: 'Search Documents',
-              icon: 'magnify',
-              color: '#8B5CF6',
-              bg: isDark ? '#2e1065' : '#EDE9FE',
-              screen: 'Search',
-            },
-          ].map((action) => (
-            <TouchableOpacity
-              key={action.label}
-              style={[s.actionRow, { borderBottomColor: colors.border }]}
-              onPress={() => navigation.navigate(action.screen, (action as any).params)}
-            >
-              <View style={[s.actionIcon, { backgroundColor: action.bg }]}>
-                <MaterialCommunityIcons
-                  name={action.icon as any}
-                  size={16}
-                  color={action.color}
-                />
-              </View>
-              <Text style={[s.actionLabel, { color: colors.text }]}>{action.label}</Text>
-              <MaterialCommunityIcons name="chevron-right" size={16} color={colors.subtext} />
-            </TouchableOpacity>
-          ))}
-        </View>
+        <AnimatedCard index={5} style={{ flex: isWeb ? 1 : undefined }}>
+          <View style={[s.midCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
+            <Text style={[s.cardTitle, { color: colors.text }]}>Quick Actions</Text>
+            {[
+              {
+                label: 'Upload Document',
+                icon: 'upload-outline',
+                color: '#10B981',
+                bg: isDark ? '#063022' : '#D1FAE5',
+                screen: 'Documents',
+              },
+              {
+                label: 'Scan Document',
+                icon: 'scan-helper',
+                color: '#3B82F6',
+                bg: isDark ? '#1e3a8a' : '#DBEAFE',
+                screen: 'Documents',
+                params: { triggerScan: true },
+              },
+              {
+                label: 'Search Documents',
+                icon: 'magnify',
+                color: '#8B5CF6',
+                bg: isDark ? '#2e1065' : '#EDE9FE',
+                screen: 'Search',
+              },
+            ].map((action) => (
+              <TouchableOpacity
+                key={action.label}
+                style={[s.actionRow, { borderBottomColor: colors.border }]}
+                onPress={() => navigation.navigate(action.screen, (action as any).params)}
+              >
+                <View style={[s.actionIcon, { backgroundColor: action.bg }]}>
+                  <MaterialCommunityIcons
+                    name={action.icon as any}
+                    size={16}
+                    color={action.color}
+                  />
+                </View>
+                <Text style={[s.actionLabel, { color: colors.text }]}>{action.label}</Text>
+                <MaterialCommunityIcons name="chevron-right" size={16} color={colors.subtext} />
+              </TouchableOpacity>
+            ))}
+          </View>
+        </AnimatedCard>
 
         {/* Recent Alerts */}
-        <View style={[s.midCard, { flex: isWeb ? 1 : undefined, backgroundColor: colors.card, borderColor: colors.border }]}>
-          <View style={s.cardHeaderRow}>
-            <Text style={[s.cardTitle, { color: colors.text }]}>Recent Alerts</Text>
-            <TouchableOpacity onPress={() => navigation.navigate('Notifications')}>
-              <Text style={s.viewAll}>View All</Text>
-            </TouchableOpacity>
-          </View>
-          {recentAlerts.length === 0 ? (
-            <Text style={[s.emptySmall, { color: colors.subtext }]}>No active alerts</Text>
-          ) : (
-            recentAlerts.map((d) => {
-              const isExpired = d.status === 'expired';
-              const days = d.expiry_date
-                ? Math.floor(
-                    (new Date(d.expiry_date).getTime() - Date.now()) / 86_400_000,
-                  )
-                : null;
-              return (
-                <View key={d.id} style={[s.alertItem, { borderBottomColor: colors.border }]}>
-                  <MaterialCommunityIcons
-                    name={isExpired ? 'alert-circle' : 'clock-outline'}
-                    size={14}
-                    color={isExpired ? '#EF4444' : '#F97316'}
-                    style={{ marginTop: 2 }}
-                  />
-                  <View style={{ flex: 1 }}>
-                    <Text style={[s.alertText, { color: colors.text }]} numberOfLines={1}>
-                      {isExpired
-                        ? `${d.name} has expired`
-                        : `${d.name} will expire in ${days} days`}
-                    </Text>
-                    <Text style={[s.alertDate, { color: colors.subtext }]}>{formatDate(d.expiry_date)}</Text>
+        <AnimatedCard index={6} style={{ flex: isWeb ? 1 : undefined }}>
+          <View style={[s.midCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
+            <View style={s.cardHeaderRow}>
+              <Text style={[s.cardTitle, { color: colors.text }]}>Recent Alerts</Text>
+              <TouchableOpacity onPress={() => navigation.navigate('Notifications')}>
+                <Text style={s.viewAll}>View All</Text>
+              </TouchableOpacity>
+            </View>
+            {recentAlerts.length === 0 ? (
+              <Text style={[s.emptySmall, { color: colors.subtext }]}>No active alerts</Text>
+            ) : (
+              recentAlerts.map((d) => {
+                const isExpired = d.status === 'expired';
+                const days = d.expiry_date
+                  ? Math.floor(
+                      (new Date(d.expiry_date).getTime() - Date.now()) / 86_400_000,
+                    )
+                  : null;
+                return (
+                  <View key={d.id} style={[s.alertItem, { borderBottomColor: colors.border }]}>
+                    <AnimatedBadge status={d.status}>
+                      <MaterialCommunityIcons
+                        name={isExpired ? 'alert-circle' : 'clock-outline'}
+                        size={14}
+                        color={isExpired ? '#EF4444' : '#F97316'}
+                        style={{ marginTop: 2 }}
+                      />
+                    </AnimatedBadge>
+                    <View style={{ flex: 1 }}>
+                      <Text style={[s.alertText, { color: colors.text }]} numberOfLines={1}>
+                        {isExpired
+                          ? `${d.name} has expired`
+                          : `${d.name} will expire in ${days} days`}
+                      </Text>
+                      <Text style={[s.alertDate, { color: colors.subtext }]}>{formatDate(d.expiry_date)}</Text>
+                    </View>
                   </View>
-                </View>
-              );
-            })
-          )}
-        </View>
+                );
+              })
+            )}
+          </View>
+        </AnimatedCard>
       </View>
 
       {/* Recent Documents table */}
-      <View style={[s.tableCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
-        <View style={[s.tableHeader, { borderBottomColor: colors.border }]}>
-          <Text style={[s.cardTitle, { color: colors.text }]}>Recent Documents</Text>
-          <TouchableOpacity onPress={() => navigation.navigate('Documents')}>
-            <Text style={s.viewAll}>View All</Text>
-          </TouchableOpacity>
-        </View>
+      <AnimatedCard index={7}>
+        <View style={[s.tableCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
+          <View style={[s.tableHeader, { borderBottomColor: colors.border }]}>
+            <Text style={[s.cardTitle, { color: colors.text }]}>Recent Documents</Text>
+            <TouchableOpacity onPress={() => navigation.navigate('Documents')}>
+              <Text style={s.viewAll}>View All</Text>
+            </TouchableOpacity>
+          </View>
 
-        {loading ? (
-          <ActivityIndicator size="small" color="#3B82F6" style={{ marginVertical: 24 }} />
+          {loading ? (
+            <View style={{ padding: 16 }}>
+              <SkeletonCard />
+              <SkeletonCard />
+            </View>
         ) : recentDocs.length === 0 ? (
           <View style={s.emptyTable}>
             <Text style={[s.emptyText, { color: colors.subtext }]}>No documents yet.</Text>
@@ -377,6 +408,7 @@ const Dashboard = () => {
           </View>
         )}
       </View>
+      </AnimatedCard>
 
       <DocumentPreviewSheet
         document={previewDoc}

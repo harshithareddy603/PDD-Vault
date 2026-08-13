@@ -21,6 +21,8 @@ import { Feather, MaterialCommunityIcons } from '@expo/vector-icons';
 import { Checkbox } from 'react-native-paper';
 
 import { useTheme } from '../context/ThemeContext';
+import { SkeletonCard } from '../components/animations/SkeletonLoader';
+import { AnimatedCard } from '../components/animations/AnimatedComponents';
 
 const Family = () => {
   const { user } = useAuth();
@@ -113,42 +115,48 @@ const Family = () => {
         </View>
 
         {loading ? (
-          <ActivityIndicator size="large" color="#3B82F6" style={{ marginTop: 40 }} />
+          <View style={s.grid}>
+            <SkeletonCard />
+            <SkeletonCard />
+            <SkeletonCard />
+          </View>
         ) : (
           <View style={s.grid}>
             {/* 1. Owner Card */}
-            <View style={[s.card, { backgroundColor: colors.card, borderColor: colors.border }]}>
-              {/* Role Pill */}
-              <View style={[s.pill, s.ownerPill]}>
-                <Text style={s.ownerPillText}>owner</Text>
-              </View>
-
-              <View style={s.cardContent}>
-                {/* Avatar */}
-                <View style={s.avatar}>
-                  <Text style={s.avatarText}>{ownerInitials}</Text>
+            <AnimatedCard index={0} style={{ width: Platform.OS === 'web' ? '31.5%' : '100%', minWidth: 260 }}>
+              <View style={[s.card, { backgroundColor: colors.card, borderColor: colors.border, width: '100%' }]}>
+                {/* Role Pill */}
+                <View style={[s.pill, s.ownerPill]}>
+                  <Text style={s.ownerPillText}>owner</Text>
                 </View>
 
-                {/* Details */}
-                <Text style={[s.memberName, { color: colors.text }]} numberOfLines={1}>
-                  {ownerName}
-                </Text>
-                <Text style={[s.memberEmail, { color: colors.subtext }]} numberOfLines={1}>
-                  {ownerEmail}
-                </Text>
+                <View style={s.cardContent}>
+                  {/* Avatar */}
+                  <View style={s.avatar}>
+                    <Text style={s.avatarText}>{ownerInitials}</Text>
+                  </View>
 
-                {/* Docs Count */}
-                <View style={s.bottomRow}>
-                  <Text style={[s.docsCount, { color: colors.subtext }]}>{ownerDocsCount} documents</Text>
-                  <TouchableOpacity onPress={() => navigation?.navigate('Profile' as any)}>
-                    <Text style={s.linkText}>View Profile</Text>
-                  </TouchableOpacity>
+                  {/* Details */}
+                  <Text style={[s.memberName, { color: colors.text }]} numberOfLines={1}>
+                    {ownerName}
+                  </Text>
+                  <Text style={[s.memberEmail, { color: colors.subtext }]} numberOfLines={1}>
+                    {ownerEmail}
+                  </Text>
+
+                  {/* Docs Count */}
+                  <View style={s.bottomRow}>
+                    <Text style={[s.docsCount, { color: colors.subtext }]}>{ownerDocsCount} documents</Text>
+                    <TouchableOpacity onPress={() => navigation?.navigate('Profile' as any)}>
+                      <Text style={s.linkText}>View Profile</Text>
+                    </TouchableOpacity>
+                  </View>
                 </View>
               </View>
-            </View>
+            </AnimatedCard>
 
             {/* 2. Family Members Cards */}
-            {members.map((m) => {
+            {members.map((m, idx) => {
               const initials = m.name
                 .split(' ')
                 .map((w) => w[0])
@@ -160,51 +168,53 @@ const Family = () => {
               const mDocs = documents.filter((d) => d.family_member_id === m.id);
 
               return (
-                <View key={m.id} style={[s.card, { backgroundColor: colors.card, borderColor: colors.border }]}>
-                  {/* Role Pill & Action Menu */}
-                  <View style={s.cardTopBar}>
-                    <View style={[s.pill, s.familyPill, isDark && { backgroundColor: '#1e3a8a' }]}>
-                      <Text style={[s.familyPillText, isDark && { color: '#93c5fd' }]}>family</Text>
+                <AnimatedCard key={m.id} index={idx + 1} style={{ width: Platform.OS === 'web' ? '31.5%' : '100%', minWidth: 260 }}>
+                  <View style={[s.card, { backgroundColor: colors.card, borderColor: colors.border, width: '100%' }]}>
+                    {/* Role Pill & Action Menu */}
+                    <View style={s.cardTopBar}>
+                      <View style={[s.pill, s.familyPill, isDark && { backgroundColor: '#1e3a8a' }]}>
+                        <Text style={[s.familyPillText, isDark && { color: '#93c5fd' }]}>family</Text>
+                      </View>
+                      <View style={s.actions}>
+                        <TouchableOpacity
+                          onPress={() => startEdit(m.id, m.name)}
+                          style={s.miniBtn}
+                        >
+                          <Feather name="edit-2" size={12} color={colors.subtext} />
+                        </TouchableOpacity>
+                        <TouchableOpacity
+                          onPress={() => handleDelete(m.id, m.name)}
+                          style={s.miniBtn}
+                        >
+                          <Feather name="trash-2" size={12} color="#EF4444" />
+                        </TouchableOpacity>
+                      </View>
                     </View>
-                    <View style={s.actions}>
-                      <TouchableOpacity
-                        onPress={() => startEdit(m.id, m.name)}
-                        style={s.miniBtn}
-                      >
-                        <Feather name="edit-2" size={12} color={colors.subtext} />
-                      </TouchableOpacity>
-                      <TouchableOpacity
-                        onPress={() => handleDelete(m.id, m.name)}
-                        style={s.miniBtn}
-                      >
-                        <Feather name="trash-2" size={12} color="#EF4444" />
-                      </TouchableOpacity>
+
+                    <View style={s.cardContent}>
+                      {/* Avatar */}
+                      <View style={s.avatar}>
+                        <Text style={s.avatarText}>{initials}</Text>
+                      </View>
+
+                      {/* Details */}
+                      <Text style={[s.memberName, { color: colors.text }]} numberOfLines={1}>
+                        {m.name}
+                      </Text>
+                      <Text style={[s.memberEmail, { color: colors.subtext }]} numberOfLines={1}>
+                        {email}
+                      </Text>
+
+                      {/* Docs Count */}
+                      <View style={s.bottomRow}>
+                        <Text style={[s.docsCount, { color: colors.subtext }]}>{mDocs.length} documents</Text>
+                        <TouchableOpacity onPress={() => setViewingId(m.id)}>
+                          <Text style={s.linkText}>View Profile</Text>
+                        </TouchableOpacity>
+                      </View>
                     </View>
                   </View>
-
-                  <View style={s.cardContent}>
-                    {/* Avatar */}
-                    <View style={s.avatar}>
-                      <Text style={s.avatarText}>{initials}</Text>
-                    </View>
-
-                    {/* Details */}
-                    <Text style={[s.memberName, { color: colors.text }]} numberOfLines={1}>
-                      {m.name}
-                    </Text>
-                    <Text style={[s.memberEmail, { color: colors.subtext }]} numberOfLines={1}>
-                      {email}
-                    </Text>
-
-                    {/* Docs Count */}
-                    <View style={s.bottomRow}>
-                      <Text style={[s.docsCount, { color: colors.subtext }]}>{mDocs.length} documents</Text>
-                      <TouchableOpacity onPress={() => setViewingId(m.id)}>
-                        <Text style={s.linkText}>View Profile</Text>
-                      </TouchableOpacity>
-                    </View>
-                  </View>
-                </View>
+                </AnimatedCard>
               );
             })}
           </View>
