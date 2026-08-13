@@ -4,7 +4,6 @@ import { useAuth } from "./useAuth";
 import { saveFileLocal, getFileLocal, deleteFileLocal } from "../lib/db";
 import * as FileSystem from 'expo-file-system';
 import * as Sharing from 'expo-sharing';
-import * as MediaLibrary from 'expo-media-library';
 import { Platform, Alert, Linking } from 'react-native';
 
 const isWeb = Platform.OS === 'web';
@@ -377,25 +376,7 @@ function base64ToArrayBuffer(base64: string): ArrayBuffer {
           }
         }
 
-        // 2. MediaLibrary fallback for saving assets into Android Media Store / Downloads
-        if (!savedInPublicStorage) {
-          try {
-            const mediaPerm = await MediaLibrary.requestPermissionsAsync();
-            if (mediaPerm.granted) {
-              await MediaLibrary.createAssetAsync(downloadRes.uri);
-              savedInPublicStorage = true;
-              Alert.alert(
-                "Download Successful",
-                `✅ File saved to Files by Google > Downloads & Gallery:\n${cleanName}`,
-                [{ text: "OK" }]
-              );
-              return true;
-            }
-          } catch (mediaErr) {
-            console.warn("MediaLibrary save error:", mediaErr);
-          }
-        }
-
+        // 2. Fallback confirmation
         if (!savedInPublicStorage) {
           Alert.alert(
             "Download Successful",
