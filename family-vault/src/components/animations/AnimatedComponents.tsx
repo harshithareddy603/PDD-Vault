@@ -206,7 +206,7 @@ export const AnimatedFAB: React.FC<AnimatedFABProps> = ({ onScan, onUpload, onAd
         ]}
         pointerEvents={open ? 'auto' : 'none'}
       >
-        <TouchableOpacity style={[styles.secondaryBtn, { backgroundColor: '#8B5CF6' })} onPress={handleScanClick}>
+        <TouchableOpacity style={[styles.secondaryBtn, { backgroundColor: '#8B5CF6' }]} onPress={handleScanClick}>
           <MaterialCommunityIcons name="camera-document" size={18} color="#FFF" />
           <Text style={styles.secondaryLabel}>Scan Document</Text>
         </TouchableOpacity>
@@ -222,7 +222,7 @@ export const AnimatedFAB: React.FC<AnimatedFABProps> = ({ onScan, onUpload, onAd
         ]}
         pointerEvents={open ? 'auto' : 'none'}
       >
-        <TouchableOpacity style={[styles.secondaryBtn, { backgroundColor: '#06B6D4' })} onPress={handleUploadClick}>
+        <TouchableOpacity style={[styles.secondaryBtn, { backgroundColor: '#06B6D4' }]} onPress={handleUploadClick}>
           <Feather name="upload-cloud" size={18} color="#FFF" />
           <Text style={styles.secondaryLabel}>Upload File</Text>
         </TouchableOpacity>
@@ -238,7 +238,7 @@ export const AnimatedFAB: React.FC<AnimatedFABProps> = ({ onScan, onUpload, onAd
         ]}
         pointerEvents={open ? 'auto' : 'none'}
       >
-        <TouchableOpacity style={[styles.secondaryBtn, { backgroundColor: '#10B981' })} onPress={handleAddClick}>
+        <TouchableOpacity style={[styles.secondaryBtn, { backgroundColor: '#10B981' }]} onPress={handleAddClick}>
           <Feather name="file-plus" size={18} color="#FFF" />
           <Text style={styles.secondaryLabel}>Add Details</Text>
         </TouchableOpacity>
