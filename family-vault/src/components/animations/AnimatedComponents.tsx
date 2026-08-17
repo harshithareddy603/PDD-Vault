@@ -139,12 +139,22 @@ export const AnimatedBadge: React.FC<AnimatedBadgeProps> = ({ status, children, 
 
 // ─── 3. AnimatedFAB (Morphing + -> × with secondary options) ─────────────
 interface AnimatedFABProps {
-  onScan: () => void;
-  onUpload: () => void;
-  onAddManual: () => void;
+  onTakePhoto?: () => void;
+  onGalleryPhoto?: () => void;
+  onBrowseFiles?: () => void;
+  onScan?: () => void;
+  onUpload?: () => void;
+  onAddManual?: () => void;
 }
 
-export const AnimatedFAB: React.FC<AnimatedFABProps> = ({ onScan, onUpload, onAddManual }) => {
+export const AnimatedFAB: React.FC<AnimatedFABProps> = ({
+  onTakePhoto,
+  onGalleryPhoto,
+  onBrowseFiles,
+  onScan,
+  onUpload,
+  onAddManual,
+}) => {
   const [open, setOpen] = useState(false);
   const rotateAnim = useRef(new Animated.Value(0)).current;
   const menuAnim = useRef(new Animated.Value(0)).current;
@@ -178,24 +188,28 @@ export const AnimatedFAB: React.FC<AnimatedFABProps> = ({ onScan, onUpload, onAd
   const translateY2 = menuAnim.interpolate({ inputRange: [0, 1], outputRange: [20, -125] });
   const translateY3 = menuAnim.interpolate({ inputRange: [0, 1], outputRange: [20, -180] });
 
-  const handleScanClick = () => {
+  const handleTakePhotoClick = () => {
     toggleFAB();
-    onScan();
+    if (onTakePhoto) onTakePhoto();
+    else if (onScan) onScan();
   };
 
-  const handleUploadClick = () => {
+  const handleGalleryPhotoClick = () => {
     toggleFAB();
-    onUpload();
+    if (onGalleryPhoto) onGalleryPhoto();
+    else if (onUpload) onUpload();
   };
 
-  const handleAddClick = () => {
+  const handleBrowseFilesClick = () => {
     toggleFAB();
-    onAddManual();
+    if (onBrowseFiles) onBrowseFiles();
+    else if (onAddManual) onAddManual();
   };
 
   return (
     <View style={styles.fabContainer} pointerEvents="box-none">
       {/* Secondary Actions */}
+      {/* 1. Take Photo (Top) */}
       <Animated.View
         style={[
           styles.secondaryBtnContainer,
@@ -206,12 +220,13 @@ export const AnimatedFAB: React.FC<AnimatedFABProps> = ({ onScan, onUpload, onAd
         ]}
         pointerEvents={open ? 'auto' : 'none'}
       >
-        <TouchableOpacity style={[styles.secondaryBtn, { backgroundColor: '#8B5CF6' }]} onPress={handleScanClick}>
-          <MaterialCommunityIcons name="camera-document" size={18} color="#FFF" />
-          <Text style={styles.secondaryLabel}>Scan Document</Text>
+        <TouchableOpacity style={[styles.secondaryBtn, { backgroundColor: '#8B5CF6' }]} onPress={handleTakePhotoClick}>
+          <Feather name="camera" size={18} color="#FFF" />
+          <Text style={styles.secondaryLabel}>Take Photo</Text>
         </TouchableOpacity>
       </Animated.View>
 
+      {/* 2. Gallery / Photo (Middle) */}
       <Animated.View
         style={[
           styles.secondaryBtnContainer,
@@ -222,12 +237,13 @@ export const AnimatedFAB: React.FC<AnimatedFABProps> = ({ onScan, onUpload, onAd
         ]}
         pointerEvents={open ? 'auto' : 'none'}
       >
-        <TouchableOpacity style={[styles.secondaryBtn, { backgroundColor: '#06B6D4' }]} onPress={handleUploadClick}>
-          <Feather name="upload-cloud" size={18} color="#FFF" />
-          <Text style={styles.secondaryLabel}>Upload File</Text>
+        <TouchableOpacity style={[styles.secondaryBtn, { backgroundColor: '#06B6D4' }]} onPress={handleGalleryPhotoClick}>
+          <Feather name="image" size={18} color="#FFF" />
+          <Text style={styles.secondaryLabel}>Gallery / Photo</Text>
         </TouchableOpacity>
       </Animated.View>
 
+      {/* 3. Browse Files (Bottom) */}
       <Animated.View
         style={[
           styles.secondaryBtnContainer,
@@ -238,9 +254,9 @@ export const AnimatedFAB: React.FC<AnimatedFABProps> = ({ onScan, onUpload, onAd
         ]}
         pointerEvents={open ? 'auto' : 'none'}
       >
-        <TouchableOpacity style={[styles.secondaryBtn, { backgroundColor: '#10B981' }]} onPress={handleAddClick}>
-          <Feather name="file-plus" size={18} color="#FFF" />
-          <Text style={styles.secondaryLabel}>Add Details</Text>
+        <TouchableOpacity style={[styles.secondaryBtn, { backgroundColor: '#10B981' }]} onPress={handleBrowseFilesClick}>
+          <Feather name="folder" size={18} color="#FFF" />
+          <Text style={styles.secondaryLabel}>Browse Files</Text>
         </TouchableOpacity>
       </Animated.View>
 

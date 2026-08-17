@@ -433,9 +433,9 @@ const Documents = () => {
 
       {!selectionMode && (
         <AnimatedFAB 
-          onScan={() => { scanDocument(); setOpen(true); }}
-          onUpload={() => { pickDocument(); setOpen(true); }}
-          onAddManual={() => setOpen(true)}
+          onTakePhoto={() => { scanDocument(); setOpen(true); }}
+          onGalleryPhoto={() => { pickImageFromGallery(); setOpen(true); }}
+          onBrowseFiles={() => { pickDocument(); setOpen(true); }}
         />
       )}
 
