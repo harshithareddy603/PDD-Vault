@@ -432,11 +432,16 @@ const Documents = () => {
       </View>
 
       {!selectionMode && (
-        <AnimatedFAB 
-          onTakePhoto={() => { scanDocument(); setOpen(true); }}
-          onGalleryPhoto={() => { pickImageFromGallery(); setOpen(true); }}
-          onBrowseFiles={() => { pickDocument(); setOpen(true); }}
-        />
+        <TouchableOpacity
+          style={styles.fab}
+          onPress={() => {
+            reset();
+            setOpen(true);
+          }}
+          activeOpacity={0.85}
+        >
+          <Feather name="plus" size={28} color="#FFFFFF" />
+        </TouchableOpacity>
       )}
 
       {/* Add Document Full Page Screen */}
