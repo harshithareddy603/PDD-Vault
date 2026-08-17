@@ -1,4 +1,4 @@
-name: Full Test Suite Pipeline & Combined Reports
+name: PDD Family Vault CI Test Suites & Artifacts
 
 on:
   push:
@@ -8,46 +8,131 @@ on:
   workflow_dispatch:
 
 jobs:
-  run-all-tests-and-generate-reports:
-    name: 🚀 Run All Test Suites & Build Artifacts Bundle
+  setup-node:
+    name: setup-node
     runs-on: ubuntu-latest
-
     steps:
-      - name: Checkout Repository Code
+      - name: Checkout Code
         uses: actions/checkout@v4
-
-      - name: Setup Node.js
+      - name: Setup Node.js 20
         uses: actions/setup-node@v4
         with:
           node-version: '20'
 
-      - name: Install ExcelJS Dependency
+  selenium-tests:
+    name: selenium-tests
+    needs: setup-node
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+      - name: Setup Node.js 20
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - name: Install Dependencies
         run: npm install exceljs
-
-      - name: 🧪 Run Selenium Test Suite (320 Cases)
+      - name: Generate Selenium Test Report
         run: node ./selenium-tests/generate-selenium-reports.mjs
-
-      - name: 📱 Run Appium Test Suite (320 Cases)
-        run: node ./appium-tests/generate-appium-reports.mjs
-
-      - name: 🛡️ Run Vulnerability Scan Suite (305 Audit Controls)
-        run: node ./vulnerability-tests/generate-vulnerability-reports.mjs
-
-      - name: 🌐 Run Web Build Test Suite (310 Cases)
-        run: node ./web-build-tests/generate-web-build-reports.mjs
-
-      - name: ⚡ Run Load & Performance Test Suite (100 VUs)
-        run: node ./load-tests/run-load-test.mjs
-
-      - name: 📦 Upload All Test Reports Bundle Artifact
+      - name: Upload Selenium Report Artifact
         uses: actions/upload-artifact@v4
         with:
-          name: PDD-Family-Vault-All-Test-Reports-Bundle
-          path: |
-            selenium-tests/selenium-test-report.xlsx
-            appium-tests/appium-test-report.xlsx
-            web-build-tests/web_buid_test_report.xlsx
-            vulnerability-tests/vulnerability-test-report.xlsx
-            load-tests/load-test-reports.xlsx
-            load-tests/load-test-reports.md
+          name: selenium-report
+          path: selenium-tests/selenium-test-report.xlsx
           retention-days: 60
+
+  appium-tests:
+    name: appium-tests
+    needs: setup-node
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+      - name: Setup Node.js 20
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - name: Install Dependencies
+        run: npm install exceljs
+      - name: Generate Appium Test Report
+        run: node ./appium-tests/generate-appium-reports.mjs
+      - name: Upload Appium Report Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: appium-report
+          path: appium-tests/appium-test-report.xlsx
+          retention-days: 60
+
+  load-tests:
+    name: load-tests
+    needs: setup-node
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+      - name: Setup Node.js 20
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - name: Install Dependencies
+        run: npm install exceljs
+      - name: Run Load Tests
+        run: node ./load-tests/run-load-test.mjs
+      - name: Upload Load Report Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: load-report
+          path: load-tests/load-test-reports.xlsx
+          retention-days: 60
+
+  security-assessment:
+    name: security-assessment
+    needs: setup-node
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+      - name: Setup Node.js 20
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - name: Install Dependencies
+        run: npm install exceljs
+      - name: Generate Security Assessment Report
+        run: node ./vulnerability-tests/generate-vulnerability-reports.mjs
+      - name: Upload Security Report Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: security-report
+          path: vulnerability-tests/vulnerability-test-report.xlsx
+          retention-days: 60
+
+  web-build-tests:
+    name: web-build-tests
+    needs: setup-node
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+      - name: Setup Node.js 20
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - name: Install Dependencies
+        run: npm install exceljs
+      - name: Generate Web Build Test Report
+        run: node ./web-build-tests/generate-web-build-reports.mjs
+      - name: Upload Web Build Report Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: web-build
+          path: web-build-tests/web_buid_test_report.xlsx
+          retention-days: 60
+
+  summary:
+    name: summary
+    needs: [selenium-tests, appium-tests, load-tests, security-assessment, web-build-tests]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Complete Summary
+        run: echo "All test suites completed successfully!"
