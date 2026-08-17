@@ -6,8 +6,7 @@ import ExcelJS from 'exceljs';
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const REPORT_DIR = __dirname;
-const REPORT_FILE_PRIMARY = 'web_buid_test_report.xlsx';
-const REPORT_FILE_SECONDARY = 'web_build_test_report.xlsx';
+const REPORT_FILE = 'web_buid_test_report.xlsx';
 
 const testCases = [
   // ==================== MODULE 1: BUNDLE COMPILATION & MINIFICATION (35 CASES) ====================
@@ -512,16 +511,10 @@ async function generateReport() {
     fs.mkdirSync(REPORT_DIR, { recursive: true });
   }
 
-  // Save Excel file to primary and secondary names in REPORT_DIR
-  const primaryPath = path.join(REPORT_DIR, REPORT_FILE_PRIMARY);
-  await workbook.xlsx.writeFile(primaryPath);
-  console.log(`Primary Excel report created successfully: ${primaryPath}`);
-
-  const secondaryPath = path.join(REPORT_DIR, REPORT_FILE_SECONDARY);
-  await workbook.xlsx.writeFile(secondaryPath);
-  console.log(`Secondary Excel report created successfully: ${secondaryPath}`);
-
-  console.log(`Web Build Test Excel reports created successfully! Total test cases: ${sortedCases.length}`);
+  // Save Excel file
+  const reportPath = path.join(REPORT_DIR, REPORT_FILE);
+  await workbook.xlsx.writeFile(reportPath);
+  console.log(`Excel sheet report created successfully inside ${reportPath}! Total rows: ${sortedCases.length}`);
 }
 
 generateReport().catch(console.error);

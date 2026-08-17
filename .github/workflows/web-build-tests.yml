@@ -31,7 +31,5 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: PDD-Family-Vault-Web-Build-Test-Report
-          path: |
-            web-build-tests/web_buid_test_report.xlsx
-            web-build-tests/web_build_test_report.xlsx
+          path: web-build-tests/web_buid_test_report.xlsx
           retention-days: 60
