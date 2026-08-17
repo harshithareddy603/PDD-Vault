@@ -166,7 +166,7 @@ const testCases = [
   { testId: 'TC-DOCS-019', module: 'Documents', feature: 'Document List', name: 'Verify offline banner alert rendering', desc: 'Ensure disconnecting network displays yellow warning offline status banner.' },
   { testId: 'TC-DOCS-020', module: 'Documents', feature: 'Document List', name: 'Verify empty document list prompts UI', desc: 'Ensure "No documents found" is shown if documents list is empty.' },
   { testId: 'TC-DOCS-021', module: 'Documents', feature: 'Document List', name: 'Verify categories graphics matching icons', desc: 'Ensure documents display correct visual graphics based on Category.' },
-  { testId: 'TC-DASH-022', module: 'Documents', feature: 'Document List', name: 'Verify active safe status badge rendering', desc: 'Ensure safe documents display green status styling.' },
+  { testId: 'TC-DOCS-022', module: 'Documents', feature: 'Document List', name: 'Verify active safe status badge rendering', desc: 'Ensure safe documents display green status styling.' },
   { testId: 'TC-DOCS-023', module: 'Documents', feature: 'Document List', name: 'Verify warning status badge color formatting', desc: 'Ensure documents expiring within 30 days show yellow status badge.' },
   { testId: 'TC-DOCS-024', module: 'Documents', feature: 'Document List', name: 'Verify critical status badge color formatting', desc: 'Ensure expired documents show red status badge.' },
   { testId: 'TC-DOCS-025', module: 'Documents', feature: 'Document List', name: 'Verify document upload timestamp format', desc: 'Ensure document card formats and shows correct uploaded date.' },

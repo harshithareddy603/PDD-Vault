@@ -1,0 +1,37 @@
+name: Web Build Test Suite Pipeline & Report Generation
+
+on:
+  push:
+    branches: [ main, master ]
+  pull_request:
+    branches: [ main, master ]
+  workflow_dispatch:
+
+jobs:
+  run-web-build-tests:
+    name: 🌐 Run Web Build Tests & Generate Excel Report (310 Cases)
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Repository Code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js Environment
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install ExcelJS Dependency
+        run: npm install exceljs
+
+      - name: 🌐 Run Web Build Test Suite Generator
+        run: node ./web-build-tests/generate-web-build-reports.mjs
+
+      - name: 📦 Upload Web Build Test Report Excel Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: PDD-Family-Vault-Web-Build-Test-Report
+          path: |
+            web-build-tests/web_buid_test_report.xlsx
+            web-build-tests/web_build_test_report.xlsx
+          retention-days: 60

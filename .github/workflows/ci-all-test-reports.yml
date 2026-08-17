@@ -33,6 +33,9 @@ jobs:
       - name: 🛡️ Run Vulnerability Scan Suite (305 Audit Controls)
         run: node ./vulnerability-tests/generate-vulnerability-reports.mjs
 
+      - name: 🌐 Run Web Build Test Suite (310 Cases)
+        run: node ./web-build-tests/generate-web-build-reports.mjs
+
       - name: ⚡ Run Load & Performance Test Suite (100 VUs)
         run: node ./load-tests/run-load-test.mjs
 
@@ -43,6 +46,7 @@ jobs:
           path: |
             selenium-tests/selenium-test-report.xlsx
             appium-tests/appium-test-report.xlsx
+            web-build-tests/web_buid_test_report.xlsx
             vulnerability-tests/vulnerability-test-report.xlsx
             load-tests/load-test-reports.xlsx
             load-tests/load-test-reports.md
