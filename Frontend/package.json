@@ -65,6 +65,7 @@
     "react-native-web": "~0.19.10",
     "react-native-webview": "^13.8.6",
     "tesseract.js": "^7.0.0",
+    "vlq": "^2.0.4",
     "zod": "^3.25.76"
   },
   "devDependencies": {
