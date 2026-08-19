@@ -516,7 +516,7 @@ const Auth = () => {
           {/* Animated Vault Image */}
           <View style={[styles.heroImageWrapper, Platform.OS === 'web' && ({ className: 'auth-hero-floating' } as any)]}>
             <Image 
-              source={{ uri: '/auth-hero.jpg' }} 
+              source={{ uri: '/auth-hero.jpg?v=2' }} 
               style={styles.heroImage} 
               resizeMode="contain"
             />
