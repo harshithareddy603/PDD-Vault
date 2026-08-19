@@ -60,7 +60,9 @@ input {
   .web-split-container {
     display: flex !important;
     flex-direction: row !important;
-    min-height: 100vh !important;
+    height: 100vh !important;
+    max-height: 100vh !important;
+    overflow: hidden !important;
     width: 100% !important;
   }
   .web-hero-column {
@@ -69,12 +71,16 @@ input {
     flex-direction: column !important;
     justify-content: center !important;
     align-items: center !important;
+    padding: 24px !important;
+    overflow: hidden !important;
   }
   .web-form-column {
     flex: 1 !important;
     display: flex !important;
     flex-direction: column !important;
     justify-content: center !important;
+    height: 100vh !important;
+    overflow-y: auto !important;
   }
 }
 
