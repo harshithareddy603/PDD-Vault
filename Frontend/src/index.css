@@ -47,4 +47,28 @@ input:-webkit-autofill:active {
   animation: pulseGlow 4s ease-in-out infinite;
 }
 
+/* Responsive Split Screen Layout for Laptops & Desktops */
+@media screen and (min-width: 640px) {
+  .web-split-container {
+    display: flex !important;
+    flex-direction: row !important;
+    min-height: 100vh !important;
+    width: 100% !important;
+  }
+  .web-hero-column {
+    flex: 1 !important;
+    display: flex !important;
+    flex-direction: column !important;
+    justify-content: center !important;
+    align-items: center !important;
+  }
+  .web-form-column {
+    flex: 1 !important;
+    display: flex !important;
+    flex-direction: column !important;
+    justify-content: center !important;
+  }
+}
+
+
 

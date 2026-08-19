@@ -3,7 +3,8 @@ import React, { useEffect, useState } from "react";
 import { useAuth } from "../hooks/useAuth";
 import { useSession } from "../hooks/useSession";
 import { isSupabaseConfigured } from "../services/supabase";
-import { MaterialCommunityIcons, Feather } from '@expo/vector-icons';
+import MaterialCommunityIcons from '@expo/vector-icons/MaterialCommunityIcons';
+import Feather from '@expo/vector-icons/Feather';
 import { useNavigation } from '@react-navigation/native';
 import * as ImagePicker from 'expo-image-picker';
 
@@ -243,7 +244,7 @@ const Auth = () => {
   };
 
   const { width } = useWindowDimensions();
-  const isDesktop = Platform.OS === 'web' && width >= 850;
+  const isDesktop = Platform.OS === 'web' && width >= 640;
 
   if (loading) return (
     <View style={styles.center}>
@@ -501,7 +502,7 @@ const Auth = () => {
       <View style={styles.webSplitContainer}>
         {/* Left Half: Project Illustration & Info */}
         <View style={styles.webHeroColumn}>
-          <View style={styles.heroGlowCircle} />
+          <View style={[styles.heroGlowCircle, Platform.OS === 'web' && ({ filter: 'blur(80px)' } as any)]} />
           
           <View style={styles.heroHeaderBadge}>
             <MaterialCommunityIcons name="shield-lock-outline" size={16} color="#60A5FA" />
@@ -851,7 +852,6 @@ const styles = StyleSheet.create({
     opacity: 0.12,
     top: '15%' as any,
     left: '15%' as any,
-    filter: 'blur(80px)' as any,
   },
   heroHeaderBadge: {
     flexDirection: 'row',
