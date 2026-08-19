@@ -495,60 +495,7 @@ const Auth = () => {
     </Modal>
   );
 
-  // Desktop Split Screen Layout
-  if (isDesktop) {
-    return (
-      <View style={styles.webSplitContainer}>
-        {/* Left Half: Project Illustration & Title */}
-        <View style={styles.webHeroColumn}>
-          <View style={[styles.heroGlowCircle, Platform.OS === 'web' && ({ filter: 'blur(90px)' } as any)]} />
-          
-          <Text style={styles.heroTitle}>Smart Family Vault</Text>
-          <Text style={styles.heroSubtitle}>
-            Safely store, organize, and manage your family's vital documents with instant search and end-to-end security.
-          </Text>
-
-          {/* Large Prominent Vault Image */}
-          <View style={[styles.heroImageWrapper, Platform.OS === 'web' && ({ className: 'auth-hero-floating' } as any)]}>
-            <Image 
-              source={{ uri: '/auth-hero.jpg?v=2' }} 
-              style={styles.heroImage} 
-              resizeMode="contain"
-            />
-          </View>
-        </View>
-
-        {/* Right Half: Login Form Container */}
-        <View style={styles.webFormColumn}>
-          <ScrollView contentContainerStyle={styles.webScrollContent}>
-            <View style={styles.logoSection}>
-              <View style={styles.logoIcon}>
-                <MaterialCommunityIcons name="shield-check" size={32} color="#fff" />
-              </View>
-              <Text style={appNameStyle()}>Smart Docs</Text>
-              <Text style={styles.appSubtitle}>Your family's documents, safely organized.</Text>
-            </View>
-
-            {!isSupabaseConfigured && (
-              <View style={styles.warningCard}>
-                <Feather name="alert-circle" size={20} color="#92400e" />
-                <View style={styles.warningTextContainer}>
-                  <Text style={styles.warningTitle}>Supabase not configured</Text>
-                  <Text style={styles.warningText}>Please check your environment variables.</Text>
-                </View>
-              </View>
-            )}
-
-            {renderAuthForm()}
-          </ScrollView>
-        </View>
-
-        {renderCropModal()}
-      </View>
-    );
-  }
-
-  // Mobile / Small Screen Layout
+  // Main Layout
   return (
     <KeyboardAvoidingView 
       behavior={Platform.OS === "ios" ? "padding" : "height"}
