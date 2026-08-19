@@ -28,6 +28,12 @@
     },
     "web": {
       "favicon": "./public/favicon.png"
-    }
+    },
+    "extra": {
+      "eas": {
+        "projectId": "f901eba4-86c5-49d2-b872-150998c3d127"
+      }
+    },
+    "owner": "aanya_zain"
   }
 }
