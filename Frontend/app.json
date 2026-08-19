@@ -29,14 +29,6 @@
     "web": {
       "favicon": "./public/favicon.png"
     },
-    "owner": "aanya_zain",
-    "extra": {
-      "eas": {
-        "projectId": "f901eba4-86c5-49d2-b872-150998c3d127"
-      }
-    },
-    "updates": {
-      "url": "https://u.expo.dev/f901eba4-86c5-49d2-b872-150998c3d127"
-    }
+    "owner": "sophiabechkem"
   }
 }
