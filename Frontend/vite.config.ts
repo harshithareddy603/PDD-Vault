@@ -29,6 +29,8 @@ export default defineConfig(({ mode }) => ({
       // files that cannot run in the browser. react-native-paper falls back to
       // Material Design CSS icons automatically when this stub is used.
       "react-native-vector-icons": path.resolve(__dirname, "./src/stubs/vector-icons.js"),
+      "@expo/vector-icons/MaterialCommunityIcons": path.resolve(__dirname, "./src/stubs/vector-icons.js"),
+      "@expo/vector-icons/Feather": path.resolve(__dirname, "./src/stubs/vector-icons.js"),
       "@expo/vector-icons": path.resolve(__dirname, "./src/stubs/vector-icons.js"),
     },
     extensions: [
