@@ -499,43 +499,22 @@ const Auth = () => {
   if (isDesktop) {
     return (
       <View style={styles.webSplitContainer}>
-        {/* Left Half: Project Illustration & Info */}
+        {/* Left Half: Project Illustration & Title */}
         <View style={styles.webHeroColumn}>
-          <View style={[styles.heroGlowCircle, Platform.OS === 'web' && ({ filter: 'blur(80px)' } as any)]} />
+          <View style={[styles.heroGlowCircle, Platform.OS === 'web' && ({ filter: 'blur(90px)' } as any)]} />
           
-          <View style={styles.heroHeaderBadge}>
-            <MaterialCommunityIcons name="shield-lock-outline" size={16} color="#60A5FA" />
-            <Text style={styles.heroBadgeText}>BANK-GRADE ENCRYPTION</Text>
-          </View>
-
           <Text style={styles.heroTitle}>Smart Family Vault</Text>
           <Text style={styles.heroSubtitle}>
-            Safely store, organize, and manage your family's vital documents with instant OCR search and end-to-end security.
+            Safely store, organize, and manage your family's vital documents with instant search and end-to-end security.
           </Text>
 
-          {/* Animated Vault Image */}
+          {/* Large Prominent Vault Image */}
           <View style={[styles.heroImageWrapper, Platform.OS === 'web' && ({ className: 'auth-hero-floating' } as any)]}>
             <Image 
               source={{ uri: '/auth-hero.jpg?v=2' }} 
               style={styles.heroImage} 
               resizeMode="contain"
             />
-          </View>
-
-          {/* Feature Highlights */}
-          <View style={styles.heroFeatureGrid}>
-            <View style={styles.heroFeatureItem}>
-              <Feather name="shield" size={16} color="#38BDF8" />
-              <Text style={styles.heroFeatureText}>256-Bit Encrypted Vault</Text>
-            </View>
-            <View style={styles.heroFeatureItem}>
-              <Feather name="cpu" size={16} color="#38BDF8" />
-              <Text style={styles.heroFeatureText}>Instant AI Document OCR</Text>
-            </View>
-            <View style={styles.heroFeatureItem}>
-              <Feather name="users" size={16} color="#38BDF8" />
-              <Text style={styles.heroFeatureText}>Family Access Controls</Text>
-            </View>
           </View>
         </View>
 
@@ -871,32 +850,31 @@ const styles = StyleSheet.create({
     letterSpacing: 1,
   },
   heroTitle: {
-    fontSize: 34,
+    fontSize: 38,
     fontWeight: '800',
     color: '#FFFFFF',
     textAlign: 'center',
     marginBottom: 12,
   },
   heroSubtitle: {
-    fontSize: 15,
+    fontSize: 16,
     color: '#94A3B8',
     textAlign: 'center',
-    maxWidth: 460,
-    lineHeight: 22,
-    marginBottom: 24,
+    maxWidth: 520,
+    lineHeight: 24,
+    marginBottom: 20,
   },
   heroImageWrapper: {
     width: '100%',
-    maxWidth: 440,
-    height: 300,
-    marginVertical: 12,
+    maxWidth: 680,
+    height: 500,
+    marginVertical: 10,
     alignItems: 'center',
     justifyContent: 'center',
   },
   heroImage: {
     width: '100%',
     height: '100%',
-    borderRadius: 16,
   },
   heroFeatureGrid: {
     flexDirection: 'row',
