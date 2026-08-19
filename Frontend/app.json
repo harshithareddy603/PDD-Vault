@@ -28,6 +28,12 @@
     },
     "web": {
       "favicon": "./public/favicon.png"
-    }
+    },
+    "extra": {
+      "eas": {
+        "projectId": "088656f4-b2c4-4326-924e-3480bae6b68c"
+      }
+    },
+    "owner": "aanyareddy"
   }
 }
