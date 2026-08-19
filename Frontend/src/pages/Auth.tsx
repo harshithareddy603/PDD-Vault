@@ -1,4 +1,4 @@
-import { View, Text, StyleSheet, TouchableOpacity, TextInput, ScrollView, Alert, ActivityIndicator, KeyboardAvoidingView, Platform, Image, Modal } from 'react-native'
+import { View, Text, StyleSheet, TouchableOpacity, TextInput, ScrollView, Alert, ActivityIndicator, KeyboardAvoidingView, Platform, Image, Modal, useWindowDimensions } from 'react-native'
 import React, { useEffect, useState } from "react";
 import { useAuth } from "../hooks/useAuth";
 import { useSession } from "../hooks/useSession";
@@ -242,12 +242,334 @@ const Auth = () => {
     }
   };
 
+  const { width } = useWindowDimensions();
+  const isDesktop = Platform.OS === 'web' && width >= 850;
+
   if (loading) return (
     <View style={styles.center}>
       <ActivityIndicator size="large" color="#3b82f6" />
     </View>
   );
 
+  const renderAuthForm = () => (
+    <View style={styles.authCard}>
+      {error && (
+        <View style={styles.errorBanner}>
+          <Feather name="alert-circle" size={16} color="#B91C1C" />
+          <Text style={styles.errorText}>{error}</Text>
+        </View>
+      )}
+      
+      {(mode === "login" || mode === "signup") && (
+        <View style={styles.tabs}>
+          <TouchableOpacity 
+            style={[styles.tab, mode === "login" && styles.activeTab]}
+            onPress={() => { setMode("login"); setError(null); }}
+          >
+            <Text style={[styles.tabText, mode === "login" && styles.activeTabText]}>Login</Text>
+          </TouchableOpacity>
+          <TouchableOpacity 
+            style={[styles.tab, mode === "signup" && styles.activeTab]}
+            onPress={() => { setMode("signup"); setError(null); }}
+          >
+            <Text style={[styles.tabText, mode === "signup" && styles.activeTabText]}>Sign up</Text>
+          </TouchableOpacity>
+        </View>
+      )}
+
+      <View style={styles.form}>
+        {mode === "signup" && (
+          <>
+            <View style={styles.inputGroup}>
+              <Text style={styles.label}>Full name</Text>
+              <TextInput 
+                style={styles.input}
+                value={name}
+                onChangeText={setName}
+                placeholder="Enter full name"
+              />
+            </View>
+            <View style={styles.inputGroup}>
+              <Text style={styles.label}>Mobile Number (optional)</Text>
+              <TextInput 
+                style={styles.input}
+                value={phone}
+                onChangeText={setPhone}
+                placeholder="Enter phone number"
+                keyboardType="phone-pad"
+              />
+            </View>
+            <View style={styles.inputGroup}>
+              <Text style={styles.label}>Profile Photo (optional, Max 3MB)</Text>
+              <TouchableOpacity style={styles.photoButton} onPress={pickImage}>
+                <Feather name="image" size={16} color="#64748B" style={{ marginRight: 8 }} />
+                <Text style={styles.photoButtonText}>
+                  {photo ? "Photo Selected" : "Choose Profile Photo"}
+                </Text>
+              </TouchableOpacity>
+            </View>
+          </>
+        )}
+
+        {mode !== "verify_signup" && (
+          <View style={styles.inputGroup}>
+            <Text style={styles.label}>Email</Text>
+            <TextInput 
+              style={styles.input}
+              value={email}
+              onChangeText={setEmail}
+              placeholder="Enter email"
+              keyboardType="email-address"
+              autoCapitalize="none"
+              editable={mode !== "reset_password"}
+            />
+          </View>
+        )}
+
+        {(mode === "verify_signup" || mode === "reset_password") && (
+          <View style={styles.inputGroup}>
+            <Text style={styles.label}>Verification Code (6-digit OTP)</Text>
+            <TextInput 
+              style={styles.input}
+              value={otpCode}
+              onChangeText={setOtpCode}
+              placeholder="Enter 6-digit code"
+              keyboardType="number-pad"
+              maxLength={6}
+            />
+            <Text style={{ fontSize: 12, color: '#64748B', marginTop: 4 }}>
+              Check spam folder if you can't find the mail.
+            </Text>
+          </View>
+        )}
+
+        {(mode === "login" || mode === "signup" || mode === "reset_password") && (
+          <View style={styles.inputGroup}>
+            <Text style={styles.label}>{mode === "reset_password" ? "New Password" : "Password"}</Text>
+            <View style={styles.passwordInputContainer}>
+              <TextInput 
+                style={styles.passwordInput}
+                value={password}
+                onChangeText={setPassword}
+                placeholder={mode === "reset_password" ? "Enter new password" : "Enter password"}
+                secureTextEntry={!showPassword}
+              />
+              <TouchableOpacity 
+                onPress={() => setShowPassword(!showPassword)}
+                style={styles.eyeIcon}
+              >
+                <Feather name={showPassword ? "eye" : "eye-off"} size={20} color="#64748B" />
+              </TouchableOpacity>
+            </View>
+          </View>
+        )}
+
+        {(mode === "signup" || mode === "reset_password") && (
+          <View style={styles.inputGroup}>
+            <Text style={styles.label}>{mode === "reset_password" ? "Confirm New Password" : "Confirm Password"}</Text>
+            <View style={styles.passwordInputContainer}>
+              <TextInput 
+                style={styles.passwordInput}
+                value={confirmPassword}
+                onChangeText={setConfirmPassword}
+                placeholder={mode === "reset_password" ? "Confirm new password" : "Confirm password"}
+                secureTextEntry={!showConfirmPassword}
+              />
+              <TouchableOpacity 
+                onPress={() => setShowConfirmPassword(!showConfirmPassword)}
+                style={styles.eyeIcon}
+              >
+                <Feather name={showConfirmPassword ? "eye" : "eye-off"} size={20} color="#64748B" />
+              </TouchableOpacity>
+            </View>
+          </View>
+        )}
+
+        {mode === "login" && (
+          <TouchableOpacity 
+            onPress={() => { setMode("forgot_password"); setError(null); }}
+            style={styles.forgotPasswordLink}
+          >
+            <Text style={styles.forgotPasswordText}>Forgot password?</Text>
+          </TouchableOpacity>
+        )}
+
+        <TouchableOpacity 
+          style={[styles.submitButton, busy && styles.disabledButton]}
+          onPress={handleSubmit}
+          disabled={busy}
+        >
+          {busy ? (
+            <ActivityIndicator color="#fff" />
+          ) : (
+            <Text style={styles.submitButtonText}>
+              {mode === "login" && "Login"}
+              {mode === "signup" && "Create account"}
+              {mode === "verify_signup" && "Verify Code"}
+              {mode === "forgot_password" && "Send Verification Code"}
+              {mode === "reset_password" && "Reset Password"}
+            </Text>
+          )}
+        </TouchableOpacity>
+
+        {mode !== "login" && mode !== "signup" && (
+          <TouchableOpacity 
+            onPress={() => { setMode("login"); setError(null); setOtpCode(""); }}
+            style={styles.backToLoginLink}
+          >
+            <Text style={styles.backToLoginText}>Back to Login</Text>
+          </TouchableOpacity>
+        )}
+      </View>
+    </View>
+  );
+
+  const renderCropModal = () => (
+    <Modal visible={showCropModal} transparent={true} animationType="slide">
+      <View style={styles.modalOverlay}>
+        <View style={styles.modalContent}>
+          <Text style={styles.modalTitle}>Crop Profile Picture</Text>
+          
+          <View style={{
+            width: 200,
+            height: 200,
+            borderRadius: 100,
+            overflow: 'hidden',
+            alignSelf: 'center',
+            backgroundColor: '#F1F5F9',
+            borderWidth: 2,
+            borderColor: '#3B82F6',
+            marginBottom: 20,
+            justifyContent: 'center',
+            alignItems: 'center',
+          }}>
+            {rawPhotoUri && (
+              <Image 
+                source={{ uri: rawPhotoUri }} 
+                style={{
+                  width: 200,
+                  height: 200,
+                  transform: [
+                    { scale: cropZoom },
+                    { translateX: cropOffsetX },
+                    { translateY: cropOffsetY }
+                  ]
+                }}
+                resizeMode="cover"
+              />
+            )}
+          </View>
+
+          <Text style={{ fontSize: 13, color: '#64748B', marginBottom: 8, textAlign: 'center' }}>Adjust Image Position</Text>
+          <View style={{ flexDirection: 'row', justifyContent: 'center', gap: 10, marginBottom: 20 }}>
+            <TouchableOpacity onPress={() => setCropOffsetX(x => x - 10)} style={styles.controlBtn}>
+              <Feather name="arrow-left" size={16} color="#475569" />
+            </TouchableOpacity>
+            <TouchableOpacity onPress={() => setCropOffsetX(x => x + 10)} style={styles.controlBtn}>
+              <Feather name="arrow-right" size={16} color="#475569" />
+            </TouchableOpacity>
+            <TouchableOpacity onPress={() => setCropOffsetY(y => y - 10)} style={styles.controlBtn}>
+              <Feather name="arrow-up" size={16} color="#475569" />
+            </TouchableOpacity>
+            <TouchableOpacity onPress={() => setCropOffsetY(y => y + 10)} style={styles.controlBtn}>
+              <Feather name="arrow-down" size={16} color="#475569" />
+            </TouchableOpacity>
+            <TouchableOpacity onPress={() => setCropZoom(z => Math.min(z + 0.1, 3))} style={styles.controlBtn}>
+              <Feather name="zoom-in" size={16} color="#475569" />
+            </TouchableOpacity>
+            <TouchableOpacity onPress={() => setCropZoom(z => Math.max(z - 0.1, 1))} style={styles.controlBtn}>
+              <Feather name="zoom-out" size={16} color="#475569" />
+            </TouchableOpacity>
+          </View>
+
+          <View style={{ flexDirection: 'row', gap: 12 }}>
+            <TouchableOpacity style={[styles.cancelBtn, { flex: 1 }]} onPress={() => setShowCropModal(false)}>
+              <Text style={styles.cancelBtnText}>Cancel</Text>
+            </TouchableOpacity>
+            <TouchableOpacity style={[styles.saveBtn, { flex: 1 }]} onPress={handleSaveCrop}>
+              <Text style={styles.saveBtnText}>Apply</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </View>
+    </Modal>
+  );
+
+  // Desktop Split Screen Layout
+  if (isDesktop) {
+    return (
+      <View style={styles.webSplitContainer}>
+        {/* Left Half: Project Illustration & Info */}
+        <View style={styles.webHeroColumn}>
+          <View style={styles.heroGlowCircle} />
+          
+          <View style={styles.heroHeaderBadge}>
+            <MaterialCommunityIcons name="shield-lock-outline" size={16} color="#60A5FA" />
+            <Text style={styles.heroBadgeText}>BANK-GRADE ENCRYPTION</Text>
+          </View>
+
+          <Text style={styles.heroTitle}>Smart Family Vault</Text>
+          <Text style={styles.heroSubtitle}>
+            Safely store, organize, and manage your family's vital documents with instant OCR search and end-to-end security.
+          </Text>
+
+          {/* Animated Vault Image */}
+          <View style={[styles.heroImageWrapper, Platform.OS === 'web' && ({ className: 'auth-hero-floating' } as any)]}>
+            <Image 
+              source={{ uri: '/auth-hero.jpg' }} 
+              style={styles.heroImage} 
+              resizeMode="contain"
+            />
+          </View>
+
+          {/* Feature Highlights */}
+          <View style={styles.heroFeatureGrid}>
+            <View style={styles.heroFeatureItem}>
+              <Feather name="shield" size={16} color="#38BDF8" />
+              <Text style={styles.heroFeatureText}>256-Bit Encrypted Vault</Text>
+            </View>
+            <View style={styles.heroFeatureItem}>
+              <Feather name="cpu" size={16} color="#38BDF8" />
+              <Text style={styles.heroFeatureText}>Instant AI Document OCR</Text>
+            </View>
+            <View style={styles.heroFeatureItem}>
+              <Feather name="users" size={16} color="#38BDF8" />
+              <Text style={styles.heroFeatureText}>Family Access Controls</Text>
+            </View>
+          </View>
+        </View>
+
+        {/* Right Half: Login Form Container */}
+        <View style={styles.webFormColumn}>
+          <ScrollView contentContainerStyle={styles.webScrollContent}>
+            <View style={styles.logoSection}>
+              <View style={styles.logoIcon}>
+                <MaterialCommunityIcons name="shield-check" size={32} color="#fff" />
+              </View>
+              <Text style={appNameStyle()}>Smart Docs</Text>
+              <Text style={styles.appSubtitle}>Your family's documents, safely organized.</Text>
+            </View>
+
+            {!isSupabaseConfigured && (
+              <View style={styles.warningCard}>
+                <Feather name="alert-circle" size={20} color="#92400e" />
+                <View style={styles.warningTextContainer}>
+                  <Text style={styles.warningTitle}>Supabase not configured</Text>
+                  <Text style={styles.warningText}>Please check your environment variables.</Text>
+                </View>
+              </View>
+            )}
+
+            {renderAuthForm()}
+          </ScrollView>
+        </View>
+
+        {renderCropModal()}
+      </View>
+    );
+  }
+
+  // Mobile / Small Screen Layout
   return (
     <KeyboardAvoidingView 
       behavior={Platform.OS === "ios" ? "padding" : "height"}
@@ -272,249 +594,10 @@ const Auth = () => {
           </View>
         )}
 
-        <View style={styles.authCard}>
-          {error && (
-            <View style={styles.errorBanner}>
-              <Feather name="alert-circle" size={16} color="#B91C1C" />
-              <Text style={styles.errorText}>{error}</Text>
-            </View>
-          )}
-          
-          {(mode === "login" || mode === "signup") && (
-            <View style={styles.tabs}>
-              <TouchableOpacity 
-                style={[styles.tab, mode === "login" && styles.activeTab]}
-                onPress={() => { setMode("login"); setError(null); }}
-              >
-                <Text style={[styles.tabText, mode === "login" && styles.activeTabText]}>Login</Text>
-              </TouchableOpacity>
-              <TouchableOpacity 
-                style={[styles.tab, mode === "signup" && styles.activeTab]}
-                onPress={() => { setMode("signup"); setError(null); }}
-              >
-                <Text style={[styles.tabText, mode === "signup" && styles.activeTabText]}>Sign up</Text>
-              </TouchableOpacity>
-            </View>
-          )}
-
-          <View style={styles.form}>
-            {mode === "signup" && (
-              <>
-                <View style={styles.inputGroup}>
-                  <Text style={styles.label}>Full name</Text>
-                  <TextInput 
-                    style={styles.input}
-                    value={name}
-                    onChangeText={setName}
-                    placeholder="Enter full name"
-                  />
-                </View>
-                <View style={styles.inputGroup}>
-                  <Text style={styles.label}>Mobile Number (optional)</Text>
-                  <TextInput 
-                    style={styles.input}
-                    value={phone}
-                    onChangeText={setPhone}
-                    placeholder="Enter phone number"
-                    keyboardType="phone-pad"
-                  />
-                </View>
-                <View style={styles.inputGroup}>
-                  <Text style={styles.label}>Profile Photo (optional, Max 3MB)</Text>
-                  <TouchableOpacity style={styles.photoButton} onPress={pickImage}>
-                    <Feather name="image" size={16} color="#64748B" style={{ marginRight: 8 }} />
-                    <Text style={styles.photoButtonText}>
-                      {photo ? "Photo Selected" : "Choose Profile Photo"}
-                    </Text>
-                  </TouchableOpacity>
-                </View>
-              </>
-            )}
-
-            {mode !== "verify_signup" && (
-              <View style={styles.inputGroup}>
-                <Text style={styles.label}>Email</Text>
-                <TextInput 
-                  style={styles.input}
-                  value={email}
-                  onChangeText={setEmail}
-                  placeholder="Enter email"
-                  keyboardType="email-address"
-                  autoCapitalize="none"
-                  editable={mode !== "reset_password"}
-                />
-              </View>
-            )}
-
-            {(mode === "verify_signup" || mode === "reset_password") && (
-              <View style={styles.inputGroup}>
-                <Text style={styles.label}>Verification Code (6-digit OTP)</Text>
-                <TextInput 
-                  style={styles.input}
-                  value={otpCode}
-                  onChangeText={setOtpCode}
-                  placeholder="Enter 6-digit code"
-                  keyboardType="number-pad"
-                  maxLength={6}
-                />
-                <Text style={{ fontSize: 12, color: '#64748B', marginTop: 4 }}>
-                  Check spam folder if you can't find the mail.
-                </Text>
-              </View>
-            )}
-
-            {(mode === "login" || mode === "signup" || mode === "reset_password") && (
-              <View style={styles.inputGroup}>
-                <Text style={styles.label}>{mode === "reset_password" ? "New Password" : "Password"}</Text>
-                <View style={styles.passwordInputContainer}>
-                  <TextInput 
-                    style={styles.passwordInput}
-                    value={password}
-                    onChangeText={setPassword}
-                    placeholder={mode === "reset_password" ? "Enter new password" : "Enter password"}
-                    secureTextEntry={!showPassword}
-                  />
-                  <TouchableOpacity 
-                    onPress={() => setShowPassword(!showPassword)}
-                    style={styles.eyeIcon}
-                  >
-                    <Feather name={showPassword ? "eye" : "eye-off"} size={20} color="#64748B" />
-                  </TouchableOpacity>
-                </View>
-              </View>
-            )}
-
-            {(mode === "signup" || mode === "reset_password") && (
-              <View style={styles.inputGroup}>
-                <Text style={styles.label}>{mode === "reset_password" ? "Confirm New Password" : "Confirm Password"}</Text>
-                <View style={styles.passwordInputContainer}>
-                  <TextInput 
-                    style={styles.passwordInput}
-                    value={confirmPassword}
-                    onChangeText={setConfirmPassword}
-                    placeholder={mode === "reset_password" ? "Confirm new password" : "Confirm password"}
-                    secureTextEntry={!showConfirmPassword}
-                  />
-                  <TouchableOpacity 
-                    onPress={() => setShowConfirmPassword(!showConfirmPassword)}
-                    style={styles.eyeIcon}
-                  >
-                    <Feather name={showConfirmPassword ? "eye" : "eye-off"} size={20} color="#64748B" />
-                  </TouchableOpacity>
-                </View>
-              </View>
-            )}
-
-            {mode === "login" && (
-              <TouchableOpacity 
-                onPress={() => { setMode("forgot_password"); setError(null); }}
-                style={styles.forgotPasswordLink}
-              >
-                <Text style={styles.forgotPasswordText}>Forgot password?</Text>
-              </TouchableOpacity>
-            )}
-
-            <TouchableOpacity 
-              style={[styles.submitButton, busy && styles.disabledButton]}
-              onPress={handleSubmit}
-              disabled={busy}
-            >
-              {busy ? (
-                <ActivityIndicator color="#fff" />
-              ) : (
-                <Text style={styles.submitButtonText}>
-                  {mode === "login" && "Login"}
-                  {mode === "signup" && "Create account"}
-                  {mode === "verify_signup" && "Verify Code"}
-                  {mode === "forgot_password" && "Send Verification Code"}
-                  {mode === "reset_password" && "Reset Password"}
-                </Text>
-              )}
-            </TouchableOpacity>
-
-            {mode !== "login" && mode !== "signup" && (
-              <TouchableOpacity 
-                onPress={() => { setMode("login"); setError(null); setOtpCode(""); }}
-                style={styles.backToLoginLink}
-              >
-                <Text style={styles.backToLoginText}>Back to Login</Text>
-              </TouchableOpacity>
-            )}
-          </View>
-        </View>
+        {renderAuthForm()}
       </ScrollView>
 
-      {/* Image Crop Modal (Web only) */}
-      <Modal visible={showCropModal} transparent={true} animationType="slide">
-        <View style={styles.modalOverlay}>
-          <View style={styles.modalContent}>
-            <Text style={styles.modalTitle}>Crop Profile Picture</Text>
-            
-            {/* Cropping Preview Area */}
-            <View style={{
-              width: 200,
-              height: 200,
-              borderRadius: 100,
-              overflow: 'hidden',
-              alignSelf: 'center',
-              backgroundColor: '#F1F5F9',
-              borderWidth: 2,
-              borderColor: '#3B82F6',
-              marginBottom: 20,
-              justifyContent: 'center',
-              alignItems: 'center',
-            }}>
-              {rawPhotoUri && (
-                <Image 
-                  source={{ uri: rawPhotoUri }} 
-                  style={{
-                    width: 200,
-                    height: 200,
-                    transform: [
-                      { scale: cropZoom },
-                      { translateX: cropOffsetX },
-                      { translateY: cropOffsetY }
-                    ]
-                  }}
-                  resizeMode="cover"
-                />
-              )}
-            </View>
-
-            {/* Adjustment Controls */}
-            <Text style={{ fontSize: 13, color: '#64748B', marginBottom: 8, textAlign: 'center' }}>Adjust Image Position</Text>
-            <View style={{ flexDirection: 'row', justifyContent: 'center', gap: 10, marginBottom: 20 }}>
-              <TouchableOpacity onPress={() => setCropOffsetX(x => x - 10)} style={styles.controlBtn}>
-                <Feather name="arrow-left" size={16} color="#475569" />
-              </TouchableOpacity>
-              <TouchableOpacity onPress={() => setCropOffsetX(x => x + 10)} style={styles.controlBtn}>
-                <Feather name="arrow-right" size={16} color="#475569" />
-              </TouchableOpacity>
-              <TouchableOpacity onPress={() => setCropOffsetY(y => y - 10)} style={styles.controlBtn}>
-                <Feather name="arrow-up" size={16} color="#475569" />
-              </TouchableOpacity>
-              <TouchableOpacity onPress={() => setCropOffsetY(y => y + 10)} style={styles.controlBtn}>
-                <Feather name="arrow-down" size={16} color="#475569" />
-              </TouchableOpacity>
-              <TouchableOpacity onPress={() => setCropZoom(z => Math.min(z + 0.1, 3))} style={styles.controlBtn}>
-                <Feather name="zoom-in" size={16} color="#475569" />
-              </TouchableOpacity>
-              <TouchableOpacity onPress={() => setCropZoom(z => Math.max(z - 0.1, 1))} style={styles.controlBtn}>
-                <Feather name="zoom-out" size={16} color="#475569" />
-              </TouchableOpacity>
-            </View>
-
-            <View style={{ flexDirection: 'row', gap: 12 }}>
-              <TouchableOpacity style={[styles.cancelBtn, { flex: 1 }]} onPress={() => setShowCropModal(false)}>
-                <Text style={styles.cancelBtnText}>Cancel</Text>
-              </TouchableOpacity>
-              <TouchableOpacity style={[styles.saveBtn, { flex: 1 }]} onPress={handleSaveCrop}>
-                <Text style={styles.saveBtnText}>Apply</Text>
-              </TouchableOpacity>
-            </View>
-          </View>
-        </View>
-      </Modal>
+      {renderCropModal()}
     </KeyboardAvoidingView>
   );
 };
@@ -741,6 +824,116 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: '#64748B',
     fontWeight: '500',
+  },
+  webSplitContainer: {
+    flex: 1,
+    flexDirection: 'row',
+    minHeight: Platform.OS === 'web' ? ('100vh' as any) : undefined,
+    backgroundColor: '#0B0F19',
+  },
+  webHeroColumn: {
+    flex: 1,
+    backgroundColor: '#0B0F19',
+    padding: 48,
+    justifyContent: 'center',
+    alignItems: 'center',
+    position: 'relative' as any,
+    overflow: 'hidden',
+    borderRightWidth: 1,
+    borderRightColor: '#1E293B',
+  },
+  heroGlowCircle: {
+    position: 'absolute' as any,
+    width: 450,
+    height: 450,
+    borderRadius: 225,
+    backgroundColor: '#3B82F6',
+    opacity: 0.12,
+    top: '15%' as any,
+    left: '15%' as any,
+    filter: 'blur(80px)' as any,
+  },
+  heroHeaderBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    backgroundColor: 'rgba(59, 130, 246, 0.12)',
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    borderRadius: 20,
+    borderWidth: 1,
+    borderColor: 'rgba(96, 165, 250, 0.25)',
+    marginBottom: 20,
+  },
+  heroBadgeText: {
+    color: '#60A5FA',
+    fontSize: 12,
+    fontWeight: '700',
+    letterSpacing: 1,
+  },
+  heroTitle: {
+    fontSize: 34,
+    fontWeight: '800',
+    color: '#FFFFFF',
+    textAlign: 'center',
+    marginBottom: 12,
+  },
+  heroSubtitle: {
+    fontSize: 15,
+    color: '#94A3B8',
+    textAlign: 'center',
+    maxWidth: 460,
+    lineHeight: 22,
+    marginBottom: 24,
+  },
+  heroImageWrapper: {
+    width: '100%',
+    maxWidth: 440,
+    height: 300,
+    marginVertical: 12,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  heroImage: {
+    width: '100%',
+    height: '100%',
+    borderRadius: 16,
+  },
+  heroFeatureGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    justifyContent: 'center',
+    gap: 12,
+    marginTop: 24,
+  },
+  heroFeatureItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    backgroundColor: 'rgba(30, 41, 59, 0.7)',
+    paddingHorizontal: 14,
+    paddingVertical: 8,
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.08)',
+  },
+  heroFeatureText: {
+    color: '#E2E8F0',
+    fontSize: 13,
+    fontWeight: '600',
+  },
+  webFormColumn: {
+    flex: 1,
+    backgroundColor: '#F8FAFC',
+    justifyContent: 'center',
+  },
+  webScrollContent: {
+    padding: 40,
+    flexGrow: 1,
+    justifyContent: 'center',
+    maxWidth: 540,
+    width: '100%',
+    alignSelf: 'center',
   },
   modalOverlay: {
     flex: 1,
