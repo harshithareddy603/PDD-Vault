@@ -4,3 +4,14 @@ html, body, #root {
   margin: 0;
   padding: 0;
 }
+
+/* Fix Chrome / Webkit autofill grey/yellow background on input fields */
+input:-webkit-autofill,
+input:-webkit-autofill:hover, 
+input:-webkit-autofill:focus, 
+input:-webkit-autofill:active {
+  -webkit-box-shadow: 0 0 0 1000px #ffffff inset !important;
+  -webkit-text-fill-color: #0f172a !important;
+  transition: background-color 5000s ease-in-out 0s;
+}
+
