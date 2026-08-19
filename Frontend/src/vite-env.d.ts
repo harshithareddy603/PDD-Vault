@@ -24,3 +24,29 @@ declare module '@expo/vector-icons/*' {
   export default IconComponent;
 }
 
+declare module '@react-navigation/native' {
+  export function useNavigation<T = any>(): T;
+  export function useRoute<T = any>(): T;
+  export function useIsFocused(): boolean;
+  export const NavigationContainer: any;
+}
+
+declare module 'react-native' {
+  export const View: any;
+  export const Text: any;
+  export const Image: any;
+  export const TextInput: any;
+  export const TouchableOpacity: any;
+  export const ScrollView: any;
+  export const StyleSheet: any;
+  export const Platform: any;
+  export const Alert: any;
+  export const ActivityIndicator: any;
+  export const KeyboardAvoidingView: any;
+  export const Modal: any;
+  export function useWindowDimensions(): { width: number; height: number; scale: number; fontScale: number };
+  const exports: any;
+  export default exports;
+}
+
+
