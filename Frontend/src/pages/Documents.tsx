@@ -1,4 +1,4 @@
-import { View, Text, StyleSheet, TouchableOpacity, TextInput, ScrollView, Image, Modal, ActivityIndicator, Alert, Dimensions, FlatList, Platform } from 'react-native'
+import { View, Text, StyleSheet, TouchableOpacity, TextInput, ScrollView, Image, Modal, ActivityIndicator, Alert, Platform } from 'react-native'
 import React, { useEffect, useState, useMemo } from "react";
 import { AppLayout } from "../components/AppLayout";
 import { useFamily } from "../hooks/useFamily";
@@ -57,7 +57,7 @@ const Documents = () => {
   const [searchQuery, setSearchQuery] = useState("");
   const [activeFilter, setActiveFilter] = useState("All");
   const [sortBy, setSortBy] = useState("newest_first");
-  const [ownerFilter, setOwnerFilter] = useState<"all" | "myself" | "family">("all");
+  const [ownerFilter, setOwnerFilter] = useState<"all" | "myself" | "family">("myself");
   const [familyMemberFilter, setFamilyMemberFilter] = useState<string>("all");
 
   const processFileWithOCR = async (selectedFile: any) => {
