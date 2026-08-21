@@ -356,7 +356,7 @@ const Family = () => {
                           ]}
                           title="Edit Member"
                         >
-                          <Feather name="edit-2" size={15} color={isDark ? '#60A5FA' : '#2563EB'} />
+                          <Feather name="edit" size={15} color={isDark ? '#60A5FA' : '#2563EB'} />
                         </TouchableOpacity>
                         <TouchableOpacity
                           onPress={() => handleDeleteMember(m.id, m.name)}
