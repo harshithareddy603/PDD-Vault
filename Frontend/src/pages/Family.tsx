@@ -347,17 +347,29 @@ const Family = () => {
                       <View style={s.actionsGroup}>
                         <TouchableOpacity
                           onPress={() => startEdit(m.id, m.name)}
-                          style={[s.miniActionBtn, { backgroundColor: isDark ? 'rgba(255, 255, 255, 0.08)' : '#F1F5F9', borderColor: colors.border }]}
+                          style={[
+                            s.miniActionBtn,
+                            {
+                              backgroundColor: isDark ? 'rgba(59, 130, 246, 0.2)' : '#EFF6FF',
+                              borderColor: isDark ? 'rgba(59, 130, 246, 0.35)' : '#BFDBFE',
+                            },
+                          ]}
                           title="Edit Member"
                         >
-                          <Feather name="edit-2" size={12} color={isDark ? '#CBD5E1' : '#64748B'} />
+                          <Feather name="edit-2" size={15} color={isDark ? '#60A5FA' : '#2563EB'} />
                         </TouchableOpacity>
                         <TouchableOpacity
                           onPress={() => handleDeleteMember(m.id, m.name)}
-                          style={[s.miniActionBtn, { backgroundColor: isDark ? 'rgba(239, 68, 68, 0.15)' : '#FEE2E2', borderColor: isDark ? 'rgba(239, 68, 68, 0.3)' : '#FCA5A5' }]}
+                          style={[
+                            s.miniActionBtn,
+                            {
+                              backgroundColor: isDark ? 'rgba(239, 68, 68, 0.18)' : '#FEE2E2',
+                              borderColor: isDark ? 'rgba(239, 68, 68, 0.35)' : '#FCA5A5',
+                            },
+                          ]}
                           title="Remove Member"
                         >
-                          <Feather name="trash-2" size={12} color="#EF4444" />
+                          <Feather name="trash-2" size={15} color="#EF4444" />
                         </TouchableOpacity>
                       </View>
                     </View>
@@ -764,8 +776,8 @@ const s = StyleSheet.create({
     gap: 8,
   },
   miniActionBtn: {
-    width: 28,
-    height: 28,
+    width: 32,
+    height: 32,
     borderRadius: 8,
     alignItems: 'center',
     justifyContent: 'center',

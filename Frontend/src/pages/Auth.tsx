@@ -661,7 +661,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingVertical: 12,
     fontSize: 16,
-    color: '#000000',
+    color: '#0F172A',
     backgroundColor: '#FFFFFF',
   },
   passwordInputContainer: {
@@ -678,7 +678,8 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingVertical: 12,
     fontSize: 16,
-    color: '#000000',
+    color: '#0F172A',
+    backgroundColor: '#FFFFFF',
   },
   eyeIcon: {
     paddingHorizontal: 12,
