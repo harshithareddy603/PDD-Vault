@@ -41,10 +41,6 @@ export const useDocuments = () => {
     else {
       const docs = (data ?? []) as DocumentRow[];
       setDocuments(docs);
-      // Automatically sync mobile top status bar / system notifications safely
-      NotificationService.syncDocumentNotifications(docs).catch((e) => {
-        console.warn("Notification sync warning:", e);
-      });
     }
     setLoading(false);
   }, [user]);

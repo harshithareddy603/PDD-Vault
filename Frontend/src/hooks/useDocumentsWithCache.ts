@@ -12,10 +12,18 @@ export const useDocumentsWithCache = () => {
   const [isOffline, setIsOffline] = useState(false);
 
   useEffect(() => {
-    const unsubscribe = NetInfo.addEventListener(state => {
-      setIsOffline(!state.isConnected);
-    });
-    return () => unsubscribe();
+    try {
+      if (NetInfo && typeof NetInfo.addEventListener === 'function') {
+        const unsubscribe = NetInfo.addEventListener(state => {
+          setIsOffline(!state.isConnected);
+        });
+        return () => {
+          if (typeof unsubscribe === 'function') unsubscribe();
+        };
+      }
+    } catch (e) {
+      console.warn("NetInfo listener warning:", e);
+    }
   }, []);
 
   useEffect(() => {
