@@ -17,7 +17,7 @@ import { useFamily } from '../hooks/useFamily';
 import { useDocumentsWithCache } from '../hooks/useDocumentsWithCache';
 import { useAuth } from '../hooks/useAuth';
 import { useNavigation } from '@react-navigation/native';
-import { Feather, MaterialCommunityIcons } from '@expo/vector-icons';
+import { Feather } from '@expo/vector-icons';
 import { Checkbox, ProgressBar } from 'react-native-paper';
 import * as DocumentPicker from 'expo-document-picker';
 import * as ImagePicker from 'expo-image-picker';
@@ -173,7 +173,6 @@ const Family = () => {
         setDocName(scannedName);
         setScanningDoc(true);
 
-        // Run OCR on scanned document
         try {
           const ocr = await performLocalOCR(asset.uri, scannedFile.name);
           if (ocr) {
@@ -281,30 +280,46 @@ const Family = () => {
         ) : (
           <View style={s.grid}>
             {/* 1. Owner Card */}
-            <AnimatedCard index={0} style={{ width: Platform.OS === 'web' ? '31.5%' : '100%', minWidth: 260 }}>
-              <View style={[s.card, { backgroundColor: colors.card, borderColor: colors.border, width: '100%' }]}>
-                <View style={[s.pill, s.ownerPill]}>
-                  <Text style={s.ownerPillText}>owner</Text>
+            <AnimatedCard index={0} style={{ width: Platform.OS === 'web' ? '31.5%' : '100%', minWidth: 280 }}>
+              <View style={[s.card, { backgroundColor: colors.card, borderColor: colors.border }]}>
+                {/* Header Badge */}
+                <View style={s.cardHeaderRow}>
+                  <View style={[s.pillBadge, { backgroundColor: isDark ? 'rgba(124, 58, 237, 0.2)' : '#F3E8FF', borderColor: isDark ? 'rgba(124, 58, 237, 0.35)' : '#DDD6FE' }]}>
+                    <Text style={[s.pillBadgeText, { color: isDark ? '#C084FC' : '#7C3AED' }]}>Owner / Primary</Text>
+                  </View>
                 </View>
 
-                <View style={s.cardContent}>
-                  <View style={s.avatar}>
-                    <Text style={s.avatarText}>{ownerInitials}</Text>
+                {/* Profile Section */}
+                <View style={s.profileSection}>
+                  <View style={[s.avatarCircle, { backgroundColor: '#7C3AED' }]}>
+                    <Text style={s.avatarInitials}>{ownerInitials}</Text>
                   </View>
-
-                  <Text style={[s.memberName, { color: colors.text }]} numberOfLines={1}>
-                    {ownerName}
-                  </Text>
-                  <Text style={[s.memberEmail, { color: colors.subtext }]} numberOfLines={1}>
-                    {ownerEmail}
-                  </Text>
-
-                  <View style={s.bottomRow}>
-                    <Text style={[s.docsCount, { color: colors.subtext }]}>{ownerDocsCount} documents</Text>
-                    <TouchableOpacity onPress={() => navigation?.navigate('Profile' as any)}>
-                      <Text style={s.linkText}>View Profile</Text>
-                    </TouchableOpacity>
+                  <View style={s.profileTextGroup}>
+                    <Text style={[s.memberName, { color: colors.text }]} numberOfLines={1}>
+                      {ownerName}
+                    </Text>
+                    <Text style={[s.memberEmail, { color: colors.subtext }]} numberOfLines={1}>
+                      {ownerEmail}
+                    </Text>
                   </View>
+                </View>
+
+                {/* Document Count Badge */}
+                <View style={[s.docCountBadge, { backgroundColor: isDark ? 'rgba(255, 255, 255, 0.04)' : '#F8FAFC', borderColor: colors.border }]}>
+                  <Feather name="file-text" size={13} color="#7C3AED" style={{ marginRight: 6 }} />
+                  <Text style={[s.docCountText, { color: colors.subtext }]}>{ownerDocsCount} {ownerDocsCount === 1 ? 'document' : 'documents'}</Text>
+                </View>
+
+                {/* Actions Row */}
+                <View style={s.cardActionsRow}>
+                  <TouchableOpacity
+                    style={s.cardViewVaultBtn}
+                    onPress={() => navigation?.navigate('Profile' as any)}
+                    activeOpacity={0.85}
+                  >
+                    <Text style={s.cardViewVaultBtnText}>View Profile</Text>
+                    <Feather name="user" size={13} color="#FFFFFF" style={{ marginLeft: 6 }} />
+                  </TouchableOpacity>
                 </View>
               </View>
             </AnimatedCard>
@@ -322,58 +337,74 @@ const Family = () => {
               const mDocs = documents.filter((d) => d.family_member_id === m.id);
 
               return (
-                <AnimatedCard key={m.id} index={idx + 1} style={{ width: Platform.OS === 'web' ? '31.5%' : '100%', minWidth: 260 }}>
-                  <View style={[s.card, { backgroundColor: colors.card, borderColor: colors.border, width: '100%' }]}>
-                    <View style={s.cardTopBar}>
-                      <View style={[s.pill, s.familyPill, isDark && { backgroundColor: '#1e3a8a' }]}>
-                        <Text style={[s.familyPillText, isDark && { color: '#93c5fd' }]}>family</Text>
+                <AnimatedCard key={m.id} index={idx + 1} style={{ width: Platform.OS === 'web' ? '31.5%' : '100%', minWidth: 280 }}>
+                  <View style={[s.card, { backgroundColor: colors.card, borderColor: colors.border }]}>
+                    {/* Header Row */}
+                    <View style={s.cardHeaderRow}>
+                      <View style={[s.pillBadge, { backgroundColor: isDark ? 'rgba(59, 130, 246, 0.18)' : '#EFF6FF', borderColor: isDark ? 'rgba(59, 130, 246, 0.3)' : '#DBEAFE' }]}>
+                        <Text style={[s.pillBadgeText, { color: isDark ? '#93C5FD' : '#2563EB' }]}>Family Member</Text>
                       </View>
-                      <View style={s.actions}>
+                      <View style={s.actionsGroup}>
                         <TouchableOpacity
                           onPress={() => startEdit(m.id, m.name)}
-                          style={s.miniBtn}
+                          style={[s.miniActionBtn, { backgroundColor: isDark ? 'rgba(255, 255, 255, 0.08)' : '#F1F5F9', borderColor: colors.border }]}
+                          title="Edit Member"
                         >
-                          <Feather name="edit-2" size={12} color={colors.subtext} />
+                          <Feather name="edit-2" size={12} color={isDark ? '#CBD5E1' : '#64748B'} />
                         </TouchableOpacity>
                         <TouchableOpacity
                           onPress={() => handleDeleteMember(m.id, m.name)}
-                          style={s.miniBtn}
+                          style={[s.miniActionBtn, { backgroundColor: isDark ? 'rgba(239, 68, 68, 0.15)' : '#FEE2E2', borderColor: isDark ? 'rgba(239, 68, 68, 0.3)' : '#FCA5A5' }]}
+                          title="Remove Member"
                         >
                           <Feather name="trash-2" size={12} color="#EF4444" />
                         </TouchableOpacity>
                       </View>
                     </View>
 
-                    <View style={s.cardContent}>
-                      <View style={s.avatar}>
-                        <Text style={s.avatarText}>{initials}</Text>
+                    {/* Profile Section */}
+                    <View style={s.profileSection}>
+                      <View style={s.avatarCircle}>
+                        <Text style={s.avatarInitials}>{initials}</Text>
                       </View>
-
-                      <Text style={[s.memberName, { color: colors.text }]} numberOfLines={1}>
-                        {m.name}
-                      </Text>
-                      <Text style={[s.memberEmail, { color: colors.subtext }]} numberOfLines={1}>
-                        {email}
-                      </Text>
-
-                      <View style={s.bottomRow}>
-                        <Text style={[s.docsCount, { color: colors.subtext }]}>{mDocs.length} documents</Text>
-                        <View style={{ flexDirection: 'row', gap: 10 }}>
-                          <TouchableOpacity
-                            style={s.addDocSmallBtn}
-                            onPress={() => {
-                              resetDocForm();
-                              setAddDocMemberId(m.id);
-                            }}
-                          >
-                            <Feather name="plus" size={12} color="#FFFFFF" />
-                            <Text style={s.addDocSmallBtnText}>Add Doc</Text>
-                          </TouchableOpacity>
-                          <TouchableOpacity onPress={() => setViewingId(m.id)}>
-                            <Text style={s.linkText}>View Vault</Text>
-                          </TouchableOpacity>
-                        </View>
+                      <View style={s.profileTextGroup}>
+                        <Text style={[s.memberName, { color: colors.text }]} numberOfLines={1}>
+                          {m.name}
+                        </Text>
+                        <Text style={[s.memberEmail, { color: colors.subtext }]} numberOfLines={1}>
+                          {email}
+                        </Text>
                       </View>
+                    </View>
+
+                    {/* Document Count Badge */}
+                    <View style={[s.docCountBadge, { backgroundColor: isDark ? 'rgba(255, 255, 255, 0.04)' : '#F8FAFC', borderColor: colors.border }]}>
+                      <Feather name="file-text" size={13} color="#3B82F6" style={{ marginRight: 6 }} />
+                      <Text style={[s.docCountText, { color: colors.subtext }]}>{mDocs.length} {mDocs.length === 1 ? 'document' : 'documents'}</Text>
+                    </View>
+
+                    {/* Actions Row */}
+                    <View style={s.cardActionsRow}>
+                      <TouchableOpacity
+                        style={[s.cardAddDocBtn, { backgroundColor: isDark ? 'rgba(59, 130, 246, 0.15)' : '#EFF6FF', borderColor: isDark ? 'rgba(59, 130, 246, 0.35)' : '#BFDBFE' }]}
+                        onPress={() => {
+                          resetDocForm();
+                          setAddDocMemberId(m.id);
+                        }}
+                        activeOpacity={0.85}
+                      >
+                        <Feather name="plus" size={13} color={isDark ? '#60A5FA' : '#2563EB'} style={{ marginRight: 4 }} />
+                        <Text style={[s.cardAddDocBtnText, { color: isDark ? '#60A5FA' : '#2563EB' }]}>Add Doc</Text>
+                      </TouchableOpacity>
+
+                      <TouchableOpacity
+                        style={s.cardViewVaultBtn}
+                        onPress={() => setViewingId(m.id)}
+                        activeOpacity={0.85}
+                      >
+                        <Text style={s.cardViewVaultBtnText}>View Vault</Text>
+                        <Feather name="arrow-right" size={13} color="#FFFFFF" style={{ marginLeft: 4 }} />
+                      </TouchableOpacity>
                     </View>
                   </View>
                 </AnimatedCard>
@@ -425,7 +456,7 @@ const Family = () => {
       {/* Detail Member Document Vault Viewer Modal */}
       <Modal visible={!!viewingId} animationType="slide" transparent={true} onRequestClose={() => setViewingId(null)}>
         <View style={s.modalOverlay}>
-          <View style={[s.modalContent, { backgroundColor: colors.modalBg, borderColor: colors.border, maxWidth: 520 }]}>
+          <View style={[s.modalContent, { backgroundColor: colors.modalBg, borderColor: colors.border, maxWidth: 540 }]}>
             {(() => {
               const m = members.find((x) => x.id === viewingId);
               const mDocs = documents.filter((d) => d.family_member_id === viewingId);
@@ -456,7 +487,7 @@ const Family = () => {
                         <Feather name="folder" size={36} color={colors.mutedText} style={{ marginBottom: 8 }} />
                         <Text style={[s.emptyDocsText, { color: colors.subtext }]}>No documents added yet for {m?.name}.</Text>
                         <TouchableOpacity
-                          style={[s.addBtn, { marginTop: 12 }]}
+                          style={[s.addBtn, { marginTop: 14 }]}
                           onPress={() => {
                             resetDocForm();
                             setAddDocMemberId(viewingId);
@@ -496,21 +527,21 @@ const Family = () => {
 
                           <View style={s.docActionsRow}>
                             <TouchableOpacity
-                              style={s.docActionBtn}
+                              style={[s.docActionBtn, { backgroundColor: isDark ? 'rgba(255,255,255,0.06)' : '#F1F5F9' }]}
                               onPress={() => openDocumentFile(d.file_url || '')}
                               title="Open File"
                             >
                               <Feather name="eye" size={14} color="#3B82F6" />
                             </TouchableOpacity>
                             <TouchableOpacity
-                              style={s.docActionBtn}
+                              style={[s.docActionBtn, { backgroundColor: isDark ? 'rgba(255,255,255,0.06)' : '#F1F5F9' }]}
                               onPress={() => downloadFileToDevice(d.file_url || '', d.name)}
                               title="Download"
                             >
                               <Feather name="download" size={14} color="#10B981" />
                             </TouchableOpacity>
                             <TouchableOpacity
-                              style={s.docActionBtn}
+                              style={[s.docActionBtn, { backgroundColor: isDark ? 'rgba(239, 68, 68, 0.15)' : '#FEE2E2' }]}
                               onPress={() => handleDeleteDocument(d.id, d.name)}
                               title="Delete"
                             >
@@ -539,17 +570,17 @@ const Family = () => {
               const memberObj = members.find((x) => x.id === addDocMemberId);
               return (
                 <ScrollView showsVerticalScrollIndicator={false}>
-                  <Text style={[s.modalTitle, { color: colors.text }]}>Add Document for {memberObj?.name}</Text>
+                  <Text style={[s.modalTitle, { color: colors.text, marginBottom: 16 }]}>Add Document for {memberObj?.name}</Text>
 
                   {/* Pick / Scan Buttons */}
                   <View style={{ flexDirection: 'row', gap: 10, marginBottom: 16 }}>
-                    <TouchableOpacity style={s.pickerBtn} onPress={handlePickDocument}>
-                      <Feather name="upload" size={16} color="#3B82F6" style={{ marginRight: 6 }} />
-                      <Text style={s.pickerBtnText}>{docFile ? 'Change File' : 'Pick File'}</Text>
+                    <TouchableOpacity style={[s.pickerBtn, { backgroundColor: isDark ? 'rgba(59, 130, 246, 0.15)' : '#EFF6FF', borderColor: isDark ? 'rgba(59, 130, 246, 0.3)' : '#BFDBFE' }]} onPress={handlePickDocument}>
+                      <Feather name="upload" size={16} color={isDark ? '#60A5FA' : '#3B82F6'} style={{ marginRight: 6 }} />
+                      <Text style={[s.pickerBtnText, { color: isDark ? '#60A5FA' : '#3B82F6' }]}>{docFile ? 'Change File' : 'Pick File'}</Text>
                     </TouchableOpacity>
-                    <TouchableOpacity style={[s.pickerBtn, { backgroundColor: '#F3E8FF', borderColor: '#DDD6FE' }]} onPress={handleScanDocument}>
-                      <Feather name="camera" size={16} color="#7C3AED" style={{ marginRight: 6 }} />
-                      <Text style={[s.pickerBtnText, { color: '#7C3AED' }]}>{scanningDoc ? 'Scanning OCR...' : 'Scan Camera'}</Text>
+                    <TouchableOpacity style={[s.pickerBtn, { backgroundColor: isDark ? 'rgba(124, 58, 237, 0.15)' : '#F3E8FF', borderColor: isDark ? 'rgba(124, 58, 237, 0.3)' : '#DDD6FE' }]} onPress={handleScanDocument}>
+                      <Feather name="camera" size={16} color={isDark ? '#C084FC' : '#7C3AED'} style={{ marginRight: 6 }} />
+                      <Text style={[s.pickerBtnText, { color: isDark ? '#C084FC' : '#7C3AED' }]}>{scanningDoc ? 'Scanning OCR...' : 'Scan Camera'}</Text>
                     </TouchableOpacity>
                   </View>
 
@@ -703,131 +734,122 @@ const s = StyleSheet.create({
     borderRadius: 16,
     borderWidth: 1,
     borderColor: '#E2E8F0',
-    width: Platform.OS === 'web' ? '31.5%' : '100%',
-    minWidth: 260,
-    padding: 20,
-    position: 'relative',
+    padding: 18,
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.03,
-    shadowRadius: 8,
-    elevation: 2,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.04,
+    shadowRadius: 12,
+    elevation: 3,
   },
-  cardTopBar: {
+  cardHeaderRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    position: 'absolute',
-    top: 20,
-    left: 20,
-    right: 20,
+    marginBottom: 14,
   },
-  pill: {
-    borderRadius: 6,
-    paddingHorizontal: 8,
+  pillBadge: {
+    borderRadius: 20,
+    borderWidth: 1,
+    paddingHorizontal: 10,
     paddingVertical: 3,
-    position: 'absolute',
-    top: 0,
-    right: 0,
   },
-  ownerPill: {
-    backgroundColor: '#F3E8FF',
-  },
-  ownerPillText: {
-    color: '#7C3AED',
+  pillBadgeText: {
     fontSize: 11,
     fontWeight: '700',
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
   },
-  familyPill: {
-    backgroundColor: '#EFF6FF',
-    position: 'relative',
-  },
-  familyPillText: {
-    color: '#3B82F6',
-    fontSize: 11,
-    fontWeight: '700',
-  },
-  actions: {
+  actionsGroup: {
     flexDirection: 'row',
     gap: 8,
   },
-  miniBtn: {
-    width: 24,
-    height: 24,
-    borderRadius: 12,
-    backgroundColor: '#F8FAFC',
+  miniActionBtn: {
+    width: 28,
+    height: 28,
+    borderRadius: 8,
     alignItems: 'center',
     justifyContent: 'center',
     borderWidth: 1,
-    borderColor: '#E2E8F0',
   },
-  cardContent: {
-    alignItems: 'flex-start',
-    marginTop: 16,
+  profileSection: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 14,
   },
-  avatar: {
-    width: 48,
-    height: 48,
-    borderRadius: 24,
+  avatarCircle: {
+    width: 46,
+    height: 46,
+    borderRadius: 23,
     backgroundColor: '#3B82F6',
     alignItems: 'center',
     justifyContent: 'center',
-    marginBottom: 16,
+    marginRight: 12,
   },
-  avatarText: {
+  avatarInitials: {
     color: '#FFFFFF',
-    fontSize: 16,
-    fontWeight: '700',
-  },
-  memberName: {
     fontSize: 15,
     fontWeight: '700',
-    color: '#0F172A',
+  },
+  profileTextGroup: {
+    flex: 1,
+  },
+  memberName: {
+    fontSize: 15.5,
+    fontWeight: '700',
     marginBottom: 2,
   },
   memberEmail: {
     fontSize: 12.5,
-    color: '#64748B',
+  },
+  docCountBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    borderRadius: 8,
+    borderWidth: 1,
+    paddingHorizontal: 10,
+    paddingVertical: 7,
     marginBottom: 16,
   },
-  bottomRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    width: '100%',
-    borderTopWidth: 1,
-    borderTopColor: '#F1F5F9',
-    paddingTop: 12,
-  },
-  docsCount: {
-    fontSize: 12.5,
-    color: '#64748B',
+  docCountText: {
+    fontSize: 12,
     fontWeight: '500',
   },
-  linkText: {
-    fontSize: 12.5,
-    color: '#3B82F6',
-    fontWeight: '600',
+  cardActionsRow: {
+    flexDirection: 'row',
+    gap: 10,
   },
-  addDocSmallBtn: {
+  cardAddDocBtn: {
+    flex: 1,
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#3B82F6',
-    borderRadius: 6,
-    paddingHorizontal: 8,
-    paddingVertical: 4,
+    justifyContent: 'center',
+    borderRadius: 8,
+    borderWidth: 1,
+    paddingVertical: 9,
   },
-  addDocSmallBtnText: {
-    color: '#FFFFFF',
-    fontSize: 11.5,
+  cardAddDocBtnText: {
+    fontSize: 12.5,
     fontWeight: '600',
-    marginLeft: 3,
+  },
+  cardViewVaultBtn: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#3B82F6',
+    borderRadius: 8,
+    paddingVertical: 9,
+  },
+  cardViewVaultBtnText: {
+    color: '#FFFFFF',
+    fontSize: 12.5,
+    fontWeight: '600',
   },
 
   // Modal styling
   modalOverlay: {
     flex: 1,
-    backgroundColor: 'rgba(15, 23, 42, 0.4)',
+    backgroundColor: 'rgba(15, 23, 42, 0.45)',
     justifyContent: 'center',
     alignItems: 'center',
     padding: 20,
@@ -838,9 +860,11 @@ const s = StyleSheet.create({
     padding: 24,
     width: '100%',
     maxWidth: 440,
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 10 },
-    shadowOpacity: 0.1,
+    shadowOpacity: 0.15,
     shadowRadius: 20,
     elevation: 10,
   },
@@ -853,7 +877,6 @@ const s = StyleSheet.create({
   modalTitle: {
     fontSize: 18,
     fontWeight: '700',
-    color: '#0F172A',
   },
   addDocHeaderBtn: {
     flexDirection: 'row',
@@ -930,16 +953,13 @@ const s = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: '#EFF6FF',
     borderWidth: 1,
-    borderColor: '#BFDBFE',
     borderRadius: 8,
     paddingVertical: 10,
   },
   pickerBtnText: {
     fontSize: 13,
     fontWeight: '600',
-    color: '#3B82F6',
   },
   fileSelectedBox: {
     flexDirection: 'row',
@@ -1060,7 +1080,6 @@ const s = StyleSheet.create({
     width: 28,
     height: 28,
     borderRadius: 6,
-    backgroundColor: '#F1F5F9',
     alignItems: 'center',
     justifyContent: 'center',
   },
