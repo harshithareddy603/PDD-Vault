@@ -57,31 +57,35 @@ export const useDocuments = () => {
   // Background Pre-fetching logic
   useEffect(() => {
     const prefetch = async () => {
-      if (!isWeb && documents.length > 0 && !loading) {
-        // Pre-fetch the most recent 10 documents
-        const recentDocs = documents.slice(0, 10);
-        for (const doc of recentDocs) {
-          if (doc.file_url) {
-            const cached = await getFileLocal(doc.file_url);
-            if (!cached) {
-              const { data, error } = await supabase.storage.from("documents").createSignedUrl(doc.file_url, 600);
-              if (data?.signedUrl && !error) {
-                try {
-                  const downloadRes = await FileSystem.downloadAsync(
-                    data.signedUrl,
-                    FileSystem.documentDirectory + 'temp-' + doc.file_url.replace(/\//g, '-')
-                  );
-                  if (downloadRes.status === 200) {
-                    await saveFileLocal(doc.file_url, downloadRes.uri);
-                    console.log("Pre-fetched and cached:", doc.name);
+      try {
+        if (!isWeb && documents.length > 0 && !loading && FileSystem && FileSystem.documentDirectory) {
+          // Pre-fetch the most recent 10 documents
+          const recentDocs = documents.slice(0, 10);
+          for (const doc of recentDocs) {
+            if (doc.file_url) {
+              const cached = await getFileLocal(doc.file_url).catch(() => null);
+              if (!cached) {
+                const { data, error } = await supabase.storage.from("documents").createSignedUrl(doc.file_url, 600);
+                if (data?.signedUrl && !error) {
+                  try {
+                    const targetUri = (FileSystem.documentDirectory || '') + 'temp-' + doc.file_url.replace(/\//g, '-');
+                    const downloadRes = await FileSystem.downloadAsync(
+                      data.signedUrl,
+                      targetUri
+                    );
+                    if (downloadRes.status === 200) {
+                      await saveFileLocal(doc.file_url, downloadRes.uri).catch(() => false);
+                    }
+                  } catch (e) {
+                    // Ignore errors
                   }
-                } catch (e) {
-                  // Ignore errors
                 }
               }
             }
           }
         }
+      } catch (e) {
+        console.warn("Background prefetch warning:", e);
       }
     };
     

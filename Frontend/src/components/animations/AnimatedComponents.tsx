@@ -1,5 +1,11 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { View, Text, StyleSheet, Animated, TouchableOpacity, Easing, Platform, StyleProp, ViewStyle } from 'react-native';
+import Animated, { View, Text, StyleSheet, TouchableOpacity, Platform } from 'react-native';
+// @ts-ignore
+type StyleProp<T> = any;
+// @ts-ignore
+type ViewStyle = any;
+// @ts-ignore
+const Easing = Animated.Easing || (Animated as any).easing;
 import { Feather, MaterialCommunityIcons } from '@expo/vector-icons';
 import { useTheme } from '../../context/ThemeContext';
 
@@ -64,6 +70,10 @@ export const AnimatedCard: React.FC<AnimatedCardProps> = ({ children, index = 0,
     }
   };
 
+  const scaleTotal = Platform.OS === 'web'
+    ? Animated.multiply(scaleAnim, hoverScaleAnim)
+    : scaleAnim;
+
   const content = (
     <Animated.View
       style={[
@@ -71,8 +81,7 @@ export const AnimatedCard: React.FC<AnimatedCardProps> = ({ children, index = 0,
           opacity: fadeAnim,
           transform: [
             { translateY: slideAnim },
-            { scale: scaleAnim },
-            { scale: hoverScaleAnim },
+            { scale: scaleTotal },
           ],
         },
         style,
