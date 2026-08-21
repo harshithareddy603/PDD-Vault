@@ -1,11 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
-import Animated, { View, Text, StyleSheet, TouchableOpacity, Platform } from 'react-native';
 // @ts-ignore
-type StyleProp<T> = any;
-// @ts-ignore
-type ViewStyle = any;
-// @ts-ignore
-const Easing = Animated.Easing || (Animated as any).easing;
+import { View, Text, StyleSheet, Animated, TouchableOpacity, Easing, Platform } from 'react-native';
 import { Feather, MaterialCommunityIcons } from '@expo/vector-icons';
 import { useTheme } from '../../context/ThemeContext';
 
@@ -14,7 +9,7 @@ interface AnimatedCardProps {
   children: React.ReactNode;
   index?: number;
   delay?: number;
-  style?: StyleProp<ViewStyle>;
+  style?: any;
   onPress?: () => void;
 }
 
@@ -110,7 +105,7 @@ export const AnimatedCard: React.FC<AnimatedCardProps> = ({ children, index = 0,
 interface AnimatedBadgeProps {
   status: 'safe' | 'soon' | 'expired';
   children: React.ReactNode;
-  style?: StyleProp<ViewStyle>;
+  style?: any;
 }
 
 export const AnimatedBadge: React.FC<AnimatedBadgeProps> = ({ status, children, style }) => {
