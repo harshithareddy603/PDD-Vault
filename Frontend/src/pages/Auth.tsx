@@ -82,8 +82,11 @@ const Auth = () => {
   const [cropOffsetX, setCropOffsetX] = useState(0);
   const [cropOffsetY, setCropOffsetY] = useState(0);
 
+  const hasNavigatedRef = useRef(false);
+
   useEffect(() => {
-    if (!loading && isAuthenticated) {
+    if (!loading && isAuthenticated && !hasNavigatedRef.current) {
+      hasNavigatedRef.current = true;
       navigation.replace("Dashboard");
     }
   }, [loading, isAuthenticated, navigation]);
@@ -157,7 +160,8 @@ const Auth = () => {
         const { error: signInError } = await signIn({ email, password });
         if (signInError) {
           setError("Incorrect password. Please try again.");
-        } else { 
+        } else if (!hasNavigatedRef.current) { 
+          hasNavigatedRef.current = true;
           navigation.replace("Dashboard"); 
         }
       } else if (mode === "signup") {
