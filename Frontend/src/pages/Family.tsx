@@ -228,6 +228,9 @@ const Family = () => {
       else Alert.alert("Success", "Document saved successfully to member vault!");
       setAddDocMemberId(null);
       resetDocForm();
+      setTimeout(() => {
+        setViewingId(memberId);
+      }, 150);
     }
   };
 
@@ -484,8 +487,12 @@ const Family = () => {
                     <TouchableOpacity
                       style={s.addDocHeaderBtn}
                       onPress={() => {
+                        const targetId = viewingId;
                         resetDocForm();
-                        setAddDocMemberId(viewingId);
+                        setViewingId(null);
+                        setTimeout(() => {
+                          setAddDocMemberId(targetId);
+                        }, 150);
                       }}
                     >
                       <Feather name="plus" size={14} color="#FFFFFF" style={{ marginRight: 4 }} />
@@ -501,8 +508,12 @@ const Family = () => {
                         <TouchableOpacity
                           style={[s.addBtn, { marginTop: 14 }]}
                           onPress={() => {
+                            const targetId = viewingId;
                             resetDocForm();
-                            setAddDocMemberId(viewingId);
+                            setViewingId(null);
+                            setTimeout(() => {
+                              setAddDocMemberId(targetId);
+                            }, 150);
                           }}
                         >
                           <Feather name="plus" size={14} color="#FFFFFF" style={{ marginRight: 6 }} />

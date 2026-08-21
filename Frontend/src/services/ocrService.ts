@@ -6,7 +6,7 @@ if (typeof window !== 'undefined' && !pdfjsLib.GlobalWorkerOptions.workerSrc) {
   pdfjsLib.GlobalWorkerOptions.workerSrc = `https://cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjsLib.version}/pdf.worker.min.js`;
 }
 
-export type DetectedCategory = 
+export type DetectedCategory =
   | 'Aadhaar'
   | 'PAN'
   | 'Passport'
@@ -127,7 +127,7 @@ export function normalizeDate(dateStr: string): string | null {
     let [, d, m, y] = match1;
     let dayNum = parseInt(d, 10);
     let monthNum = parseInt(m, 10);
-    
+
     // Swap if month > 12 (MM/DD/YYYY format handling)
     if (monthNum > 12 && dayNum <= 12) {
       [dayNum, monthNum] = [monthNum, dayNum];
@@ -308,7 +308,7 @@ function extractPersonName(rawText: string, category: DetectedCategory): string 
   for (const line of topLines) {
     const cleanLine = line.replace(/[^a-zA-Z\s]/g, '').trim();
     const wordCount = cleanLine.split(/\s+/).length;
-    
+
     if (cleanLine.length >= 4 && cleanLine.length <= 60 && wordCount >= 2 && wordCount <= 5) {
       const lower = cleanLine.toLowerCase();
       const invalidWords = [
@@ -437,7 +437,7 @@ async function extractTextOrCanvasFromPDF(pdfSource: string | File | Blob): Prom
  */
 export function parseExtractedText(rawText: string, filename: string = ''): ExtractedDocData {
   const textLower = (rawText + ' ' + filename).toLowerCase();
-  
+
   // 1. Category Detection using Keyword Scoring
   let bestCategory: DetectedCategory = 'General';
   let maxScore = 0;
@@ -456,7 +456,7 @@ export function parseExtractedText(rawText: string, filename: string = ''): Extr
   }
 
   const docNumber: string | null = extractDocumentIDNumber(rawText, bestCategory);
-  
+
   // DOB extraction
   let dob: string | null = null;
   const dobMatch = rawText.match(/(?:dob|date of birth|yob|year of birth)[:\s]*([0-9]{2}[/.-][0-9]{2}[/.-][0-9]{4}|[0-9]{4})/i);
@@ -471,7 +471,7 @@ export function parseExtractedText(rawText: string, filename: string = ''): Extr
   // --- DOCUMENT TITLE FORMATTING ---
   const personNamePart = personName ? `${personName} - ` : '';
   let docTitle = '';
-  
+
   if (bestCategory === 'Aadhaar') docTitle = `${personNamePart}Aadhaar Card`;
   else if (bestCategory === 'PAN') docTitle = `${personNamePart}PAN Card`;
   else if (bestCategory === 'Passport') docTitle = `${personNamePart}Passport`;
@@ -626,7 +626,7 @@ export async function performLocalOCR(
   }
 
   // 3. PDF Documents (.pdf)
-  const isPdf = 
+  const isPdf =
     ext === 'pdf' ||
     (imageSource instanceof File && imageSource.type === 'application/pdf') ||
     (imageSource instanceof Blob && imageSource.type === 'application/pdf') ||
@@ -652,7 +652,7 @@ export async function performLocalOCR(
 
     if (onProgress) onProgress(0.5);
     const worker = await createWorker('eng');
-    
+
     if (onProgress) onProgress(0.8);
     const ret = await worker.recognize(processedSource);
     await worker.terminate();

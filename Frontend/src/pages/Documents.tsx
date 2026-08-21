@@ -252,15 +252,16 @@ const Documents = () => {
           const matchesSearch = d.name.toLowerCase().includes(q) || d.category.toLowerCase().includes(q) || ownerName.toLowerCase().includes(q);
           if (!matchesSearch) return false;
         }
+        // 1. Owner Isolation: Main Documents page shows ONLY user's personal documents
+        if (d.family_member_id !== null) {
+          return false;
+        }
+
+        // 2. Active Category / Expiry Filter
         if (activeFilter !== "All") {
           if (activeFilter === "⚠ Expiring Soon") return d.status === "soon";
           if (activeFilter === "❌ Expired") return d.status === "expired";
           return d.category === activeFilter;
-        }
-        if (ownerFilter === "myself" && d.family_member_id !== null) return false;
-        if (ownerFilter === "family") {
-          if (d.family_member_id === null) return false;
-          if (familyMemberFilter !== "all" && d.family_member_id !== familyMemberFilter) return false;
         }
         return true;
       })
