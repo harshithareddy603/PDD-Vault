@@ -32,6 +32,7 @@ export default defineConfig(({ mode }) => ({
       "@expo/vector-icons/MaterialCommunityIcons": path.resolve(__dirname, "./src/stubs/vector-icons.js"),
       "@expo/vector-icons/Feather": path.resolve(__dirname, "./src/stubs/vector-icons.js"),
       "@expo/vector-icons": path.resolve(__dirname, "./src/stubs/vector-icons.js"),
+      "expo-notifications": path.resolve(__dirname, "./src/stubs/expo-notifications.js"),
     },
     extensions: [
       ".web.mjs",

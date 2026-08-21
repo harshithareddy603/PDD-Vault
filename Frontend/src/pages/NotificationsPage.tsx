@@ -3,23 +3,23 @@ import {
   View,
   Text,
   StyleSheet,
-  ScrollView,
   TouchableOpacity,
   Platform,
+  Alert,
 } from 'react-native';
-import React, { useMemo } from 'react';
+import React, { useMemo, useState } from 'react';
 import { AppLayout } from '../components/AppLayout';
 import { useDocuments } from '../hooks/useDocuments';
 import { useNavigation } from '@react-navigation/native';
 import { Feather, MaterialCommunityIcons } from '@expo/vector-icons';
-
+import { calculateMilestone, NotificationService } from '../services/notificationService';
 import { useTheme } from '../context/ThemeContext';
 
 const NotificationsPage = () => {
   const { documents } = useDocuments();
   const navigation = useNavigation<any>();
   const { colors, isDark } = useTheme();
-  const isWeb = Platform.OS === 'web';
+  const [permissionGranted, setPermissionGranted] = useState<boolean | null>(null);
 
   // Dynamic statistics
   const expiringSoonCount = documents.filter((d) => d.status === 'soon').length;
@@ -32,37 +32,67 @@ const NotificationsPage = () => {
     return new Date(dateStr).toLocaleDateString('en-CA');
   };
 
-  // Compile active alerts from real document status
+  // Compile active alerts from real document status with Milestone Info
   const activeAlerts = useMemo(() => {
     return documents
       .filter((d) => d.status !== 'safe')
       .map((d) => {
-        const isExpired = d.status === 'expired';
-        let msg = '';
-        if (isExpired) {
-          msg = `${d.name} has expired`;
-        } else {
-          const daysLeft = d.expiry_date
-            ? Math.floor((new Date(d.expiry_date).getTime() - Date.now()) / 86_400_000)
-            : 0;
-          msg = `Your ${d.name} will expire in ${daysLeft} days`;
-        }
-
+        const info = calculateMilestone(d.expiry_date);
         return {
           id: d.id,
-          message: msg,
+          message: `${d.name}: ${info.message}`,
           date: formatDate(d.expiry_date),
-          isExpired,
+          isExpired: d.status === 'expired',
+          milestoneInfo: info,
           document: d,
         };
+      })
+      .sort((a, b) => {
+        if (a.isExpired && !b.isExpired) return -1;
+        if (!a.isExpired && b.isExpired) return 1;
+        return a.milestoneInfo.minutesLeft - b.milestoneInfo.minutesLeft;
       });
   }, [documents]);
+
+  const handleEnableNotifications = async () => {
+    const granted = await NotificationService.requestPermission();
+    setPermissionGranted(granted);
+    if (granted) {
+      await NotificationService.postStatusBarNotification(
+        "🔔 Status Bar Notifications Enabled!",
+        "You will receive alerts in your phone's status bar for 1-hour, 1-day, and weekly document expiries."
+      );
+      if (Platform.OS === 'web') alert("Status bar / desktop notifications enabled!");
+      else Alert.alert("Success", "Mobile status bar notifications are enabled!");
+    } else {
+      if (Platform.OS === 'web') alert("Notification permission was denied.");
+      else Alert.alert("Permission Denied", "Please allow notifications in your device settings.");
+    }
+  };
 
   return (
     <AppLayout>
       <View style={s.header}>
         <Text style={[s.pageTitle, { color: colors.text }]}>Alerts & Reminders</Text>
         <Text style={[s.subtitle, { color: colors.subtext }]}>{activeAlertsCount} active alert{activeAlertsCount !== 1 ? 's' : ''}</Text>
+      </View>
+
+      {/* Quick Enable Mobile Status Bar Notification Banner */}
+      <View style={[s.enableBanner, { backgroundColor: isDark ? '#1e293b' : '#EFF6FF', borderColor: colors.border }]}>
+        <View style={s.enableBannerLeft}>
+          <MaterialCommunityIcons name="bell-ring-outline" size={22} color="#3B82F6" />
+          <View style={{ flex: 1, marginLeft: 10 }}>
+            <Text style={[s.enableBannerTitle, { color: colors.text }]}>Mobile Top Status Bar Notifications</Text>
+            <Text style={[s.enableBannerSub, { color: colors.subtext }]}>
+              Receive status bar tray alerts for 1-hour, 1-day, and weekly expiry reminders.
+            </Text>
+          </View>
+        </View>
+        <TouchableOpacity style={s.enableBtn} onPress={handleEnableNotifications} activeOpacity={0.8}>
+          <Text style={s.enableBtnText}>
+            {permissionGranted ? 'Active ✓' : 'Enable Status Bar Alerts'}
+          </Text>
+        </TouchableOpacity>
       </View>
 
       {/* Top 3 Quick Stats Cards */}
@@ -74,7 +104,7 @@ const NotificationsPage = () => {
           </View>
           <Text style={[s.cardTitle, { color: colors.text }]}>Expiring Soon</Text>
           <Text style={[s.cardValue, s.orangeText]}>{expiringSoonCount}</Text>
-          <Text style={[s.cardDesc, { color: colors.subtext }]}>Documents expiring within 60 days</Text>
+          <Text style={[s.cardDesc, { color: colors.subtext }]}>Documents expiring within 30 days</Text>
         </View>
 
         {/* Card 2: Expired */}
@@ -103,7 +133,7 @@ const NotificationsPage = () => {
 
       {/* Active Alerts Panel */}
       <View style={[s.panelCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
-        <Text style={[s.panelTitle, { color: colors.text }]}>Active Alerts</Text>
+        <Text style={[s.panelTitle, { color: colors.text }]}>Active Expiry Milestone Alerts</Text>
 
         <View style={s.alertsList}>
           {activeAlerts.length === 0 ? (
@@ -112,44 +142,59 @@ const NotificationsPage = () => {
               <Text style={[s.emptyStateText, { color: colors.subtext }]}>No active alerts at the moment.</Text>
             </View>
           ) : (
-            activeAlerts.map((alert) => (
-              <View
-                key={alert.id}
-                style={[
-                  s.alertRow,
-                  {
-                    backgroundColor: isDark
-                      ? alert.isExpired
-                        ? '#3b1212'
-                        : '#332010'
-                      : alert.isExpired
-                      ? '#FFF5F5'
-                      : '#FFFBEB',
-                    borderColor: colors.border,
-                  },
-                ]}
-              >
-                <View style={s.alertLeft}>
-                  <View style={[s.alertIconCircle, { backgroundColor: isDark ? colors.card : alert.isExpired ? '#FEE2E2' : '#FEF3C7' }]}>
-                    <Feather
-                      name={alert.isExpired ? 'alert-circle' : 'clock'}
-                      size={15}
-                      color={alert.isExpired ? '#EF4444' : '#F97316'}
-                    />
-                  </View>
-                  <View style={s.alertMeta}>
-                    <Text style={[s.alertMessage, { color: colors.text }]}>{alert.message}</Text>
-                    <Text style={[s.alertDate, { color: colors.subtext }]}>{alert.date}</Text>
-                  </View>
-                </View>
-                <TouchableOpacity
-                  style={[s.viewBtn, { borderColor: colors.border }]}
-                  onPress={() => navigation.navigate('Documents', { search: alert.document.name })}
+            activeAlerts.map((alert) => {
+              const { milestoneInfo } = alert;
+              return (
+                <View
+                  key={alert.id}
+                  style={[
+                    s.alertRow,
+                    {
+                      backgroundColor: isDark
+                        ? alert.isExpired
+                          ? '#3b1212'
+                          : '#1e293b'
+                        : milestoneInfo.badgeBg,
+                      borderColor: colors.border,
+                    },
+                  ]}
                 >
-                  <Text style={s.viewBtnText}>View</Text>
-                </TouchableOpacity>
-              </View>
-            ))
+                  <View style={s.alertLeft}>
+                    <View
+                      style={[
+                        s.alertIconCircle,
+                        { backgroundColor: milestoneInfo.badgeBg },
+                      ]}
+                    >
+                      <MaterialCommunityIcons
+                        name={milestoneInfo.icon as any}
+                        size={18}
+                        color={milestoneInfo.badgeColor}
+                      />
+                    </View>
+                    <View style={s.alertMeta}>
+                      <View style={s.badgePillWrap}>
+                        <View style={[s.milestonePill, { backgroundColor: milestoneInfo.badgeColor }]}>
+                          <Text style={s.milestonePillText}>{milestoneInfo.label}</Text>
+                        </View>
+                      </View>
+                      <Text style={[s.alertMessage, { color: colors.text, marginTop: 4 }]}>
+                        {alert.message}
+                      </Text>
+                      <Text style={[s.alertDate, { color: colors.subtext }]}>
+                        Expiry Date: {alert.date}
+                      </Text>
+                    </View>
+                  </View>
+                  <TouchableOpacity
+                    style={[s.viewBtn, { borderColor: colors.border }]}
+                    onPress={() => navigation.navigate('Documents', { search: alert.document.name })}
+                  >
+                    <Text style={s.viewBtnText}>View</Text>
+                  </TouchableOpacity>
+                </View>
+              );
+            })
           )}
         </View>
       </View>
@@ -173,6 +218,59 @@ const s = StyleSheet.create({
     color: '#64748B',
     marginTop: 2,
   },
+  enableBanner: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    padding: 16,
+    borderRadius: 14,
+    borderWidth: 1,
+    marginBottom: 24,
+    flexWrap: 'wrap',
+    gap: 12,
+  },
+  enableBannerLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    flex: 1,
+    minWidth: 240,
+  },
+  enableBannerTitle: {
+    fontSize: 14,
+    fontWeight: '700',
+  },
+  enableBannerSub: {
+    fontSize: 12,
+    marginTop: 2,
+  },
+  enableBtn: {
+    backgroundColor: '#3B82F6',
+    paddingHorizontal: 14,
+    paddingVertical: 9,
+    borderRadius: 8,
+  },
+  enableBtnText: {
+    color: '#FFFFFF',
+    fontSize: 12.5,
+    fontWeight: '600',
+  },
+  badgePillWrap: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 2,
+  },
+  milestonePill: {
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: 6,
+  },
+  milestonePillText: {
+    color: '#FFFFFF',
+    fontSize: 10.5,
+    fontWeight: '700',
+    letterSpacing: 0.2,
+  },
+
   statsGrid: {
     flexDirection: 'row',
     flexWrap: 'wrap',

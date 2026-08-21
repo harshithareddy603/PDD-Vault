@@ -4,10 +4,13 @@ import { useAuth } from "./useAuth";
 import { saveFileLocal, getFileLocal, deleteFileLocal } from "../lib/db";
 import * as FileSystem from 'expo-file-system';
 import * as Sharing from 'expo-sharing';
+import { Platform, Alert } from 'react-native';
+import * as Linking from 'expo-linking';
 import * as MediaLibrary from 'expo-media-library';
-import { Platform, Alert, Linking } from 'react-native';
 
 const isWeb = Platform.OS === 'web';
+
+import { NotificationService } from "../services/notificationService";
 
 const computeStatus = (expiry: string | null): DocStatus => {
   if (!expiry) return "safe";
@@ -35,9 +38,15 @@ export const useDocuments = () => {
       .eq("user_id", user.id)
       .order("created_at", { ascending: false });
     if (error) setError(error.message);
-    else setDocuments((data ?? []) as DocumentRow[]);
+    else {
+      const docs = (data ?? []) as DocumentRow[];
+      setDocuments(docs);
+      // Automatically sync mobile top status bar / system notifications
+      NotificationService.syncDocumentNotifications(docs);
+    }
     setLoading(false);
   }, [user]);
+
 
   useEffect(() => {
     fetchDocuments();

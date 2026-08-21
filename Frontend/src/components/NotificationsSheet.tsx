@@ -1,7 +1,8 @@
-import { View, Text, StyleSheet, TouchableOpacity, TextInput, ScrollView, Image, Modal } from 'react-native'
+import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Modal } from 'react-native';
 import React from "react";
 import type { DocumentRow } from "../services/supabase";
 import { Feather } from '@expo/vector-icons';
+import { calculateMilestone } from '../services/notificationService';
 
 interface NotificationsSheetProps {
   documents: DocumentRow[];
@@ -10,22 +11,16 @@ interface NotificationsSheetProps {
 }
 
 export const NotificationsSheet = ({ documents, isOpen, onClose }: NotificationsSheetProps) => {
-  const now = new Date();
-  
   const notifications = documents
     .filter((d) => d.status === "expired" || d.status === "soon")
     .map((d) => {
-      let daysLeft = 0;
-      if (d.expiry_date) {
-        const exp = new Date(d.expiry_date);
-        daysLeft = Math.ceil((exp.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
-      }
-      return { ...d, daysLeft };
+      const milestoneInfo = calculateMilestone(d.expiry_date);
+      return { ...d, milestoneInfo };
     })
     .sort((a, b) => {
       if (a.status === "expired" && b.status !== "expired") return -1;
       if (b.status === "expired" && a.status !== "expired") return 1;
-      return a.daysLeft - b.daysLeft;
+      return a.milestoneInfo.minutesLeft - b.milestoneInfo.minutesLeft;
     });
 
   return (
@@ -38,7 +33,7 @@ export const NotificationsSheet = ({ documents, isOpen, onClose }: Notifications
       <View style={styles.modalContainer}>
         <View style={styles.content}>
           <View style={styles.header}>
-            <Text style={styles.title}>Notifications</Text>
+            <Text style={styles.title}>Notifications & Status Bar Alerts</Text>
             <TouchableOpacity onPress={onClose} style={styles.closeButton}>
               <Feather name="x" size={24} color="#0F172A" />
             </TouchableOpacity>
@@ -61,15 +56,11 @@ export const NotificationsSheet = ({ documents, isOpen, onClose }: Notifications
                       <Text style={styles.expiryText}>{d.expiry_date}</Text>
                     </View>
                   </View>
-                  {d.status === "expired" ? (
-                    <View style={styles.expiredBadge}>
-                      <Text style={styles.badgeText}>EXPIRED</Text>
-                    </View>
-                  ) : (
-                    <View style={styles.soonBadge}>
-                      <Text style={styles.soonBadgeText}>{d.daysLeft} days left</Text>
-                    </View>
-                  )}
+                  <View style={[styles.milestoneBadge, { backgroundColor: d.milestoneInfo.badgeBg, borderColor: d.milestoneInfo.badgeColor }]}>
+                    <Text style={[styles.milestoneBadgeText, { color: d.milestoneInfo.badgeColor }]}>
+                      {d.milestoneInfo.label}
+                    </Text>
+                  </View>
                 </View>
               ))
             )}
@@ -159,28 +150,15 @@ const styles = StyleSheet.create({
     fontSize: 11,
     color: '#64748B',
   },
-  expiredBadge: {
-    backgroundColor: '#EF4444',
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: 6,
-  },
-  badgeText: {
-    color: '#FFFFFF',
-    fontSize: 10,
-    fontWeight: 'bold',
-  },
-  soonBadge: {
-    backgroundColor: '#FEF3C7',
+  milestoneBadge: {
     paddingHorizontal: 8,
     paddingVertical: 4,
     borderRadius: 6,
     borderWidth: 1,
-    borderColor: '#FDE68A',
   },
-  soonBadgeText: {
-    color: '#92400E',
+  milestoneBadgeText: {
     fontSize: 10,
-    fontWeight: '600',
+    fontWeight: '700',
   },
 });
+

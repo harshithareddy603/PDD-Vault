@@ -2,6 +2,7 @@
   "extends": "./node_modules/expo/tsconfig.base.json",
   "compilerOptions": {
     "target": "es2020",
+    "module": "esnext",
     "lib": ["dom", "dom.iterable", "esnext"],
     "strict": false,
     "jsx": "react-jsx",
