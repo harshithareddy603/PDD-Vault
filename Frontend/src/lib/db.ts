@@ -2,22 +2,23 @@ import * as FileSystem from 'expo-file-system';
 import { Platform } from 'react-native';
 
 const isWeb = Platform.OS === 'web';
-const BASE_DIR = isWeb ? '' : (FileSystem.documentDirectory + 'files/');
+const getBaseDir = () => (isWeb ? '' : (FileSystem.documentDirectory || '') + 'files/');
 
 const ensureDir = async () => {
-  if (isWeb) return;
-  const dirInfo = await FileSystem.getInfoAsync(BASE_DIR);
+  if (isWeb || !FileSystem.documentDirectory) return;
+  const dir = getBaseDir();
+  const dirInfo = await FileSystem.getInfoAsync(dir);
   if (!dirInfo.exists) {
-    await FileSystem.makeDirectoryAsync(BASE_DIR, { intermediates: true });
+    await FileSystem.makeDirectoryAsync(dir, { intermediates: true });
   }
 };
 
 export const saveFileLocal = async (id: string, content: any) => {
-  if (isWeb) return false;
+  if (isWeb || !FileSystem.documentDirectory) return false;
   try {
     await ensureDir();
     const fileName = id.replace(/[\/\\?%*:|"<>]/g, '-');
-    const fileUri = BASE_DIR + fileName;
+    const fileUri = getBaseDir() + fileName;
     
     if (typeof content === 'string' && content.includes('://')) {
       await FileSystem.copyAsync({ from: content, to: fileUri });
@@ -30,10 +31,10 @@ export const saveFileLocal = async (id: string, content: any) => {
 };
 
 export const getFileLocal = async (id: string): Promise<string | null> => {
-  if (isWeb) return null;
+  if (isWeb || !FileSystem.documentDirectory) return null;
   try {
     const fileName = id.replace(/[\/\\?%*:|"<>]/g, '-');
-    const fileUri = BASE_DIR + fileName;
+    const fileUri = getBaseDir() + fileName;
     const fileInfo = await FileSystem.getInfoAsync(fileUri);
     return fileInfo.exists ? fileUri : null;
   } catch (e) {
@@ -43,10 +44,10 @@ export const getFileLocal = async (id: string): Promise<string | null> => {
 };
 
 export const deleteFileLocal = async (id: string) => {
-  if (isWeb) return false;
+  if (isWeb || !FileSystem.documentDirectory) return false;
   try {
     const fileName = id.replace(/[\/\\?%*:|"<>]/g, '-');
-    const fileUri = BASE_DIR + fileName;
+    const fileUri = getBaseDir() + fileName;
     const fileInfo = await FileSystem.getInfoAsync(fileUri);
     if (fileInfo.exists) {
       await FileSystem.deleteAsync(fileUri);
