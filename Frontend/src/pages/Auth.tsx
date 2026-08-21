@@ -1,5 +1,5 @@
 import { View, Text, StyleSheet, TouchableOpacity, TextInput, ScrollView, Alert, ActivityIndicator, KeyboardAvoidingView, Platform, Image, Modal, useWindowDimensions } from 'react-native'
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { useAuth } from "../hooks/useAuth";
 import { useSession } from "../hooks/useSession";
 import { isSupabaseConfigured } from "../services/supabase";
@@ -9,7 +9,11 @@ import * as ImagePicker from 'expo-image-picker';
 
 const cropImageWeb = (imageUri: string, zoom: number, offsetX: number, offsetY: number) => {
   return new Promise<string>((resolve, reject) => {
-    const img = new window.Image();
+    if (typeof window === 'undefined' || typeof document === 'undefined' || !(window as any).Image) {
+      resolve(imageUri);
+      return;
+    }
+    const img = new (window as any).Image();
     img.src = imageUri;
     img.onload = () => {
       const canvas = document.createElement('canvas');

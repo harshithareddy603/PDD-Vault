@@ -10,7 +10,11 @@ import { useTheme } from "../context/ThemeContext";
 
 const cropImageWeb = (imageUri: string, zoom: number, offsetX: number, offsetY: number) => {
   return new Promise<string>((resolve, reject) => {
-    const img = new window.Image();
+    if (typeof window === 'undefined' || typeof document === 'undefined' || !(window as any).Image) {
+      resolve(imageUri);
+      return;
+    }
+    const img = new (window as any).Image();
     img.src = imageUri;
     img.onload = () => {
       const canvas = document.createElement('canvas');
