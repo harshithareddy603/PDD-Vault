@@ -34,12 +34,6 @@ export const supabase: SupabaseClient = createClient(
       autoRefreshToken: false,
       detectSessionInUrl: false,
     },
-    global: {
-      // Increase default timeout for slow networks
-      fetch: (url, options) => {
-        return fetch(url, { ...options, signal: options?.signal || (AbortSignal as any).timeout?.(60000) });
-      },
-    },
   }
 );
 

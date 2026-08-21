@@ -171,22 +171,36 @@ export class NotificationService {
 
   public static async requestPermission(): Promise<boolean> {
     if (Platform.OS === 'web') {
-      if (typeof window !== 'undefined' && 'Notification' in window) {
-        if (window.Notification.permission === 'granted') return true;
-        if (window.Notification.permission !== 'denied') {
-          const res = await window.Notification.requestPermission();
-          return res === 'granted';
+      try {
+        if (typeof window !== 'undefined' && 'Notification' in window) {
+          if (window.Notification.permission === 'granted') return true;
+          if (window.Notification.permission !== 'denied') {
+            const res = await window.Notification.requestPermission();
+            return res === 'granted';
+          }
         }
+      } catch (e) {
+        console.warn('Web notification permission warning:', e);
       }
       return false;
     }
 
     try {
-      // Lazy import Expo Notifications on native mobile
-      const Notifications = await import('expo-notifications');
+      let Notifications: any = null;
+      try {
+        Notifications = await import('expo-notifications');
+      } catch (e) {
+        console.warn('Expo Notifications module not present:', e);
+        return false;
+      }
+
+      if (!Notifications || typeof Notifications.getPermissionsAsync !== 'function') {
+        return false;
+      }
+
       const { status: existingStatus } = await Notifications.getPermissionsAsync();
       let finalStatus = existingStatus;
-      if (existingStatus !== 'granted') {
+      if (existingStatus !== 'granted' && typeof Notifications.requestPermissionsAsync === 'function') {
         const { status } = await Notifications.requestPermissionsAsync();
         finalStatus = status;
       }
@@ -195,25 +209,25 @@ export class NotificationService {
         return false;
       }
 
-      // Configure high-priority notification channel for Android status bar
-      if (Platform.OS === 'android') {
+      if (Platform.OS === 'android' && typeof Notifications.setNotificationChannelAsync === 'function') {
         await Notifications.setNotificationChannelAsync('document-expiries', {
           name: 'Document Expiry Alerts',
-          importance: Notifications.AndroidImportance.MAX,
+          importance: Notifications.AndroidImportance?.MAX ?? 5,
           vibrationPattern: [0, 250, 250, 250],
           lightColor: '#FF0000',
           sound: 'default',
         });
       }
 
-      // Configure foreground status bar display
-      Notifications.setNotificationHandler({
-        handleNotification: async () => ({
-          shouldShowAlert: true,
-          shouldPlaySound: true,
-          shouldSetBadge: true,
-        }),
-      });
+      if (typeof Notifications.setNotificationHandler === 'function') {
+        Notifications.setNotificationHandler({
+          handleNotification: async () => ({
+            shouldShowAlert: true,
+            shouldPlaySound: true,
+            shouldSetBadge: true,
+          }),
+        });
+      }
 
       this.isInitialized = true;
       return true;
@@ -223,68 +237,81 @@ export class NotificationService {
     }
   }
 
-  // Fire a direct Mobile Top Status Bar / Web Notification
   public static async postStatusBarNotification(title: string, body: string, data?: any) {
     if (Platform.OS === 'web') {
-      if (typeof window !== 'undefined' && 'Notification' in window) {
-        if (window.Notification.permission === 'granted') {
-          new window.Notification(title, {
-            body,
-            icon: '/favicon.ico',
-          });
+      try {
+        if (typeof window !== 'undefined' && 'Notification' in window) {
+          if (window.Notification.permission === 'granted') {
+            new window.Notification(title, {
+              body,
+              icon: '/favicon.ico',
+            });
+          }
         }
+      } catch (e) {
+        console.warn('Web notification error:', e);
       }
       return;
     }
 
     try {
-      const Notifications = await import('expo-notifications');
+      let Notifications: any = null;
+      try {
+        Notifications = await import('expo-notifications');
+      } catch (e) {
+        return;
+      }
+
+      if (!Notifications || typeof Notifications.scheduleNotificationAsync !== 'function') {
+        return;
+      }
+
       await Notifications.scheduleNotificationAsync({
         content: {
           title,
           body,
           data: data || {},
           sound: 'default',
-          priority: Notifications.AndroidNotificationPriority.HIGH,
+          priority: Notifications.AndroidNotificationPriority?.HIGH ?? 4,
         },
-        trigger: null, // Display immediately in top status bar
+        trigger: null,
       });
     } catch (err) {
       console.warn('Failed to post status bar notification:', err);
     }
   }
 
-  // Sync and schedule status bar notifications for all user documents
   public static async syncDocumentNotifications(documents: any[]) {
-    if (!documents || documents.length === 0) return;
+    try {
+      if (!documents || documents.length === 0) return;
+      await this.requestPermission();
 
-    // First request permissions silently if not requested yet
-    await this.requestPermission();
+      for (const doc of documents) {
+        if (!doc.expiry_date) continue;
+        const info = calculateMilestone(doc.expiry_date);
 
-    for (const doc of documents) {
-      if (!doc.expiry_date) continue;
-      const info = calculateMilestone(doc.expiry_date);
-
-      // Trigger status bar notifications for critical & urgent milestones
-      if (info.milestone === 'hour_1') {
-        await this.postStatusBarNotification(
-          `🚨 URGENT: ${doc.name} Expires in 1 Hour!`,
-          `Your document "${doc.name}" expires in ${info.minutesLeft} minutes. Please review or renew now!`,
-          { docId: doc.id }
-        );
-      } else if (info.milestone === 'day_1') {
-        await this.postStatusBarNotification(
-          `⚠️ WARNING: ${doc.name} Expires Tomorrow!`,
-          `Your document "${doc.name}" will expire in 24 hours.`,
-          { docId: doc.id }
-        );
-      } else if (info.milestone === 'week_1' && info.daysLeft === 7) {
-        await this.postStatusBarNotification(
-          `📅 Reminder: ${doc.name} Expires in 1 Week`,
-          `Your document "${doc.name}" expires in 7 days.`,
-          { docId: doc.id }
-        );
+        if (info.milestone === 'hour_1') {
+          await this.postStatusBarNotification(
+            `🚨 URGENT: ${doc.name} Expires in 1 Hour!`,
+            `Your document "${doc.name}" expires in ${info.minutesLeft} minutes. Please review or renew now!`,
+            { docId: doc.id }
+          );
+        } else if (info.milestone === 'day_1') {
+          await this.postStatusBarNotification(
+            `⚠️ WARNING: ${doc.name} Expires Tomorrow!`,
+            `Your document "${doc.name}" will expire in 24 hours.`,
+            { docId: doc.id }
+          );
+        } else if (info.milestone === 'week_1' && info.daysLeft === 7) {
+          await this.postStatusBarNotification(
+            `📅 Reminder: ${doc.name} Expires in 1 Week`,
+            `Your document "${doc.name}" expires in 7 days.`,
+            { docId: doc.id }
+          );
+        }
       }
+    } catch (e) {
+      console.warn('syncDocumentNotifications failed gracefully:', e);
     }
   }
 }
