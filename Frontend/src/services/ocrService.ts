@@ -1,9 +1,74 @@
 import { createWorker } from 'tesseract.js';
 import * as pdfjsLib from 'pdfjs-dist';
+import * as FileSystem from 'expo-file-system';
+import { Platform } from 'react-native';
+
+const isWeb = Platform.OS === 'web';
 
 // Set up PDF.js worker URL for web & mobile browsers
 if (typeof window !== 'undefined' && !pdfjsLib.GlobalWorkerOptions.workerSrc) {
   pdfjsLib.GlobalWorkerOptions.workerSrc = `https://cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjsLib.version}/pdf.worker.min.js`;
+}
+
+async function getBase64FromSource(imageSource: string | File | Blob): Promise<string | null> {
+  try {
+    if (typeof imageSource === 'string') {
+      if (imageSource.startsWith('data:image')) {
+        return imageSource;
+      }
+      if (!isWeb && FileSystem && typeof FileSystem.readAsStringAsync === 'function') {
+        const b64 = await FileSystem.readAsStringAsync(imageSource, {
+          encoding: FileSystem.EncodingType.Base64,
+        });
+        return `data:image/jpeg;base64,${b64}`;
+      }
+      const res = await fetch(imageSource);
+      const blob = await res.blob();
+      return await new Promise<string>((resolve) => {
+        const reader = new FileReader();
+        reader.onloadend = () => resolve(reader.result as string);
+        reader.readAsDataURL(blob);
+      });
+    }
+    if (imageSource instanceof File || imageSource instanceof Blob) {
+      return await new Promise<string>((resolve) => {
+        const reader = new FileReader();
+        reader.onloadend = () => resolve(reader.result as string);
+        reader.readAsDataURL(imageSource);
+      });
+    }
+  } catch (e) {
+    console.warn("Base64 conversion failed:", e);
+  }
+  return null;
+}
+
+async function fetchOCRSpace(base64Data: string): Promise<string | null> {
+  try {
+    const formData = new FormData();
+    formData.append('apikey', 'helloworld');
+    formData.append('base64Image', base64Data);
+    formData.append('language', 'eng');
+    formData.append('isOverlayRequired', 'false');
+    formData.append('scale', 'true');
+    formData.append('OCREngine', '2');
+
+    const res = await fetch('https://api.ocr.space/parse/image', {
+      method: 'POST',
+      body: formData,
+    });
+
+    const json = await res.json();
+    if (json && json.ParsedResults && json.ParsedResults.length > 0) {
+      const text = json.ParsedResults[0].ParsedText;
+      if (text && text.trim().length > 0) {
+        return text;
+      }
+    }
+  } catch (e) {
+    console.warn("OCR.space API error:", e);
+  }
+  return null;
 }
 
 export type DetectedCategory =
@@ -647,10 +712,26 @@ export async function performLocalOCR(
 
   // 4. Image Files (.jpg, .jpeg, .png, .webp, .bmp, .gif, .tiff, camera images)
   try {
-    if (onProgress) onProgress(0.3);
-    const processedSource = await preprocessImageForOCR(imageSource);
+    if (onProgress) onProgress(0.2);
 
-    if (onProgress) onProgress(0.5);
+    // Strategy A: OCR.space High-Accuracy Cloud Document Engine (Works on Mobile Android/iOS + Web)
+    try {
+      const base64Data = await getBase64FromSource(imageSource);
+      if (base64Data) {
+        if (onProgress) onProgress(0.5);
+        const cloudText = await fetchOCRSpace(base64Data);
+        if (cloudText && cloudText.trim().length > 5) {
+          if (onProgress) onProgress(1.0);
+          return parseExtractedText(cloudText, filename);
+        }
+      }
+    } catch (apiErr) {
+      console.warn("OCR.space API fallback:", apiErr);
+    }
+
+    // Strategy B: Local Tesseract.js (Web fallback)
+    if (onProgress) onProgress(0.6);
+    const processedSource = await preprocessImageForOCR(imageSource);
     const worker = await createWorker('eng');
 
     if (onProgress) onProgress(0.8);
